@@ -248,14 +248,7 @@
 }
 
 .employee-dashboard .section-title::after {
-  content: "";
-  position: absolute;
-  bottom: -10px;
-  left: 46px;
-  width: 60px;
-  height: 3px;
-  border-radius: 2px;
-  background: #0a70e7;
+  display: none;
 }
 
 .employee-dashboard .section-title svg {
@@ -686,6 +679,139 @@
   border: 1px solid #e1e6ef;
   border-radius: 12px;
 }
+
+/* ============================================
+   LEAVE SUMMARY VIEW
+   ============================================ */
+.employee-dashboard .leave-summary {
+  width: 100%;
+  padding: 8px 0 0;
+}
+
+.employee-dashboard .leave-summary .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  margin-bottom: 24px;
+}
+
+.employee-dashboard .leave-summary .card {
+  padding: 26px 26px;
+  border: 0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 14px 38px rgba(24, 76, 139, 0.06);
+}
+
+.employee-dashboard .leave-summary .card strong {
+  display: block;
+  color: #0b1220;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.employee-dashboard .leave-summary .card .value {
+  color: #071022;
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.employee-dashboard .leave-summary .summary-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.employee-dashboard .leave-summary .summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(24, 76, 139, 0.04);
+}
+
+.employee-dashboard .leave-summary .summary-item span {
+  color: #0b1220;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.employee-dashboard .leave-summary .badge {
+  min-width: 80px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  font-weight: 800;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.employee-dashboard .leave-summary .badge.approved {
+  color: #046b2a;
+  background: #e6f9ee;
+}
+
+.employee-dashboard .leave-summary .badge.rejected {
+  color: #9f1b20;
+  background: #feecec;
+}
+
+/* Card header and icons */
+.employee-dashboard .leave-summary .card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.employee-dashboard .leave-summary .card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #eaf4ff;
+  color: #0a70e7;
+}
+
+.employee-dashboard .leave-summary .card-icon.orange { background: #fff3e6; color: #ff8a00; }
+.employee-dashboard .leave-summary .card-icon.green { background: #e9f8ee; color: #047a2b; }
+.employee-dashboard .leave-summary .card-icon.purple { background: #f3ecff; color: #7b4edb; }
+
+.employee-dashboard .leave-summary .muted {
+  color: #586077;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+/* Summary list items */
+.employee-dashboard .leave-summary .summary-item .left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.employee-dashboard .leave-summary .icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(8,104,239,0.06);
+}
+
+.employee-dashboard .leave-summary .icon-wrap.approved { background: #e6f9ee; color: #046b2a; }
+.employee-dashboard .leave-summary .icon-wrap.rejected { background: #feecec; color: #9f1b20; }
+
+.employee-dashboard .leave-summary .labels strong { font-size: 16px; }
+
+.employee-dashboard .leave-summary .right { display:flex; align-items:center; gap:16px; }
+.employee-dashboard .leave-summary .count { font-size: 28px; font-weight: 900; color: #071022; }
 
 .employee-dashboard .leave-table {
   width: 100%;

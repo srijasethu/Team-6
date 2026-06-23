@@ -46,6 +46,104 @@ function BrandIcon() {
   );
 }
 
+function ApplyLeaveForm() {
+  const [formData, setFormData] = useState({
+    leaveType: "Casual Leave",
+    fromDate: "2026-06-22",
+    fromTime: "09:00 AM",
+    toDate: "2026-06-24",
+    toTime: "05:00 PM",
+    reason: "",
+  });
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  return (
+    <div className="leave-content">
+      <div className="section-title leave-title">
+        <FaRegEdit />
+        <h1>Apply Leave</h1>
+      </div>
+      <form className="apply-leave-form">
+        <div className="form-row">
+          <div className="form-group half-width">
+            <label htmlFor="leaveType">Leave Type</label>
+            <select
+              id="leaveType"
+              value={formData.leaveType}
+              onChange={(e) => handleChange("leaveType", e.target.value)}
+            >
+              <option>Casual Leave</option>
+              <option>Medical Leave</option>
+              <option>General Permission</option>
+              <option>Vacation Leave</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group half-width">
+            <label htmlFor="fromDate">From Date</label>
+            <input
+              id="fromDate"
+              type="date"
+              value={formData.fromDate}
+              onChange={(e) => handleChange("fromDate", e.target.value)}
+            />
+          </div>
+          <div className="form-group half-width">
+            <label htmlFor="fromTime">From Time</label>
+            <input
+              id="fromTime"
+              type="time"
+              value={formData.fromTime}
+              onChange={(e) => handleChange("fromTime", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="form-row">
+          <div className="form-group half-width">
+            <label htmlFor="toDate">To Date</label>
+            <input
+              id="toDate"
+              type="date"
+              value={formData.toDate}
+              onChange={(e) => handleChange("toDate", e.target.value)}
+            />
+          </div>
+          <div className="form-group half-width">
+            <label htmlFor="toTime">To Time</label>
+            <input
+              id="toTime"
+              type="time"
+              value={formData.toTime}
+              onChange={(e) => handleChange("toTime", e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="reason">Reason</label>
+          <textarea
+            id="reason"
+            value={formData.reason}
+            onChange={(e) => handleChange("reason", e.target.value)}
+            placeholder="Enter reason for leave..."
+          />
+        </div>
+        <div className="form-actions">
+          <button className="apply-leave-btn" type="button">
+            Apply Leave
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, onCancel, onChange }) {
   return (
     <div className="profile-content">
@@ -208,7 +306,128 @@ function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, 
   );
 }
 
-function LeaveHistoryView() {
+function LeaveSummaryView() {
+  const approved = leaveRows.filter((r) => r[7].toLowerCase() === "approved").length;
+  const rejected = leaveRows.filter((r) => r[7].toLowerCase() === "rejected").length;
+  const pending = leaveRows.filter((r) => r[7].toLowerCase() === "pending").length;
+
+  return (
+    <div className="leave-summary">
+      <div className="summary-cards">
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon">
+              <FaRegCalendarAlt />
+            </div>
+            <strong>Total Allowed</strong>
+          </div>
+          <div className="value">20 Days</div>
+          <div className="muted">Annual leave allocation</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon orange">
+              <FaCheck />
+            </div>
+            <strong>Leaves Taken</strong>
+          </div>
+          <div className="value">8 Days</div>
+          <div className="muted">Already used</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon green">
+              <FaSuitcase />
+            </div>
+            <strong>Remaining</strong>
+          </div>
+          <div className="value">12 Days</div>
+          <div className="muted">Available balance</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon purple">
+              <FaRegCalendarAlt />
+            </div>
+            <strong>Pending Requests</strong>
+          </div>
+          <div className="value">{pending}</div>
+          <div className="muted">Awaiting approval</div>
+        </div>
+      </div>
+
+      <div className="summary-list">
+        <div className="summary-item">
+          <div className="left">
+            <div className="icon-wrap approved">
+              <FaCheck />
+            </div>
+            <div className="labels">
+              <strong>Approved Requests</strong>
+              <div className="muted">&nbsp;</div>
+            </div>
+          </div>
+          <div className="right">
+            <div className="count">{approved}</div>
+            <span className="badge approved">Approved</span>
+          </div>
+        </div>
+
+        <div className="summary-item">
+          <div className="left">
+            <div className="icon-wrap rejected">
+              <FaRegCalendarAlt />
+            </div>
+            <div className="labels">
+              <strong>Rejected Requests</strong>
+              <div className="muted">&nbsp;</div>
+            </div>
+          </div>
+          <div className="right">
+            <div className="count">{rejected}</div>
+            <span className="badge rejected">Rejected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeaveHistoryView({ onNewLeaveClick }) {
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedRange, setSelectedRange] = useState("all");
+
+  const parseLeaveStartDate = (row) => {
+    const dateString = row[3].split("\n")[0];
+    const [day, month, year] = dateString.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const filteredRows = leaveRows.filter((row) => {
+    const status = row[7].toLowerCase();
+    const statusMatches = selectedStatus === "all" || status === selectedStatus;
+    if (!statusMatches) {
+      return false;
+    }
+
+    if (selectedRange === "all") {
+      return true;
+    }
+
+    const leaveDate = parseLeaveStartDate(row);
+    const today = new Date();
+
+    if (selectedRange === "month") {
+      return leaveDate.getMonth() === today.getMonth() && leaveDate.getFullYear() === today.getFullYear();
+    }
+
+    if (selectedRange === "year") {
+      return leaveDate.getFullYear() === today.getFullYear();
+    }
+
+    return true;
+  });
+
   return (
     <div className="leave-content">
       <div className="leave-top">
@@ -217,18 +436,27 @@ function LeaveHistoryView() {
           <h1>Leave History</h1>
         </div>
         <div className="leave-actions">
-          <button className="new-leave-btn" type="button">
+          <button className="new-leave-btn" type="button" onClick={onNewLeaveClick}>
             <FaPlus />
             New Leave
           </button>
           <div className="leave-filters">
-            <select aria-label="Filter leave status" defaultValue="all">
+            <select
+              aria-label="Filter leave status"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="pending">Pending</option>
             </select>
-            <select aria-label="Select date range" defaultValue="range">
-              <option value="range">Select Date Range</option>
+            <select
+              aria-label="Select date range"
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value)}
+            >
+              <option value="all">Select Date Range</option>
               <option value="month">This Month</option>
               <option value="year">This Year</option>
             </select>
@@ -248,11 +476,10 @@ function LeaveHistoryView() {
               <th>Call Count</th>
               <th>Reason</th>
               <th>Status</th>
-              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {leaveRows.map((row) => (
+            {filteredRows.map((row) => (
               <tr key={row[1]}>
                 {row.slice(0, 7).map((cell, index) => (
                   <td key={`${row[1]}-${index}`}>
@@ -265,12 +492,6 @@ function LeaveHistoryView() {
                 ))}
                 <td>
                   <span className={`status-pill ${row[7].toLowerCase()}`}>{row[7]}</span>
-                </td>
-                <td>
-                  <button className="details-btn" type="button">
-                    <FaFileAlt />
-                    Details
-                  </button>
                 </td>
               </tr>
             ))}
@@ -386,14 +607,18 @@ function EmployeeDashboard({ onLogout }) {
               <span>My Profile</span>
             </button>
             <button
-              className={`nav-item ${activeView === "leave" ? "active" : ""}`}
+              className={`nav-item ${activeView === "apply" ? "active" : ""}`}
               type="button"
-              onClick={() => setActiveView("leave")}
+              onClick={() => setActiveView("apply")}
             >
               <FaRegEdit />
               <span>Apply Leave</span>
             </button>
-            <button className="nav-item" type="button">
+            <button
+              className={`nav-item ${activeView === "leaveSummary" ? "active" : ""}`}
+              type="button"
+              onClick={() => setActiveView("leaveSummary")}
+            >
               <FaRegChartBar />
               <span>Leave Summary</span>
             </button>
@@ -419,7 +644,11 @@ function EmployeeDashboard({ onLogout }) {
               onChange={handleChange}
             />
           )}
-          {activeView === "leave" && <LeaveHistoryView />}
+          {activeView === "leave" && (
+            <LeaveHistoryView onNewLeaveClick={() => setActiveView("apply")} />
+          )}
+          {activeView === "apply" && <ApplyLeaveForm />}
+          {activeView === "leaveSummary" && <LeaveSummaryView />}
           {activeView === "logout" && (
             <LogoutView onCancel={() => setActiveView("profile")} onConfirm={onLogout} />
           )}
