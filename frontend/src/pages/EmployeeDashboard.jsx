@@ -22,34 +22,6 @@ import {
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
 
-const profileDetails = [
-  {
-    icon: <FaEnvelope />,
-    label: "Email",
-    value: "srija@gmail.com",
-  },
-  {
-    icon: <FaPhoneAlt />,
-    label: "Phone",
-    value: "9876543210",
-  },
-  {
-    icon: <FaRegCalendarAlt />,
-    label: "Joining Date",
-    value: "01-06-2025",
-  },
-  {
-    icon: <FaRegBuilding />,
-    label: "Department",
-    value: "IT",
-  },
-  {
-    icon: <FaSuitcase />,
-    label: "Designation",
-    value: "Software Engineer",
-  },
-];
-
 const leaveRows = [
   ["1", "LV2026/001", "Casual Leave", "22-06-2026\n09:00 AM", "24-06-2026\n05:00 PM", "1", "Family function", "Approved"],
   ["2", "LV2026/002", "Medical Leave", "15-06-2026\n10:00 AM", "16-06-2026\n05:00 PM", "1", "Fever", "Approved"],
@@ -74,50 +46,164 @@ function BrandIcon() {
   );
 }
 
-function ProfileView() {
+function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, onCancel, onChange }) {
   return (
     <div className="profile-content">
       <div className="section-title">
         <FaRegUser />
-        <h1>Employee Profile</h1>
+        <h1>My Profile</h1>
       </div>
 
       <div className="profile-hero">
         <EmployeeAvatar large />
-        <div>
+        <div className="hero-details">
           <div className="employee-name">
-            <h2>Srija S</h2>
-            <span className="role-badge">Software Engineer</span>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-name-input"
+                value={tempProfileData.name}
+                onChange={(e) => onChange("name", e.target.value)}
+                placeholder="Enter name"
+              />
+            ) : (
+              <h2>{profileData.name}</h2>
+            )}
+            <span className="role-badge">{profileData.designation}</span>
           </div>
           <div className="employee-meta">
             <span>
               <FaRegCalendarAlt />
-              Employee ID: EMP001
+              Employee ID: {profileData.employeeId}
             </span>
             <span>
               <FaBuilding />
-              IT Department
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="edit-meta-input"
+                  value={tempProfileData.department}
+                  onChange={(e) => onChange("department", e.target.value)}
+                  placeholder="Enter department"
+                />
+              ) : (
+                `${profileData.department} Department`
+              )}
             </span>
           </div>
         </div>
       </div>
 
       <div className="info-grid">
-        {profileDetails.map((detail) => (
-          <div className="info-card" key={detail.label}>
-            {detail.icon}
-            <div>
-              <strong>{detail.label}</strong>
-              <span>{detail.value}</span>
-            </div>
+        {/* Email */}
+        <div className="info-card">
+          <FaEnvelope />
+          <div className="card-body">
+            <strong>Email</strong>
+            {isEditing ? (
+              <input
+                type="email"
+                className="edit-card-input"
+                value={tempProfileData.email}
+                onChange={(e) => onChange("email", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.email}</span>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Phone */}
+        <div className="info-card">
+          <FaPhoneAlt />
+          <div className="card-body">
+            <strong>Phone</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.phone}
+                onChange={(e) => onChange("phone", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.phone}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Joining Date */}
+        <div className="info-card">
+          <FaRegCalendarAlt />
+          <div className="card-body">
+            <strong>Joining Date</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.joiningDate}
+                onChange={(e) => onChange("joiningDate", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.joiningDate}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Department */}
+        <div className="info-card">
+          <FaRegBuilding />
+          <div className="card-body">
+            <strong>Department</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.department}
+                onChange={(e) => onChange("department", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.department}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Designation */}
+        <div className="info-card">
+          <FaSuitcase />
+          <div className="card-body">
+            <strong>Designation</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.designation}
+                onChange={(e) => onChange("designation", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.designation}</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <button className="edit-profile" type="button">
-        <FaPencilAlt />
-        Edit Profile
-      </button>
+      {/* Action buttons */}
+      <div className="action-buttons-container">
+        {isEditing ? (
+          <div className="edit-actions-group">
+            <button className="save-profile-btn" type="button" onClick={onSave}>
+              Save Changes
+            </button>
+            <button className="cancel-edit-btn" type="button" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button className="edit-profile" type="button" onClick={onEdit}>
+            <FaPencilAlt />
+            Edit Profile
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -242,31 +328,54 @@ function LogoutView({ onCancel, onConfirm }) {
 
 function EmployeeDashboard({ onLogout }) {
   const [activeView, setActiveView] = useState("profile");
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [profileData, setProfileData] = useState({
+    name: "Srija S",
+    employeeId: "EMP001",
+    department: "IT",
+    email: "srija@gmail.com",
+    phone: "9876543210",
+    joiningDate: "01-06-2025",
+    designation: "Software Engineer",
+  });
+
+  const [tempProfileData, setTempProfileData] = useState({ ...profileData });
+
+  const handleEditClick = () => {
+    setTempProfileData({ ...profileData });
+    setIsEditing(true);
+  };
+
+  const handleSaveClick = () => {
+    setProfileData({ ...tempProfileData });
+    setIsEditing(false);
+  };
+
+  const handleCancelClick = () => {
+    setTempProfileData({ ...profileData });
+    setIsEditing(false);
+  };
+
+  const handleChange = (field, value) => {
+    setTempProfileData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <main className="employee-dashboard">
-      <header className="dashboard-header">
-        <div className="brand">
-          <BrandIcon />
-          <span>
-            Employee
-            <br />
-            Dashboard
-          </span>
-        </div>
-
-        <div className="user-menu">
-          <EmployeeAvatar />
-          <div className="user-copy">
-            <strong>Srija S</strong>
-            <span>EMP001</span>
-          </div>
-          <FaChevronDown className="chevron" />
-        </div>
-      </header>
-
       <div className="dashboard-shell">
         <aside className="sidebar" aria-label="Employee dashboard navigation">
+          <div className="brand">
+            <BrandIcon />
+            <div className="brand-text">
+              <span className="brand-title-main">Employee</span>
+              <span className="brand-title-sub">Dashboard</span>
+            </div>
+          </div>
+
           <nav className="nav-list">
             <button
               className={`nav-item ${activeView === "profile" || activeView === "logout" ? "active" : ""}`}
@@ -289,7 +398,9 @@ function EmployeeDashboard({ onLogout }) {
               <span>Leave Summary</span>
             </button>
           </nav>
+
           <span className="sidebar-dot-grid" />
+
           <button className="logout" type="button" onClick={() => setActiveView("logout")}>
             <FaSignOutAlt />
             <span>Logout</span>
@@ -297,7 +408,17 @@ function EmployeeDashboard({ onLogout }) {
         </aside>
 
         <section className="profile-panel">
-          {activeView === "profile" && <ProfileView />}
+          {activeView === "profile" && (
+            <ProfileView
+              profileData={profileData}
+              tempProfileData={tempProfileData}
+              isEditing={isEditing}
+              onEdit={handleEditClick}
+              onSave={handleSaveClick}
+              onCancel={handleCancelClick}
+              onChange={handleChange}
+            />
+          )}
           {activeView === "leave" && <LeaveHistoryView />}
           {activeView === "logout" && (
             <LogoutView onCancel={() => setActiveView("profile")} onConfirm={onLogout} />
