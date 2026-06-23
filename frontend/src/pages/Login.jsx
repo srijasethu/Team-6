@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import "./../styles/Login.css";
 
-function Login({ onEmployeeLogin }) {
+function Login({ onEmployeeLogin, onManagerLogin }) {
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,8 +20,8 @@ function Login({ onEmployeeLogin }) {
   function handleSubmit(event) {
     event.preventDefault();
 
-    if (role !== "employee") {
-      setError("Please select Employee to open the employee dashboard.");
+    if (!role) {
+      setError("Please select a role.");
       return;
     }
 
@@ -31,7 +31,11 @@ function Login({ onEmployeeLogin }) {
     }
 
     setError("");
-    onEmployeeLogin();
+    if (role === "employee") {
+      onEmployeeLogin();
+    } else if (role === "manager") {
+      onManagerLogin();
+    }
   }
 
   return (
