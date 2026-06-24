@@ -46,13 +46,13 @@ function BrandIcon() {
   );
 }
 
-function ApplyLeaveForm() {
+function ApplyLeaveForm({ onApplyLeave }) {
   const [formData, setFormData] = useState({
     leaveType: "Casual Leave",
     fromDate: "2026-06-22",
-    fromTime: "09:00 AM",
+    fromTime: "09:00",
     toDate: "2026-06-24",
-    toTime: "05:00 PM",
+    toTime: "17:00",
     reason: "",
   });
 
@@ -65,80 +65,73 @@ function ApplyLeaveForm() {
 
   return (
     <div className="leave-content">
-      <div className="section-title leave-title">
-        <FaRegEdit />
-        <h1>Apply Leave</h1>
-      </div>
-      <form className="apply-leave-form">
-        <div className="form-row">
-          <div className="form-group half-width">
-            <label htmlFor="leaveType">Leave Type</label>
-            <select
-              id="leaveType"
-              value={formData.leaveType}
-              onChange={(e) => handleChange("leaveType", e.target.value)}
-            >
-              <option>Casual Leave</option>
-              <option>Medical Leave</option>
-              <option>General Permission</option>
-              <option>Vacation Leave</option>
-            </select>
-          </div>
+      <form className="new-leave-form" onSubmit={(e) => { e.preventDefault(); if (onApplyLeave) onApplyLeave(); }}>
+        <div className="section-title leave-form-title">
+          <FaRegEdit />
+          <h1>Apply Leave</h1>
         </div>
-        <div className="form-row">
-          <div className="form-group half-width">
-            <label htmlFor="fromDate">From Date</label>
+
+        <label className="leave-form-field leave-form-field-wide">
+          <span>Leave Type</span>
+          <select
+            value={formData.leaveType}
+            onChange={(e) => handleChange("leaveType", e.target.value)}
+          >
+            <option>Casual Leave</option>
+            <option>Medical Leave</option>
+            <option>General Permission</option>
+            <option>Vacation Leave</option>
+          </select>
+        </label>
+
+        <div className="leave-form-grid">
+          <label className="leave-form-field">
+            <span>From Date</span>
             <input
-              id="fromDate"
               type="date"
               value={formData.fromDate}
               onChange={(e) => handleChange("fromDate", e.target.value)}
             />
-          </div>
-          <div className="form-group half-width">
-            <label htmlFor="fromTime">From Time</label>
+          </label>
+          <label className="leave-form-field">
+            <span>From Time</span>
             <input
-              id="fromTime"
               type="time"
               value={formData.fromTime}
               onChange={(e) => handleChange("fromTime", e.target.value)}
             />
-          </div>
-        </div>
-        <div className="form-row">
-          <div className="form-group half-width">
-            <label htmlFor="toDate">To Date</label>
+          </label>
+          <label className="leave-form-field">
+            <span>To Date</span>
             <input
-              id="toDate"
               type="date"
               value={formData.toDate}
               onChange={(e) => handleChange("toDate", e.target.value)}
             />
-          </div>
-          <div className="form-group half-width">
-            <label htmlFor="toTime">To Time</label>
+          </label>
+          <label className="leave-form-field">
+            <span>To Time</span>
             <input
-              id="toTime"
               type="time"
               value={formData.toTime}
               onChange={(e) => handleChange("toTime", e.target.value)}
             />
-          </div>
+          </label>
         </div>
-        <div className="form-group">
-          <label htmlFor="reason">Reason</label>
+
+        <label className="leave-form-field leave-form-field-wide">
+          <span>Reason</span>
           <textarea
-            id="reason"
             value={formData.reason}
             onChange={(e) => handleChange("reason", e.target.value)}
             placeholder="Enter reason for leave..."
           />
-        </div>
-        <div className="form-actions">
-          <button className="apply-leave-btn" type="button">
-            Apply Leave
-          </button>
-        </div>
+        </label>
+
+        <button className="apply-leave-submit" type="submit">
+          <FaPlus />
+          Apply Leave
+        </button>
       </form>
     </div>
   );
@@ -469,27 +462,33 @@ function LeaveHistoryView({ onNewLeaveClick }) {
           <thead>
             <tr>
               <th>S.No</th>
-              <th>Application No</th>
               <th>Leave Type</th>
               <th>From</th>
               <th>To</th>
-              <th>Call Count</th>
               <th>Reason</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredRows.map((row) => (
-              <tr key={row[1]}>
-                {row.slice(0, 7).map((cell, index) => (
-                  <td key={`${row[1]}-${index}`}>
-                    {String(cell)
-                      .split("\n")
-                      .map((line) => (
-                        <span key={line}>{line}</span>
-                      ))}
-                  </td>
-                ))}
+              <tr key={row[0]}>
+                <td>{row[0]}</td>
+                <td>{row[2]}</td>
+                <td>
+                  {String(row[3])
+                    .split("\n")
+                    .map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                </td>
+                <td>
+                  {String(row[4])
+                    .split("\n")
+                    .map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                </td>
+                <td>{row[6]}</td>
                 <td>
                   <span className={`status-pill ${row[7].toLowerCase()}`}>{row[7]}</span>
                 </td>
@@ -512,13 +511,6 @@ function LeaveHistoryView({ onNewLeaveClick }) {
           <button type="button" aria-label="Next page">
             <FaArrowRight />
           </button>
-        </div>
-        <div className="page-size">
-          {[10, 25, 50, 100].map((size) => (
-            <button className={size === 10 ? "active" : ""} type="button" key={size}>
-              {size}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -607,9 +599,9 @@ function EmployeeDashboard({ onLogout }) {
               <span>My Profile</span>
             </button>
             <button
-              className={`nav-item ${activeView === "apply" ? "active" : ""}`}
+              className={`nav-item ${activeView === "leave" || activeView === "newLeave" ? "active" : ""}`}
               type="button"
-              onClick={() => setActiveView("apply")}
+              onClick={() => setActiveView("leave")}
             >
               <FaRegEdit />
               <span>Apply Leave</span>
@@ -645,9 +637,11 @@ function EmployeeDashboard({ onLogout }) {
             />
           )}
           {activeView === "leave" && (
-            <LeaveHistoryView onNewLeaveClick={() => setActiveView("apply")} />
+            <LeaveHistoryView onNewLeaveClick={() => setActiveView("newLeave")} />
           )}
-          {activeView === "apply" && <ApplyLeaveForm />}
+          {activeView === "newLeave" && (
+            <ApplyLeaveForm onApplyLeave={() => setActiveView("leave")} />
+          )}
           {activeView === "leaveSummary" && <LeaveSummaryView />}
           {activeView === "logout" && (
             <LogoutView onCancel={() => setActiveView("profile")} onConfirm={onLogout} />

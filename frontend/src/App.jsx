@@ -7,7 +7,11 @@ function App() {
   const [activePage, setActivePage] = useState("login");
 
   if (activePage === "employee-dashboard") {
-    return <EmployeeDashboard onLogout={() => setActivePage("login")} />;
+    return (
+      <EmployeeDashboard
+        onLogout={() => setActivePage("login")}
+      />
+    );
   }
 
   if (activePage === "manager-dashboard") {
