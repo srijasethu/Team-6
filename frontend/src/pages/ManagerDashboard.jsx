@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FaUser,
   FaUsers,
@@ -51,6 +51,18 @@ function ManagerDashboard({ onLogout }) {
   const [reportSelectedEmpId, setReportSelectedEmpId] = useState("EMP045"); // Highlight Aarav Patel by default
   const [showLeaveSummary, setShowLeaveSummary] = useState(true);
   const [selectedEmpReport, setSelectedEmpReport] = useState(null);
+
+  // Profile photo
+  const [profilePhoto, setProfilePhoto] = useState(arunKumarAvatar);
+  const profilePhotoInputRef = useRef(null);
+
+  const handleProfilePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setProfilePhoto(url);
+    }
+  };
 
   // Active Take Action Modal Request
   const [activeRequestModal, setActiveRequestModal] = useState(null);
@@ -583,7 +595,24 @@ function ManagerDashboard({ onLogout }) {
 
               <div className="profile-hero">
                 <div className="avatar-wrapper">
-                  <img src={arunKumarAvatar} alt="Arun Kumar" className="manager-avatar" />
+                  <img src={profilePhoto} alt="Arun Kumar" className="manager-avatar" />
+                  {/* Hidden file input */}
+                  <input
+                    ref={profilePhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleProfilePhotoChange}
+                  />
+                  {/* Pencil overlay button */}
+                  <button
+                    type="button"
+                    className="avatar-edit-btn"
+                    title="Change profile photo"
+                    onClick={() => profilePhotoInputRef.current.click()}
+                  >
+                    <FaPencilAlt />
+                  </button>
                 </div>
                 <div className="hero-details">
                   <div className="manager-name-row">
