@@ -856,18 +856,24 @@
 }
 
 .employee-dashboard .leave-summary .card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: #eaf4ff;
   color: #0a70e7;
+  box-shadow: 0 10px 28px rgba(10, 112, 231, 0.08);
 }
 
-.employee-dashboard .leave-summary .card-icon.orange { background: #fff3e6; color: #ff8a00; }
-.employee-dashboard .leave-summary .card-icon.green { background: #e9f8ee; color: #047a2b; }
-.employee-dashboard .leave-summary .card-icon.purple { background: #f3ecff; color: #7b4edb; }
+.employee-dashboard .leave-summary .card-icon.orange { background: #fff3e6; color: #ff8a00; box-shadow: 0 10px 28px rgba(255,138,0,0.08); }
+.employee-dashboard .leave-summary .card-icon.green { background: #e9f8ee; color: #047a2b; box-shadow: 0 10px 28px rgba(4,122,43,0.06); }
+.employee-dashboard .leave-summary .card-icon.purple { background: #f3ecff; color: #7b4edb; box-shadow: 0 10px 28px rgba(123,78,219,0.06); }
+
+.employee-dashboard .leave-summary .card-icon svg {
+  width: 22px;
+  height: 22px;
+}
 
 .employee-dashboard .leave-summary .muted {
   color: #586077;
@@ -883,17 +889,17 @@
 }
 
 .employee-dashboard .leave-summary .icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: #ffffff;
-  box-shadow: 0 6px 18px rgba(8,104,239,0.06);
+  box-shadow: 0 10px 28px rgba(24,76,139,0.06);
 }
 
-.employee-dashboard .leave-summary .icon-wrap.approved { background: #e6f9ee; color: #046b2a; }
-.employee-dashboard .leave-summary .icon-wrap.rejected { background: #feecec; color: #9f1b20; }
+.employee-dashboard .leave-summary .icon-wrap.approved { background: #e6f9ee; color: #046b2a; box-shadow: 0 8px 22px rgba(4,122,43,0.06); }
+.employee-dashboard .leave-summary .icon-wrap.rejected { background: #feecec; color: #9f1b20; box-shadow: 0 8px 22px rgba(159,27,32,0.06); }
 
 .employee-dashboard .leave-summary .labels strong { font-size: 16px; }
 
