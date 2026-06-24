@@ -269,20 +269,20 @@
   width: 100%;
 }
 
-.section-title {
+.employee-dashboard .section-title {
   display: flex;
   align-items: center;
   gap: 31px;
   margin-bottom: 33px;
 }
 
-.section-title svg {
+.employee-dashboard .section-title svg {
   width: 42px;
   height: 42px;
   color: #0a70e7;
 }
 
-.section-title h1 {
+.employee-dashboard .section-title h1 {
   position: relative;
   margin: 0;
   color: #080d21;
@@ -291,7 +291,7 @@
   font-weight: 800;
 }
 
-.section-title h1::after {
+.employee-dashboard .section-title h1::after {
   content: "";
   position: absolute;
   left: 0;
@@ -355,14 +355,14 @@
   color: #0a70e7;
 }
 
-.info-grid {
+.employee-dashboard .info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(20px, 1.7vw, 28px);
   margin-top: clamp(26px, 2.2vw, 34px);
 }
 
-.info-card {
+.employee-dashboard .info-card {
   min-height: clamp(108px, 11vh, 132px);
   display: flex;
   align-items: center;
@@ -373,14 +373,14 @@
   background: rgba(255, 255, 255, 0.85);
 }
 
-.info-card svg {
+.employee-dashboard .info-card svg {
   flex: 0 0 auto;
   width: 33px;
   height: 33px;
   color: #0a70e7;
 }
 
-.info-card strong {
+.employee-dashboard .info-card strong {
   display: block;
   margin-bottom: 8px;
   color: #111827;
@@ -389,7 +389,7 @@
   font-weight: 800;
 }
 
-.info-card span {
+.employee-dashboard .info-card span {
   display: block;
   color: #4a4e5c;
   font-size: 20px;
