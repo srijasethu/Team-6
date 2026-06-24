@@ -22,34 +22,6 @@ import {
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
 
-const profileDetails = [
-  {
-    icon: <FaEnvelope />,
-    label: "Email",
-    value: "srija@gmail.com",
-  },
-  {
-    icon: <FaPhoneAlt />,
-    label: "Phone",
-    value: "9876543210",
-  },
-  {
-    icon: <FaRegCalendarAlt />,
-    label: "Joining Date",
-    value: "01-06-2025",
-  },
-  {
-    icon: <FaRegBuilding />,
-    label: "Department",
-    value: "IT",
-  },
-  {
-    icon: <FaSuitcase />,
-    label: "Designation",
-    value: "Software Engineer",
-  },
-];
-
 const leaveRows = [
   ["1", "LV2026/001", "Casual Leave", "22-06-2026\n09:00 AM", "24-06-2026\n05:00 PM", "1", "Family function", "Approved"],
   ["2", "LV2026/002", "Medical Leave", "15-06-2026\n10:00 AM", "16-06-2026\n05:00 PM", "1", "Fever", "Approved"],
@@ -74,55 +46,381 @@ function BrandIcon() {
   );
 }
 
-function ProfileView() {
+function ApplyLeaveForm({ onApplyLeave }) {
+  const [formData, setFormData] = useState({
+    leaveType: "Casual Leave",
+    fromDate: "2026-06-22",
+    fromTime: "09:00",
+    toDate: "2026-06-24",
+    toTime: "17:00",
+    reason: "",
+  });
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  return (
+    <div className="leave-content">
+      <form className="new-leave-form" onSubmit={(e) => { e.preventDefault(); if (onApplyLeave) onApplyLeave(); }}>
+        <div className="section-title leave-form-title">
+          <FaRegEdit />
+          <h1>Apply Leave</h1>
+        </div>
+
+        <label className="leave-form-field leave-form-field-wide">
+          <span>Leave Type</span>
+          <select
+            value={formData.leaveType}
+            onChange={(e) => handleChange("leaveType", e.target.value)}
+          >
+            <option>Casual Leave</option>
+            <option>Medical Leave</option>
+            <option>General Permission</option>
+            <option>Vacation Leave</option>
+          </select>
+        </label>
+
+        <div className="leave-form-grid">
+          <label className="leave-form-field">
+            <span>From Date</span>
+            <input
+              type="date"
+              value={formData.fromDate}
+              onChange={(e) => handleChange("fromDate", e.target.value)}
+            />
+          </label>
+          <label className="leave-form-field">
+            <span>From Time</span>
+            <input
+              type="time"
+              value={formData.fromTime}
+              onChange={(e) => handleChange("fromTime", e.target.value)}
+            />
+          </label>
+          <label className="leave-form-field">
+            <span>To Date</span>
+            <input
+              type="date"
+              value={formData.toDate}
+              onChange={(e) => handleChange("toDate", e.target.value)}
+            />
+          </label>
+          <label className="leave-form-field">
+            <span>To Time</span>
+            <input
+              type="time"
+              value={formData.toTime}
+              onChange={(e) => handleChange("toTime", e.target.value)}
+            />
+          </label>
+        </div>
+
+        <label className="leave-form-field leave-form-field-wide">
+          <span>Reason</span>
+          <textarea
+            value={formData.reason}
+            onChange={(e) => handleChange("reason", e.target.value)}
+            placeholder="Enter reason for leave..."
+          />
+        </label>
+
+        <button className="apply-leave-submit" type="submit">
+          <FaPlus />
+          Apply Leave
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, onCancel, onChange }) {
   return (
     <div className="profile-content">
       <div className="section-title">
         <FaRegUser />
-        <h1>Employee Profile</h1>
+        <h1>My Profile</h1>
       </div>
 
       <div className="profile-hero">
         <EmployeeAvatar large />
-        <div>
+        <div className="hero-details">
           <div className="employee-name">
-            <h2>Srija S</h2>
-            <span className="role-badge">Software Engineer</span>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-name-input"
+                value={tempProfileData.name}
+                onChange={(e) => onChange("name", e.target.value)}
+                placeholder="Enter name"
+              />
+            ) : (
+              <h2>{profileData.name}</h2>
+            )}
+            <span className="role-badge">{profileData.designation}</span>
           </div>
           <div className="employee-meta">
             <span>
               <FaRegCalendarAlt />
-              Employee ID: EMP001
+              Employee ID: {profileData.employeeId}
             </span>
             <span>
               <FaBuilding />
-              IT Department
+              {isEditing ? (
+                <input
+                  type="text"
+                  className="edit-meta-input"
+                  value={tempProfileData.department}
+                  onChange={(e) => onChange("department", e.target.value)}
+                  placeholder="Enter department"
+                />
+              ) : (
+                `${profileData.department} Department`
+              )}
             </span>
           </div>
         </div>
       </div>
 
       <div className="info-grid">
-        {profileDetails.map((detail) => (
-          <div className="info-card" key={detail.label}>
-            {detail.icon}
-            <div>
-              <strong>{detail.label}</strong>
-              <span>{detail.value}</span>
-            </div>
+        {/* Email */}
+        <div className="info-card">
+          <FaEnvelope />
+          <div className="card-body">
+            <strong>Email</strong>
+            {isEditing ? (
+              <input
+                type="email"
+                className="edit-card-input"
+                value={tempProfileData.email}
+                onChange={(e) => onChange("email", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.email}</span>
+            )}
           </div>
-        ))}
+        </div>
+
+        {/* Phone */}
+        <div className="info-card">
+          <FaPhoneAlt />
+          <div className="card-body">
+            <strong>Phone</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.phone}
+                onChange={(e) => onChange("phone", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.phone}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Joining Date */}
+        <div className="info-card">
+          <FaRegCalendarAlt />
+          <div className="card-body">
+            <strong>Joining Date</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.joiningDate}
+                onChange={(e) => onChange("joiningDate", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.joiningDate}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Department */}
+        <div className="info-card">
+          <FaRegBuilding />
+          <div className="card-body">
+            <strong>Department</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.department}
+                onChange={(e) => onChange("department", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.department}</span>
+            )}
+          </div>
+        </div>
+
+        {/* Designation */}
+        <div className="info-card">
+          <FaSuitcase />
+          <div className="card-body">
+            <strong>Designation</strong>
+            {isEditing ? (
+              <input
+                type="text"
+                className="edit-card-input"
+                value={tempProfileData.designation}
+                onChange={(e) => onChange("designation", e.target.value)}
+              />
+            ) : (
+              <span>{profileData.designation}</span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <button className="edit-profile" type="button">
-        <FaPencilAlt />
-        Edit Profile
-      </button>
+      {/* Action buttons */}
+      <div className="action-buttons-container">
+        {isEditing ? (
+          <div className="edit-actions-group">
+            <button className="save-profile-btn" type="button" onClick={onSave}>
+              Save Changes
+            </button>
+            <button className="cancel-edit-btn" type="button" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button className="edit-profile" type="button" onClick={onEdit}>
+            <FaPencilAlt />
+            Edit Profile
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-function LeaveHistoryView() {
+function LeaveSummaryView() {
+  const approved = leaveRows.filter((r) => r[7].toLowerCase() === "approved").length;
+  const rejected = leaveRows.filter((r) => r[7].toLowerCase() === "rejected").length;
+  const pending = leaveRows.filter((r) => r[7].toLowerCase() === "pending").length;
+
+  return (
+    <div className="leave-summary">
+      <div className="summary-cards">
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon">
+              <FaRegCalendarAlt />
+            </div>
+            <strong>Total Allowed</strong>
+          </div>
+          <div className="value">20 Days</div>
+          <div className="muted">Annual leave allocation</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon orange">
+              <FaCheck />
+            </div>
+            <strong>Leaves Taken</strong>
+          </div>
+          <div className="value">8 Days</div>
+          <div className="muted">Already used</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon green">
+              <FaSuitcase />
+            </div>
+            <strong>Remaining</strong>
+          </div>
+          <div className="value">12 Days</div>
+          <div className="muted">Available balance</div>
+        </div>
+        <div className="card">
+          <div className="card-head">
+            <div className="card-icon purple">
+              <FaRegCalendarAlt />
+            </div>
+            <strong>Pending Requests</strong>
+          </div>
+          <div className="value">{pending}</div>
+          <div className="muted">Awaiting approval</div>
+        </div>
+      </div>
+
+      <div className="summary-list">
+        <div className="summary-item">
+          <div className="left">
+            <div className="icon-wrap approved">
+              <FaCheck />
+            </div>
+            <div className="labels">
+              <strong>Approved Requests</strong>
+              <div className="muted">&nbsp;</div>
+            </div>
+          </div>
+          <div className="right">
+            <div className="count">{approved}</div>
+            <span className="badge approved">Approved</span>
+          </div>
+        </div>
+
+        <div className="summary-item">
+          <div className="left">
+            <div className="icon-wrap rejected">
+              <FaRegCalendarAlt />
+            </div>
+            <div className="labels">
+              <strong>Rejected Requests</strong>
+              <div className="muted">&nbsp;</div>
+            </div>
+          </div>
+          <div className="right">
+            <div className="count">{rejected}</div>
+            <span className="badge rejected">Rejected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeaveHistoryView({ onNewLeaveClick }) {
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedRange, setSelectedRange] = useState("all");
+
+  const parseLeaveStartDate = (row) => {
+    const dateString = row[3].split("\n")[0];
+    const [day, month, year] = dateString.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const filteredRows = leaveRows.filter((row) => {
+    const status = row[7].toLowerCase();
+    const statusMatches = selectedStatus === "all" || status === selectedStatus;
+    if (!statusMatches) {
+      return false;
+    }
+
+    if (selectedRange === "all") {
+      return true;
+    }
+
+    const leaveDate = parseLeaveStartDate(row);
+    const today = new Date();
+
+    if (selectedRange === "month") {
+      return leaveDate.getMonth() === today.getMonth() && leaveDate.getFullYear() === today.getFullYear();
+    }
+
+    if (selectedRange === "year") {
+      return leaveDate.getFullYear() === today.getFullYear();
+    }
+
+    return true;
+  });
+
   return (
     <div className="leave-content">
       <div className="leave-top">
@@ -131,18 +429,27 @@ function LeaveHistoryView() {
           <h1>Leave History</h1>
         </div>
         <div className="leave-actions">
-          <button className="new-leave-btn" type="button">
+          <button className="new-leave-btn" type="button" onClick={onNewLeaveClick}>
             <FaPlus />
             New Leave
           </button>
           <div className="leave-filters">
-            <select aria-label="Filter leave status" defaultValue="all">
+            <select
+              aria-label="Filter leave status"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="pending">Pending</option>
             </select>
-            <select aria-label="Select date range" defaultValue="range">
-              <option value="range">Select Date Range</option>
+            <select
+              aria-label="Select date range"
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value)}
+            >
+              <option value="all">Select Date Range</option>
               <option value="month">This Month</option>
               <option value="year">This Year</option>
             </select>
@@ -155,36 +462,35 @@ function LeaveHistoryView() {
           <thead>
             <tr>
               <th>S.No</th>
-              <th>Application No</th>
               <th>Leave Type</th>
               <th>From</th>
               <th>To</th>
-              <th>Call Count</th>
               <th>Reason</th>
               <th>Status</th>
-              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {leaveRows.map((row) => (
-              <tr key={row[1]}>
-                {row.slice(0, 7).map((cell, index) => (
-                  <td key={`${row[1]}-${index}`}>
-                    {String(cell)
-                      .split("\n")
-                      .map((line) => (
-                        <span key={line}>{line}</span>
-                      ))}
-                  </td>
-                ))}
+            {filteredRows.map((row) => (
+              <tr key={row[0]}>
+                <td>{row[0]}</td>
+                <td>{row[2]}</td>
                 <td>
-                  <span className={`status-pill ${row[7].toLowerCase()}`}>{row[7]}</span>
+                  {String(row[3])
+                    .split("\n")
+                    .map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
                 </td>
                 <td>
-                  <button className="details-btn" type="button">
-                    <FaFileAlt />
-                    Details
-                  </button>
+                  {String(row[4])
+                    .split("\n")
+                    .map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                </td>
+                <td>{row[6]}</td>
+                <td>
+                  <span className={`status-pill ${row[7].toLowerCase()}`}>{row[7]}</span>
                 </td>
               </tr>
             ))}
@@ -205,13 +511,6 @@ function LeaveHistoryView() {
           <button type="button" aria-label="Next page">
             <FaArrowRight />
           </button>
-        </div>
-        <div className="page-size">
-          {[10, 25, 50, 100].map((size) => (
-            <button className={size === 10 ? "active" : ""} type="button" key={size}>
-              {size}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -242,31 +541,54 @@ function LogoutView({ onCancel, onConfirm }) {
 
 function EmployeeDashboard({ onLogout }) {
   const [activeView, setActiveView] = useState("profile");
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [profileData, setProfileData] = useState({
+    name: "Srija S",
+    employeeId: "EMP001",
+    department: "IT",
+    email: "srija@gmail.com",
+    phone: "9876543210",
+    joiningDate: "01-06-2025",
+    designation: "Software Engineer",
+  });
+
+  const [tempProfileData, setTempProfileData] = useState({ ...profileData });
+
+  const handleEditClick = () => {
+    setTempProfileData({ ...profileData });
+    setIsEditing(true);
+  };
+
+  const handleSaveClick = () => {
+    setProfileData({ ...tempProfileData });
+    setIsEditing(false);
+  };
+
+  const handleCancelClick = () => {
+    setTempProfileData({ ...profileData });
+    setIsEditing(false);
+  };
+
+  const handleChange = (field, value) => {
+    setTempProfileData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <main className="employee-dashboard">
-      <header className="dashboard-header">
-        <div className="brand">
-          <BrandIcon />
-          <span>
-            Employee
-            <br />
-            Dashboard
-          </span>
-        </div>
-
-        <div className="user-menu">
-          <EmployeeAvatar />
-          <div className="user-copy">
-            <strong>Srija S</strong>
-            <span>EMP001</span>
-          </div>
-          <FaChevronDown className="chevron" />
-        </div>
-      </header>
-
       <div className="dashboard-shell">
         <aside className="sidebar" aria-label="Employee dashboard navigation">
+          <div className="brand">
+            <BrandIcon />
+            <div className="brand-text">
+              <span className="brand-title-main">Employee</span>
+              <span className="brand-title-sub">Dashboard</span>
+            </div>
+          </div>
+
           <nav className="nav-list">
             <button
               className={`nav-item ${activeView === "profile" || activeView === "logout" ? "active" : ""}`}
@@ -277,19 +599,25 @@ function EmployeeDashboard({ onLogout }) {
               <span>My Profile</span>
             </button>
             <button
-              className={`nav-item ${activeView === "leave" ? "active" : ""}`}
+              className={`nav-item ${activeView === "leave" || activeView === "newLeave" ? "active" : ""}`}
               type="button"
               onClick={() => setActiveView("leave")}
             >
               <FaRegEdit />
               <span>Apply Leave</span>
             </button>
-            <button className="nav-item" type="button">
+            <button
+              className={`nav-item ${activeView === "leaveSummary" ? "active" : ""}`}
+              type="button"
+              onClick={() => setActiveView("leaveSummary")}
+            >
               <FaRegChartBar />
               <span>Leave Summary</span>
             </button>
           </nav>
+
           <span className="sidebar-dot-grid" />
+
           <button className="logout" type="button" onClick={() => setActiveView("logout")}>
             <FaSignOutAlt />
             <span>Logout</span>
@@ -297,8 +625,24 @@ function EmployeeDashboard({ onLogout }) {
         </aside>
 
         <section className="profile-panel">
-          {activeView === "profile" && <ProfileView />}
-          {activeView === "leave" && <LeaveHistoryView />}
+          {activeView === "profile" && (
+            <ProfileView
+              profileData={profileData}
+              tempProfileData={tempProfileData}
+              isEditing={isEditing}
+              onEdit={handleEditClick}
+              onSave={handleSaveClick}
+              onCancel={handleCancelClick}
+              onChange={handleChange}
+            />
+          )}
+          {activeView === "leave" && (
+            <LeaveHistoryView onNewLeaveClick={() => setActiveView("newLeave")} />
+          )}
+          {activeView === "newLeave" && (
+            <ApplyLeaveForm onApplyLeave={() => setActiveView("leave")} />
+          )}
+          {activeView === "leaveSummary" && <LeaveSummaryView />}
           {activeView === "logout" && (
             <LogoutView onCancel={() => setActiveView("profile")} onConfirm={onLogout} />
           )}
