@@ -9,6 +9,7 @@ import {
   FaEnvelope,
   FaFileAlt,
   FaPencilAlt,
+  FaTimes,
   FaPhoneAlt,
   FaPlus,
   FaRegBuilding,
@@ -22,6 +23,18 @@ import {
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
 
+const DEFAULT_AVATAR_SVG = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <g fill='none' fill-rule='evenodd'>
+    <circle cx='50' cy='50' r='48' stroke='%23000000' stroke-width='3' fill='none'/>
+    <g transform='translate(20,18)'>
+      <circle cx='30' cy='18' r='12' fill='%23000000'/>
+      <path d='M4 64c6-10 18-16 28-16s22 6 28 16' fill='%23000000'/>
+    </g>
+  </g>
+</svg>`;
+const DEFAULT_AVATAR = `data:image/svg+xml;utf8,${encodeURIComponent(DEFAULT_AVATAR_SVG)}`;
+
 const leaveRows = [
   ["1", "LV2026/001", "Casual Leave", "22-06-2026\n09:00 AM", "24-06-2026\n05:00 PM", "1", "Family function", "Approved"],
   ["2", "LV2026/002", "Medical Leave", "15-06-2026\n10:00 AM", "16-06-2026\n05:00 PM", "1", "Fever", "Approved"],
@@ -30,8 +43,23 @@ const leaveRows = [
   ["5", "LV2026/005", "Medical Leave", "28-05-2026\n09:00 AM", "30-05-2026\n05:00 PM", "2", "Stomach pain", "Approved"],
 ];
 
-function EmployeeAvatar({ large = false }) {
-  return <div className={`avatar${large ? " large" : ""}`} aria-label="Srija S" />;
+function EmployeeAvatar({ large = false, src = "", name = "", onEdit }) {
+  return (
+    <div className={`avatar${large ? " large" : ""}`} aria-label={name}>
+      {src ? (
+        <img src={src} alt={name} />
+      ) : (
+        <img src={DEFAULT_AVATAR} alt="default avatar" />
+      )}
+      <div className="avatar-controls">
+        {onEdit && (
+          <button type="button" className="avatar-edit" onClick={onEdit} aria-label="Edit avatar">
+            <FaPencilAlt />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function BrandIcon() {
@@ -138,6 +166,8 @@ function ApplyLeaveForm({ onApplyLeave }) {
 }
 
 function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, onCancel, onChange }) {
+  const avatarSrc = (tempProfileData && tempProfileData.avatar) || profileData.avatar || DEFAULT_AVATAR;
+
   return (
     <div className="profile-content">
       <div className="section-title">
@@ -146,7 +176,32 @@ function ProfileView({ profileData, tempProfileData, isEditing, onEdit, onSave, 
       </div>
 
       <div className="profile-hero">
-        <EmployeeAvatar large />
+        <div className="avatar-wrap">
+          <EmployeeAvatar large src={avatarSrc} name={profileData.name} onEdit={() => {
+            const input = document.getElementById('avatarInput');
+            if (input) input.click();
+          }} />
+          <input
+            id="avatarInput"
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files && e.target.files[0];
+              if (!f) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                const dataUrl = ev.target.result;
+                  onChange('avatar', dataUrl);
+                  if (typeof onSave === 'function') {
+                    // persist immediately
+                    onSave();
+                  }
+              };
+              reader.readAsDataURL(f);
+            }}
+          />
+        </div>
         <div className="hero-details">
           <div className="employee-name">
             {isEditing ? (
@@ -551,9 +606,10 @@ function EmployeeDashboard({ onLogout }) {
     phone: "9876543210",
     joiningDate: "01-06-2025",
     designation: "Software Engineer",
+    avatar: DEFAULT_AVATAR,
   });
 
-  const [tempProfileData, setTempProfileData] = useState({ ...profileData });
+  const [tempProfileData, setTempProfileData] = useState({ ...profileData, avatar: profileData.avatar || DEFAULT_AVATAR });
 
   const handleEditClick = () => {
     setTempProfileData({ ...profileData });
