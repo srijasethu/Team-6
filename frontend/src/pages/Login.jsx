@@ -5,6 +5,7 @@ import {
   FaEnvelope,
   FaLock,
   FaEye,
+  FaEyeSlash,
   FaCalendarAlt,
   FaCheck,
   FaSignInAlt,
@@ -16,8 +17,9 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     if (!role) {
@@ -30,11 +32,36 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
       return;
     }
 
-    setError("");
-    if (role === "employee") {
-      onEmployeeLogin();
-    } else if (role === "manager") {
-      onManagerLogin();
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+          role: role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setError("");
+
+        if (data.user.role === "employee") {
+          onEmployeeLogin();
+        } else if (data.user.role === "manager") {
+          onManagerLogin();
+        }
+      } else {
+        setError("Invalid email, password, or role selected.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Backend connection failed. Please try again.");
     }
   }
 
@@ -46,7 +73,6 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
       <div className="soft-circle soft-circle-right"></div>
 
       <form className="login-card" onSubmit={handleSubmit}>
-
         <div className="logo">
           <FaCalendarAlt className="calendar-icon" />
           <FaUser className="logo-user" />
@@ -107,12 +133,23 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
           <div className="input-box">
             <FaLock className="input-icon" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            <FaEye className="eye-icon" />
+            <button
+              type="button"
+              className="eye-icon-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <FaEyeSlash className="eye-icon" />
+              ) : (
+                <FaEye className="eye-icon" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -127,7 +164,6 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
           <p>Don't have an account?</p>
           <a href="/">Contact administrator (email)</a>
         </div>
-
       </form>
     </div>
   );

@@ -254,6 +254,26 @@ body {
   color: #777777;
 }
 
+.eye-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  color: #777777;
+  line-height: 1;
+}
+
+.eye-icon-btn:focus-visible {
+  outline: 2px solid #0f63e9;
+  border-radius: 4px;
+}
+
 .eye-icon {
   cursor: pointer;
 }
