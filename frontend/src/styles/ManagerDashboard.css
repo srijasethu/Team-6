@@ -474,6 +474,63 @@
   box-shadow: 0 5px 16px rgba(243, 110, 34, 0.6);
 }
 
+/* Manager Avatar Menu Dropdown */
+.manager-avatar-menu {
+  position: absolute;
+  bottom: -94px;
+  right: -55px;
+  background: #ffffff;
+  border: 1px solid #fde7d8;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(242, 92, 5, 0.15);
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  min-width: 175px;
+  animation: mgAvatarMenuFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mgAvatarMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.manager-avatar-menu-item {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  width: 100%;
+}
+
+.manager-avatar-menu-item:hover {
+  background: #fff4ef;
+  color: #f25c05;
+}
+
+.manager-avatar-menu-item.remove {
+  color: #ef4444;
+  border-top: 1px solid #fde7d8;
+}
+
+.manager-avatar-menu-item.remove:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 .hero-details { display: flex; flex-direction: column; }
 
 .manager-name-row {
@@ -2392,3 +2449,94 @@
   background: transparent;
 }
 
+/* ============================================
+   CLICKABLE STAT CARD
+   ============================================ */
+.clickable-stat-card {
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.clickable-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(192, 57, 43, 0.18);
+}
+
+/* ============================================
+   LOW BALANCE ALERT MODAL
+   ============================================ */
+.low-balance-modal {
+  max-width: 520px;
+  width: 90vw;
+}
+
+.low-balance-subtitle {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: #64748b;
+  padding: 0 24px;
+}
+
+.low-balance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 24px 24px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.low-balance-empty {
+  color: #64748b;
+  font-size: 14px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.low-balance-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+}
+
+.low-balance-critical {
+  background: #fff1f2;
+  border-color: #fecaca;
+}
+
+.low-balance-low {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.low-balance-moderate {
+  background: #fefce8;
+  border-color: #fde68a;
+}
+
+.low-balance-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.low-balance-days {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.low-balance-critical .low-balance-days { color: #c0392b; }
+.low-balance-low .low-balance-days { color: #ea580c; }
+.low-balance-moderate .low-balance-days { color: #ca8a04; }
+
+.low-balance-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 2px;
+}
