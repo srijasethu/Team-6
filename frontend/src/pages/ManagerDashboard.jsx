@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   FaUser,
   FaUsers,
@@ -30,6 +30,7 @@ import {
   FaHistory,
   FaChevronDown,
 } from "react-icons/fa";
+import { FiLogOut } from "react-icons/fi";
 import arunKumarAvatar from "../assets/arun_kumar.png";
 import aaravPatelAvatar from "../assets/aarav_patel.png";
 import sarahRamanAvatar from "../assets/sarah_raman.png";
@@ -44,14 +45,34 @@ function ManagerDashboard({ onLogout }) {
 
   // Employee Report states
   const [reportSearchQuery, setReportSearchQuery] = useState("");
-  const [reportDateFilter, setReportDateFilter] = useState("");
+  const [reportDepartmentFilter, setReportDepartmentFilter] = useState(""); // "" or department name
   const [reportLeaveTypeFilter, setReportLeaveTypeFilter] = useState("");
   const [reportStatusFilter, setReportStatusFilter] = useState(""); // "", "Pending", "Approved", "Rejected"
   const [reportSelectedEmpId, setReportSelectedEmpId] = useState("EMP045"); // Highlight Aarav Patel by default
-  const [showDetailedHistory, setShowDetailedHistory] = useState(false);
+  const [showLeaveSummary, setShowLeaveSummary] = useState(true);
+  const [selectedEmpReport, setSelectedEmpReport] = useState(null);
+
+  // Profile photo
+  const [profilePhoto, setProfilePhoto] = useState(arunKumarAvatar);
+  const profilePhotoInputRef = useRef(null);
+
+  const handleProfilePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setProfilePhoto(url);
+    }
+  };
 
   // Active Take Action Modal Request
   const [activeRequestModal, setActiveRequestModal] = useState(null);
+
+  // Leave Approval inline action popup
+  const [approvalActionPopup, setApprovalActionPopup] = useState(null); // stores the request object
+
+  // Leave Approval states
+  const [approvalSearchQuery, setApprovalSearchQuery] = useState("");
+  const [approvalStatusFilter, setApprovalStatusFilter] = useState(""); // "", "Pending", "Approved", "Rejected"
 
   // Leave Requests state for Mockup 2 & 3
   const [requestsList, setRequestsList] = useState([
@@ -289,13 +310,6 @@ function ManagerDashboard({ onLogout }) {
 
   const [tempProfileData, setTempProfileData] = useState({ ...profileData });
 
-  const [stats, setStats] = useState({
-    total: 25,
-    pending: 8,
-    approved: 12,
-    rejected: 5,
-  });
-
   const [leaveRequests, setLeaveRequests] = useState([
     {
       id: "EMP045",
@@ -303,7 +317,8 @@ function ManagerDashboard({ onLogout }) {
       type: "Sick Leave",
       dates: "Oct 15 - Oct 17, 2026",
       photo: aaravPatelAvatar,
-      description: "Taking leave for my younger sister's wedding in Mumbai. I have already coordinated with Sarah (EMP021) for project handovers. Will be available on email for emergencies."
+      description: "Taking leave for my younger sister's wedding in Mumbai. I have already coordinated with Sarah (EMP021) for project handovers. Will be available on email for emergencies.",
+      status: "Pending"
     },
     {
       id: "EMP021",
@@ -311,7 +326,8 @@ function ManagerDashboard({ onLogout }) {
       type: "Casual Leave",
       dates: "Oct 15 - Oct 17, 2026",
       photo: sarahRamanAvatar,
-      description: "Going to my hometown for family gathering."
+      description: "Going to my hometown for family gathering.",
+      status: "Pending"
     },
     {
       id: "EMP033",
@@ -319,23 +335,71 @@ function ManagerDashboard({ onLogout }) {
       type: "Vacation Leave",
       dates: "Oct 15 - Oct 17, 2026",
       photo: rinaSharmaAvatar,
-      description: "Annual vacation trip with family. Will be available on phone if needed."
+      description: "Annual vacation trip with family. Will be available on phone if needed.",
+      status: "Pending"
     },
     {
       id: "EMP048",
       name: "Aarav Patel",
       type: "Sick Leave",
-      dates: "Oct 15 - Oct 17, 2026",
+      dates: "Sep 28 - Sep 30, 2026",
       photo: aaravPatelAvatar,
-      description: "Medical checkup and dentist appointment."
+      description: "Medical checkup and dentist appointment.",
+      status: "Pending"
     },
     {
       id: "EMP073",
       name: "Sarah Pamest",
       type: "Sick Leave",
-      dates: "Oct 15 - Oct 17, 2026",
+      dates: "Sep 20 - Sep 21, 2026",
       photo: sarahPamestAvatar,
-      description: "Doctor's appointment for checking fever."
+      description: "Doctor's appointment for checking fever.",
+      status: "Pending"
+    },
+    {
+      id: "EMP088",
+      name: "Rina Sharma",
+      type: "Annual Leave",
+      dates: "Sep 01 - Sep 05, 2026",
+      photo: rinaSharmaAvatar,
+      description: "Family vacation to Goa. Tasks handover completed with team lead.",
+      status: "Approved"
+    },
+    {
+      id: "EMP101",
+      name: "Aarav Patel",
+      type: "Casual Leave",
+      dates: "Aug 18 - Aug 19, 2026",
+      photo: aaravPatelAvatar,
+      description: "Personal errands and administrative work.",
+      status: "Approved"
+    },
+    {
+      id: "EMP115",
+      name: "Sarah Raman",
+      type: "Medical Leave",
+      dates: "Aug 10 - Aug 12, 2026",
+      photo: sarahRamanAvatar,
+      description: "Post-surgery recovery as advised by doctor.",
+      status: "Approved"
+    },
+    {
+      id: "EMP022",
+      name: "Sarah Pamest",
+      type: "Casual Leave",
+      dates: "Aug 05, 2026",
+      photo: sarahPamestAvatar,
+      description: "Requested leave without proper notice period as per company policy.",
+      status: "Rejected"
+    },
+    {
+      id: "EMP059",
+      name: "Rina Sharma",
+      type: "Vacation Leave",
+      dates: "Jul 28 - Aug 02, 2026",
+      photo: rinaSharmaAvatar,
+      description: "Overlapping with critical project deadline. Request denied for business continuity.",
+      status: "Rejected"
     }
   ]);
 
@@ -364,27 +428,29 @@ function ManagerDashboard({ onLogout }) {
   };
 
   const handleApproveRequest = (id) => {
-    setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
-    setStats((prev) => ({
-      ...prev,
-      pending: prev.pending - 1,
-      approved: prev.approved + 1,
-    }));
+    setLeaveRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Approved" } : r))
+    );
     if (selectedRequest && selectedRequest.id === id) {
       setSelectedRequest(null);
     }
   };
 
   const handleRejectRequest = (id) => {
-    setLeaveRequests((prev) => prev.filter((r) => r.id !== id));
-    setStats((prev) => ({
-      ...prev,
-      pending: prev.pending - 1,
-      rejected: prev.rejected + 1,
-    }));
+    setLeaveRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r))
+    );
     if (selectedRequest && selectedRequest.id === id) {
       setSelectedRequest(null);
     }
+  };
+
+  // Computed stats from actual leave requests data
+  const stats = {
+    total: leaveRequests.length,
+    pending: leaveRequests.filter(r => r.status === "Pending").length,
+    approved: leaveRequests.filter(r => r.status === "Approved").length,
+    rejected: leaveRequests.filter(r => r.status === "Rejected").length,
   };
 
   // Filter employee summaries
@@ -401,7 +467,11 @@ function ManagerDashboard({ onLogout }) {
       ? leaveHistoryData.some((h) => h.employeeId === emp.id && h.status === reportStatusFilter)
       : true;
 
-    return matchesSearch && matchesLeaveType && matchesStatus;
+    const matchesDepartment = reportDepartmentFilter
+      ? emp.department === reportDepartmentFilter
+      : true;
+
+    return matchesSearch && matchesLeaveType && matchesStatus && matchesDepartment;
   });
 
   // Filter detailed history log
@@ -418,7 +488,11 @@ function ManagerDashboard({ onLogout }) {
       ? hist.status === reportStatusFilter
       : true;
 
-    return matchesSearch && matchesLeaveType && matchesStatus;
+    const matchesDepartment = reportDepartmentFilter
+      ? hist.department === reportDepartmentFilter
+      : true;
+
+    return matchesSearch && matchesLeaveType && matchesStatus && matchesDepartment;
   });
 
   // Filter leave requests list
@@ -436,6 +510,17 @@ function ManagerDashboard({ onLogout }) {
       : true;
 
     return matchesSearch && matchesLeaveType && matchesStatus;
+  });
+
+  // Filter leave requests for Leave Approval view
+  const filteredLeaveRequests = leaveRequests.filter((req) => {
+    const matchesSearch =
+      req.name.toLowerCase().includes(approvalSearchQuery.toLowerCase()) ||
+      req.id.toLowerCase().includes(approvalSearchQuery.toLowerCase());
+
+    const matchesStatus = approvalStatusFilter === "" ? true : req.status === approvalStatusFilter;
+
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -483,8 +568,8 @@ function ManagerDashboard({ onLogout }) {
                 setReportStatusFilter("");
                 setReportSearchQuery("");
                 setReportLeaveTypeFilter("");
-                setReportDateFilter("");
-                setShowDetailedHistory(false);
+                setReportDepartmentFilter("");
+                setShowLeaveSummary(true);
               }}
             >
               <FaRegChartBar />
@@ -494,8 +579,8 @@ function ManagerDashboard({ onLogout }) {
           
           <span className="sidebar-dot-grid" />
           
-          <button className="logout logout-red" type="button" onClick={() => setShowLogoutModal(true)}>
-            <FaSignOutAlt />
+          <button className="logout" type="button" onClick={() => setShowLogoutModal(true)}>
+            <FiLogOut />
             <span>Logout</span>
           </button>
         </aside>
@@ -510,7 +595,24 @@ function ManagerDashboard({ onLogout }) {
 
               <div className="profile-hero">
                 <div className="avatar-wrapper">
-                  <img src={arunKumarAvatar} alt="Arun Kumar" className="manager-avatar" />
+                  <img src={profilePhoto} alt="Arun Kumar" className="manager-avatar" />
+                  {/* Hidden file input */}
+                  <input
+                    ref={profilePhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={handleProfilePhotoChange}
+                  />
+                  {/* Pencil overlay button */}
+                  <button
+                    type="button"
+                    className="avatar-edit-btn"
+                    title="Change profile photo"
+                    onClick={() => profilePhotoInputRef.current.click()}
+                  >
+                    <FaPencilAlt />
+                  </button>
                 </div>
                 <div className="hero-details">
                   <div className="manager-name-row">
@@ -765,7 +867,58 @@ function ManagerDashboard({ onLogout }) {
                 </div>
               </div>
 
-              {/* Pending Requests Section */}
+              {/* Filters Bar */}
+              <div className="approval-filters-bar">
+                {/* Search */}
+                <div className="filter-search-wrapper approval-search">
+                  <FaSearch className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search by employee name or ID..."
+                    value={approvalSearchQuery}
+                    onChange={(e) => setApprovalSearchQuery(e.target.value)}
+                    className="report-search-input"
+                  />
+                </div>
+
+                {/* Status Pills */}
+                <div className="approval-status-pills">
+                  <button
+                    type="button"
+                    className={`approval-pill all ${approvalStatusFilter === "" ? "active" : ""}`}
+                    onClick={() => setApprovalStatusFilter("")}
+                  >
+                    All
+                    <span className="pill-count">{leaveRequests.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`approval-pill pending ${approvalStatusFilter === "Pending" ? "active" : ""}`}
+                    onClick={() => setApprovalStatusFilter("Pending")}
+                  >
+                    Pending
+                    <span className="pill-count">{leaveRequests.filter(r => r.status === "Pending").length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`approval-pill approved ${approvalStatusFilter === "Approved" ? "active" : ""}`}
+                    onClick={() => setApprovalStatusFilter("Approved")}
+                  >
+                    Approved
+                    <span className="pill-count">{leaveRequests.filter(r => r.status === "Approved").length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`approval-pill rejected ${approvalStatusFilter === "Rejected" ? "active" : ""}`}
+                    onClick={() => setApprovalStatusFilter("Rejected")}
+                  >
+                    Rejected
+                    <span className="pill-count">{leaveRequests.filter(r => r.status === "Rejected").length}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Leave Requests Section */}
               <div className="requests-table-section">
                 <table className="requests-table">
                   <thead>
@@ -774,19 +927,25 @@ function ManagerDashboard({ onLogout }) {
                       <th>Employee ID</th>
                       <th>Leave Type</th>
                       <th>Date Range</th>
-                      <th>Actions</th>
+                      <th>Status</th>
+                      {(approvalStatusFilter === "Pending" || approvalStatusFilter === "Rejected") && (
+                        <th style={{ textAlign: "center" }}>Action</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {leaveRequests.length === 0 ? (
+                    {filteredLeaveRequests.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="empty-table-message">
-                          No pending leave requests.
+                        <td
+                          colSpan={(approvalStatusFilter === "Pending" || approvalStatusFilter === "Rejected") ? 6 : 5}
+                          className="empty-table-message"
+                        >
+                          No requests found.
                         </td>
                       </tr>
                     ) : (
-                      leaveRequests.map((request) => (
-                        <tr key={request.id}>
+                      filteredLeaveRequests.map((request, index) => (
+                        <tr key={`${request.id}-${index}`}>
                           {/* Employee Name column */}
                           <td>
                             <div className="employee-info-cell">
@@ -805,7 +964,6 @@ function ManagerDashboard({ onLogout }) {
                           {/* Leave Type column */}
                           <td>
                             <div className="leave-type-cell">
-                              <span className="leave-type-text">{request.type}</span>
                               <button
                                 className="info-icon-btn"
                                 type="button"
@@ -814,36 +972,88 @@ function ManagerDashboard({ onLogout }) {
                               >
                                 <FaInfoCircle />
                               </button>
+                              <span className="leave-type-text">{request.type}</span>
                             </div>
                           </td>
                           {/* Date Range column */}
                           <td>
                             <span className="date-range-label">{request.dates}</span>
                           </td>
-                          {/* Actions column */}
+                          {/* Status column */}
                           <td>
-                            <div className="action-buttons-cell">
-                              <button
-                                className="approve-btn-outlined"
-                                type="button"
-                                onClick={() => handleApproveRequest(request.id)}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                className="reject-btn-outlined"
-                                type="button"
-                                onClick={() => handleRejectRequest(request.id)}
-                              >
-                                Reject
-                              </button>
-                            </div>
+                            <span className={`approval-status-badge ${request.status.toLowerCase()}`}>
+                              {request.status === "Pending" && <span className="status-dot pending-dot" />}
+                              {request.status === "Approved" && <span className="status-dot approved-dot" />}
+                              {request.status === "Rejected" && <span className="status-dot rejected-dot" />}
+                              {request.status}
+                            </span>
                           </td>
+                          {/* Action column — only for Pending / Rejected filters */}
+                          {(approvalStatusFilter === "Pending" || approvalStatusFilter === "Rejected") && (
+                            <td className="action-col-cell">
+                              <div className="action-popup-wrapper">
+                                <button
+                                  type="button"
+                                  className="action-trigger-btn"
+                                  title="Take Action"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setApprovalActionPopup(
+                                      approvalActionPopup && approvalActionPopup.id === request.id
+                                        ? null
+                                        : request
+                                    );
+                                  }}
+                                >
+                                  Take Action
+                                </button>
+                                {approvalActionPopup && approvalActionPopup.id === request.id && (
+                                  <div className="action-inline-popup" onClick={(e) => e.stopPropagation()}>
+                                    <div className="action-popup-arrow" />
+                                    <button
+                                      type="button"
+                                      className="popup-action-btn approve-action"
+                                      onClick={() => {
+                                        handleApproveRequest(request.id);
+                                        setApprovalActionPopup(null);
+                                      }}
+                                    >
+                                      ✓ Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="popup-action-btn reject-action"
+                                      onClick={() => {
+                                        handleRejectRequest(request.id);
+                                        setApprovalActionPopup(null);
+                                      }}
+                                    >
+                                      ✗ Reject
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="popup-action-btn cancel-action"
+                                      onClick={() => setApprovalActionPopup(null)}
+                                    >
+                                      ✕ Cancel
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
+                {/* Close action popup when clicking outside */}
+                {approvalActionPopup && (
+                  <div
+                    className="action-popup-backdrop"
+                    onClick={() => setApprovalActionPopup(null)}
+                  />
+                )}
               </div>
 
               {/* Details Popup Modal */}
@@ -886,9 +1096,7 @@ function ManagerDashboard({ onLogout }) {
                     <span>Aggregate Team Balance</span>
                   </div>
                   <div className="report-card-body">
-                    <div className="report-card-icon-wrap orange-tint">
-                      <FaCoins />
-                    </div>
+                    <div className="report-card-icon-wrap orange-tint"><FaCoins /></div>
                     <div className="report-card-text">
                       <span className="report-card-num">1,420</span>
                       <span className="report-card-unit">Days</span>
@@ -905,18 +1113,9 @@ function ManagerDashboard({ onLogout }) {
                   <div className="report-card-body flex-row">
                     <div className="pie-chart-visual" />
                     <div className="pie-chart-legend">
-                      <div className="legend-item">
-                        <span className="legend-dot sick" />
-                        <span>Sick (25%)</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot casual" />
-                        <span>Casual (35%)</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot annual" />
-                        <span>Annual (40%)</span>
-                      </div>
+                      <div className="legend-item"><span className="legend-dot sick" /><span>Sick (25%)</span></div>
+                      <div className="legend-item"><span className="legend-dot casual" /><span>Casual (35%)</span></div>
+                      <div className="legend-item"><span className="legend-dot annual" /><span>Annual (40%)</span></div>
                     </div>
                   </div>
                 </div>
@@ -928,18 +1127,10 @@ function ManagerDashboard({ onLogout }) {
                     <span>Top Departmental Usage</span>
                   </div>
                   <div className="report-card-body flex-row">
-                    <div className="report-card-icon-wrap green-tint">
-                      <FaRegChartBar />
-                    </div>
+                    <div className="report-card-icon-wrap green-tint"><FaRegChartBar /></div>
                     <div className="dept-stats-list">
-                      <div className="dept-stat-row">
-                        <span className="dept-name">Sales</span>
-                        <span className="dept-value">(35 days avg)</span>
-                      </div>
-                      <div className="dept-stat-row">
-                        <span className="dept-name">R&D</span>
-                        <span className="dept-value">(28 days avg)</span>
-                      </div>
+                      <div className="dept-stat-row"><span className="dept-name">Sales</span><span className="dept-value">(35 days avg)</span></div>
+                      <div className="dept-stat-row"><span className="dept-name">R&D</span><span className="dept-value">(28 days avg)</span></div>
                     </div>
                   </div>
                 </div>
@@ -951,9 +1142,7 @@ function ManagerDashboard({ onLogout }) {
                     <span>High Balance Alerts</span>
                   </div>
                   <div className="report-card-body">
-                    <div className="report-card-icon-wrap red-tint">
-                      <FaExclamationTriangle />
-                    </div>
+                    <div className="report-card-icon-wrap red-tint"><FaExclamationTriangle /></div>
                     <div className="report-card-text">
                       <span className="report-card-num">18</span>
                       <span className="report-card-unit">Employees</span>
@@ -976,19 +1165,23 @@ function ManagerDashboard({ onLogout }) {
                   />
                 </div>
 
-                {/* Date Filter */}
-                <div className="filter-input-field-wrapper">
-                  <FaRegCalendarAlt className="field-icon" />
-                  <input
-                    type="text"
-                    placeholder="Filter by Date"
-                    value={reportDateFilter}
-                    onChange={(e) => setReportDateFilter(e.target.value)}
-                    className="report-text-input"
-                  />
+                {/* Filter by Department */}
+                <div className="filter-select-field-wrapper">
+                  <FaFolder className="field-icon" />
+                  <select
+                    value={reportDepartmentFilter}
+                    onChange={(e) => setReportDepartmentFilter(e.target.value)}
+                    className="report-select-input"
+                  >
+                    <option value="">Filter by Department</option>
+                    {Array.from(new Set(employeesData.map(emp => emp.department))).map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                  <FaChevronDown className="select-chevron" />
                 </div>
 
-                {/* Leave Type Filter */}
+                {/* Filter by Leave Type */}
                 <div className="filter-select-field-wrapper">
                   <FaFolder className="field-icon" />
                   <select
@@ -1004,259 +1197,132 @@ function ManagerDashboard({ onLogout }) {
                   <FaChevronDown className="select-chevron" />
                 </div>
 
-                {/* Status Pills */}
-                <div className="filter-status-group">
-                  <span className="status-label">Status</span>
-                  <button
-                    type="button"
-                    className={`status-pill pending ${reportStatusFilter === "Pending" ? "active" : ""}`}
-                    onClick={() => setReportStatusFilter(prev => prev === "Pending" ? "" : "Pending")}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    type="button"
-                    className={`status-pill approved ${reportStatusFilter === "Approved" ? "active" : ""}`}
-                    onClick={() => setReportStatusFilter(prev => prev === "Approved" ? "" : "Approved")}
-                  >
-                    Approved
-                  </button>
-                  <button
-                    type="button"
-                    className={`status-pill rejected ${reportStatusFilter === "Rejected" ? "active" : ""}`}
-                    onClick={() => setReportStatusFilter(prev => prev === "Rejected" ? "" : "Rejected")}
-                  >
-                    Rejected
-                  </button>
-                </div>
 
-                {/* Leave History Button */}
+                {/* Leave Summary Button */}
                 <button
                   type="button"
-                  className={`toggle-history-btn ${showDetailedHistory ? "active" : ""}`}
-                  onClick={() => setShowDetailedHistory(!showDetailedHistory)}
+                  className="toggle-history-btn active"
+                  onClick={() => {
+                    setReportSearchQuery("");
+                    setReportDepartmentFilter("");
+                    setReportLeaveTypeFilter("");
+                    setReportStatusFilter("");
+                    setShowLeaveSummary(true);
+                  }}
                 >
                   <FaHistory />
-                  <span>Leave History</span>
+                  <span>Leave Summary</span>
                 </button>
               </div>
 
-              {/* Data Table */}
+              {/* Data Table — Employee Summary */}
               <div className="report-table-section">
-                {reportStatusFilter === "" && !showDetailedHistory ? (
-                  // Summary Table (Mockup 1)
-                  <table className="report-table">
-                    <thead>
-                      <tr>
-                        <th>Employee Name</th>
-                        <th>Department</th>
-                        <th>Total Entitlement</th>
-                        <th>Used Leaves</th>
-                        <th>Remaining Balance</th>
-                        <th>Attendance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEmployees.length === 0 ? (
-                        <tr>
-                          <td colSpan="6" className="empty-table-message">
-                            No employees match current filters.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredEmployees.map((emp) => {
-                          const isSelected = reportSelectedEmpId === emp.id;
-                          const bgColors = ["#ff5722", "#4f46e5", "#0d9488", "#e11d48", "#7c3aed", "#2563eb"];
-                          const charSum = emp.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                          const initialsBg = bgColors[charSum % bgColors.length];
-                          const initials = emp.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("");
-
-                          return (
-                            <tr
-                              key={emp.id}
-                              className={`report-row ${isSelected ? "selected-active-row" : ""}`}
-                              onClick={() => setReportSelectedEmpId(emp.id)}
-                            >
-                              <td>
-                                <div className="employee-info-cell">
-                                  {emp.photo ? (
-                                    <img
-                                      src={emp.photo}
-                                      alt={emp.name}
-                                      className="employee-photo-circle"
-                                    />
-                                  ) : (
-                                    <div
-                                      className="employee-initials-circle"
-                                      style={{ backgroundColor: initialsBg }}
-                                    >
-                                      {initials}
-                                    </div>
-                                  )}
-                                  <div className="employee-name-id">
-                                    <span className="employee-name-label">{emp.name}</span>
-                                    <span className="employee-id-label">{emp.id}</span>
-                                  </div>
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      <th>Employee Name</th>
+                      <th>Department</th>
+                      <th>Total Entitlement</th>
+                      <th>Used Leaves</th>
+                      <th>Remaining Balance</th>
+                      <th>Attendance</th>
+                      <th>Report</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEmployees.length === 0 ? (
+                      <tr><td colSpan="7" className="empty-table-message">No employees match current filters.</td></tr>
+                    ) : (
+                      filteredEmployees.map((emp) => {
+                        const isSelected = reportSelectedEmpId === emp.id;
+                        const bgColors = ["#ff5722", "#4f46e5", "#0d9488", "#e11d48", "#7c3aed", "#2563eb"];
+                        const charSum = emp.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        const initialsBg = bgColors[charSum % bgColors.length];
+                        const initials = emp.name.split(" ").map((n) => n[0]).join("");
+                        return (
+                          <tr
+                            key={emp.id}
+                            className={`report-row ${isSelected ? "selected-active-row" : ""}`}
+                            onClick={() => setReportSelectedEmpId(emp.id)}
+                          >
+                            <td>
+                              <div className="employee-info-cell">
+                                {emp.photo ? (
+                                  <img src={emp.photo} alt={emp.name} className="employee-photo-circle" />
+                                ) : (
+                                  <div className="employee-initials-circle" style={{ backgroundColor: initialsBg }}>{initials}</div>
+                                )}
+                                <div className="employee-name-id">
+                                  <span className="employee-name-label">{emp.name}</span>
+                                  <span className="employee-id-label">{emp.id}</span>
                                 </div>
-                              </td>
-                              <td>{emp.department}</td>
-                              <td>{emp.totalEntitlement} days</td>
-                              <td>{emp.usedLeaves} days</td>
-                              <td>{emp.remainingBalance} days</td>
-                              <td>
-                                <span className="attendance-percentage">{emp.attendance}</span>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                ) : (
-                  // Leave Requests Table (Mockup 2 & 3)
-                  <table className="report-table">
-                    <thead>
-                      <tr>
-                        <th>Employee Name</th>
-                        <th>Employee ID</th>
-                        <th>Leave Type</th>
-                        <th>Leave Dates</th>
-                        <th>Remaining Balance</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredRequests.length === 0 ? (
-                        <tr>
-                          <td colSpan="7" className="empty-table-message">
-                            No leave requests found.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredRequests.map((req) => {
-                          const bgColors = ["#ff5722", "#4f46e5", "#0d9488", "#e11d48", "#7c3aed", "#2563eb"];
-                          const charSum = req.name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                          const initialsBg = bgColors[charSum % bgColors.length];
-                          const initials = req.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("");
-
-                          return (
-                            <tr key={req.id} className="report-row">
-                              <td>
-                                <div className="employee-info-cell">
-                                  {req.photo ? (
-                                    <img
-                                      src={req.photo}
-                                      alt={req.name}
-                                      className="employee-photo-circle"
-                                    />
-                                  ) : (
-                                    <div
-                                      className="employee-initials-circle"
-                                      style={{ backgroundColor: initialsBg }}
-                                    >
-                                      {initials}
-                                    </div>
-                                  )}
-                                  <span className="employee-name-label">{req.name}</span>
-                                </div>
-                              </td>
-                              <td>
-                                <span className="employee-id-badge">{req.id}</span>
-                              </td>
-                              <td>{req.leaveType}</td>
-                              <td>{req.leaveDates}</td>
-                              <td>{req.remainingBalance}</td>
-                              <td>
-                                <span className={`status-badge-pill ${req.status.toLowerCase()}`}>
-                                  {req.status}
-                                </span>
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="take-action-btn"
-                                  onClick={() => setActiveRequestModal(req)}
-                                >
-                                  Take Action
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                )}
+                              </div>
+                            </td>
+                            <td>{emp.department}</td>
+                            <td>{emp.totalEntitlement} days</td>
+                            <td>{emp.usedLeaves} days</td>
+                            <td>{emp.remainingBalance} days</td>
+                            <td><span className="attendance-percentage">{emp.attendance}</span></td>
+                            <td>
+                              <button
+                                type="button"
+                                className="report-action-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEmpReport(emp);
+                                }}
+                              >
+                                <FaRegChartBar />
+                                Report
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
 
-              {/* Dynamic Action Modals */}
+              {/* Take Action Modal */}
               {activeRequestModal && (
                 <div className="popup-overlay" onClick={() => setActiveRequestModal(null)}>
                   <div className="details-popup-card action-modal-card" onClick={(e) => e.stopPropagation()}>
                     <div className="popup-card-header">
-                      <h3>
-                        {activeRequestModal.status === "Pending"
-                          ? "Take Action"
-                          : "Leave Request Details"}
-                      </h3>
-                      <button
-                        className="close-popup-btn"
-                        type="button"
-                        onClick={() => setActiveRequestModal(null)}
-                      >
+                      <h3>{activeRequestModal.status === "Pending" ? "Take Action" : "Leave Request Details"}</h3>
+                      <button className="close-popup-btn" type="button" onClick={() => setActiveRequestModal(null)}>
                         <FaTimes />
                       </button>
                     </div>
                     <div className="popup-card-body">
-                      {/* Avatar & Name */}
                       <div className="popup-employee-header">
                         {activeRequestModal.photo ? (
-                          <img
-                            src={activeRequestModal.photo}
-                            alt={activeRequestModal.name}
-                            className="popup-employee-avatar"
-                          />
+                          <img src={activeRequestModal.photo} alt={activeRequestModal.name} className="popup-employee-avatar" />
                         ) : (
                           <div className="popup-employee-initials">
-                            {activeRequestModal.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {activeRequestModal.name.split(" ").map((n) => n[0]).join("")}
                           </div>
                         )}
                         <div className="popup-employee-info">
                           <h4>{activeRequestModal.name}</h4>
-                          <span className="popup-employee-id">{activeRequestModal.id}</span>
+                          <span className="popup-employee-id">{activeRequestModal.id || activeRequestModal.employeeId}</span>
                         </div>
                       </div>
-
-                      {/* Fields details */}
                       <div className="popup-fields-grid">
                         <div className="popup-field-row">
                           <span className="field-label">Leave Type</span>
                           <span className="field-separator">:</span>
-                          <span className="field-value">{activeRequestModal.leaveType}</span>
+                          <span className="field-value">{activeRequestModal.leaveType || activeRequestModal.type}</span>
                         </div>
                         <div className="popup-field-row">
                           <span className="field-label">Leave Dates</span>
                           <span className="field-separator">:</span>
-                          <span className="field-value">
-                            {activeRequestModal.status === "Rejected"
-                              ? "01 Jun - 06 Jun"
-                              : activeRequestModal.leaveDates}
-                          </span>
+                          <span className="field-value">{activeRequestModal.dates || activeRequestModal.leaveDates}</span>
                         </div>
                         <div className="popup-field-row">
                           <span className="field-label">Duration</span>
                           <span className="field-separator">:</span>
-                          <span className="field-value">{activeRequestModal.duration}</span>
+                          <span className="field-value">{activeRequestModal.duration || `${activeRequestModal.days} days`}</span>
                         </div>
                         <div className="popup-field-row">
                           <span className="field-label">Reason</span>
@@ -1266,103 +1332,154 @@ function ManagerDashboard({ onLogout }) {
                         <div className="popup-field-row">
                           <span className="field-label">Current Status</span>
                           <span className="field-separator">:</span>
-                          <span className={`status-badge-pill ${activeRequestModal.status.toLowerCase()}`}>
-                            {activeRequestModal.status}
-                          </span>
+                          <span className={`status-badge-pill ${activeRequestModal.status.toLowerCase()}`}>{activeRequestModal.status}</span>
                         </div>
                       </div>
-
-                      {/* Action buttons */}
                       <div className="popup-modal-actions">
                         {activeRequestModal.status === "Pending" ? (
                           <>
-                            <button
-                              type="button"
-                              className="modal-reject-action-btn"
-                              onClick={() => {
-                                setRequestsList((prev) =>
-                                  prev.map((r) =>
-                                    r.id === activeRequestModal.id
-                                      ? { ...r, status: "Rejected" }
-                                      : r
-                                  )
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
+                            <button type="button" className="modal-reject-action-btn" onClick={() => { handleRejectRequest(activeRequestModal.id || activeRequestModal.employeeId); setActiveRequestModal(null); }}>
                               <FaTimes /> Reject
                             </button>
-                            <button
-                              type="button"
-                              className="modal-approve-action-btn"
-                              onClick={() => {
-                                setRequestsList((prev) =>
-                                  prev.map((r) =>
-                                    r.id === activeRequestModal.id
-                                      ? { ...r, status: "Approved" }
-                                      : r
-                                  )
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
+                            <button type="button" className="modal-approve-action-btn" onClick={() => { handleApproveRequest(activeRequestModal.id || activeRequestModal.employeeId); setActiveRequestModal(null); }}>
                               <FaCheck /> Approve
                             </button>
                           </>
-                        ) : activeRequestModal.status === "Rejected" ? (
-                          <>
-                            <button
-                              type="button"
-                              className="modal-reject-action-btn"
-                              onClick={() => setActiveRequestModal(null)}
-                            >
-                              <FaTimes /> Close
-                            </button>
-                            <button
-                              type="button"
-                              className="modal-approve-action-btn"
-                              onClick={() => {
-                                setRequestsList((prev) =>
-                                  prev.map((r) =>
-                                    r.id === activeRequestModal.id
-                                      ? { ...r, status: "Approved" }
-                                      : r
-                                  )
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
-                              <FaCheck /> Approve Leave
-                            </button>
-                          </>
                         ) : (
-                          // Approved
-                          <>
-                            <button
-                              type="button"
-                              className="modal-reject-action-btn"
-                              onClick={() => {
-                                setRequestsList((prev) =>
-                                  prev.map((r) =>
-                                    r.id === activeRequestModal.id
-                                      ? { ...r, status: "Rejected" }
-                                      : r
-                                  )
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
-                              <FaTimes /> Reject Leave
-                            </button>
-                            <button
-                              type="button"
-                              className="modal-approve-action-btn"
-                              onClick={() => setActiveRequestModal(null)}
-                            >
-                              <FaCheck /> Close
-                            </button>
-                          </>
+                          <button type="button" className="modal-approve-action-btn" onClick={() => setActiveRequestModal(null)}>
+                            <FaCheck /> Close
+                          </button>
                         )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Detailed Employee Leave Report Modal */}
+              {selectedEmpReport && (
+                <div className="popup-overlay" onClick={() => setSelectedEmpReport(null)}>
+                  <div className="details-popup-card report-detail-modal-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="popup-card-header">
+                      <h3>Employee Leave Report</h3>
+                      <button className="close-popup-btn" type="button" onClick={() => setSelectedEmpReport(null)}>
+                        <FaTimes />
+                      </button>
+                    </div>
+                    <div className="popup-card-body scrollable-modal-body">
+                      {/* Section 1: Employee Header Profile */}
+                      <div className="popup-employee-header">
+                        {selectedEmpReport.photo ? (
+                          <img src={selectedEmpReport.photo} alt={selectedEmpReport.name} className="popup-employee-avatar" />
+                        ) : (
+                          <div className="popup-employee-initials" style={{ backgroundColor: '#ff5722' }}>
+                            {selectedEmpReport.name.split(" ").map((n) => n[0]).join("")}
+                          </div>
+                        )}
+                        <div className="popup-employee-info">
+                          <h4>{selectedEmpReport.name}</h4>
+                          <span className="popup-employee-id">{selectedEmpReport.id} — {selectedEmpReport.department}</span>
+                        </div>
+                      </div>
+
+                      {/* Section 2: Summary Stats Row */}
+                      <div className="report-modal-stats-grid">
+                        <div className="modal-stat-card entitlement-card">
+                          <span className="modal-stat-label">Total Entitlement</span>
+                          <span className="modal-stat-value">{selectedEmpReport.totalEntitlement} days</span>
+                        </div>
+                        <div className="modal-stat-card used-card">
+                          <span className="modal-stat-label">Used Leaves</span>
+                          <span className="modal-stat-value">{selectedEmpReport.usedLeaves} days</span>
+                        </div>
+                        <div className="modal-stat-card remaining-card">
+                          <span className="modal-stat-label">Remaining Balance</span>
+                          <span className="modal-stat-value">{selectedEmpReport.remainingBalance} days</span>
+                        </div>
+                        <div className="modal-stat-card attendance-card">
+                          <span className="modal-stat-label">Attendance</span>
+                          <span className="modal-stat-value">{selectedEmpReport.attendance}</span>
+                        </div>
+                      </div>
+
+                      {/* Section 3: Visual Leave Breakdown */}
+                      <div className="leave-breakdown-section">
+                        <h5>Leave Type Breakdown</h5>
+                        {selectedEmpReport.usedLeaves > 0 ? (
+                          <div className="breakdown-chart-flex">
+                            {/* Conic-gradient donut chart */}
+                            {(() => {
+                              const breakdown = {
+                                sick: Math.max(1, Math.round(selectedEmpReport.usedLeaves * 0.25)),
+                                casual: Math.max(1, Math.round(selectedEmpReport.usedLeaves * 0.35)),
+                              };
+                              breakdown.vacation = Math.max(0, selectedEmpReport.usedLeaves - breakdown.sick - breakdown.casual);
+                              
+                              const total = selectedEmpReport.usedLeaves;
+                              const sickPct = Math.round((breakdown.sick / total) * 100);
+                              const casualPct = Math.round((breakdown.casual / total) * 100);
+                              const vacationPct = 100 - sickPct - casualPct;
+
+                              return (
+                                <>
+                                  <div className="donut-chart-container">
+                                    <div className="donut-chart" style={{
+                                      background: `conic-gradient(#ff5722 0% ${sickPct}%, #4f46e5 ${sickPct}% ${sickPct + casualPct}%, #10b981 ${sickPct + casualPct}% 100%)`
+                                    }}>
+                                      <div className="donut-center">
+                                        <span className="donut-number">{selectedEmpReport.usedLeaves}</span>
+                                        <span className="donut-label">Used</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="donut-chart-legend">
+                                    <div className="legend-row">
+                                      <span className="legend-indicator sick" />
+                                      <span className="legend-label">Sick Leave ({breakdown.sick} days — {sickPct}%)</span>
+                                    </div>
+                                    <div className="legend-row">
+                                      <span className="legend-indicator casual" />
+                                      <span className="legend-label">Casual Leave ({breakdown.casual} days — {casualPct}%)</span>
+                                    </div>
+                                    <div className="legend-row">
+                                      <span className="legend-indicator vacation" />
+                                      <span className="legend-label">Vacation Leave ({breakdown.vacation} days — {vacationPct}%)</span>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="empty-chart-message">
+                            No leaves taken by this employee yet.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Section 4: Recent History List */}
+                      <div className="modal-history-section">
+                        <h5>Recent Leave History</h5>
+                        <div className="modal-history-list">
+                          {leaveHistoryData.filter(hist => hist.employeeId === selectedEmpReport.id).length === 0 ? (
+                            <p className="empty-history-text">No recent leave requests found.</p>
+                          ) : (
+                            leaveHistoryData
+                              .filter(hist => hist.employeeId === selectedEmpReport.id)
+                              .map((hist) => (
+                                <div key={hist.id} className="history-list-item">
+                                  <div className="item-meta">
+                                    <span className="history-item-dates">{hist.dates}</span>
+                                    <span className="history-item-type">{hist.type}</span>
+                                  </div>
+                                  <div className="item-status-reason">
+                                    <span className={`status-badge-pill ${hist.status.toLowerCase()}`}>{hist.status}</span>
+                                    <p className="history-item-reason">{hist.reason}</p>
+                                  </div>
+                                </div>
+                              ))
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1370,6 +1487,8 @@ function ManagerDashboard({ onLogout }) {
               )}
             </div>
           )}
+
+
         </section>
       </div>
 
