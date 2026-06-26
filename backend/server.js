@@ -1,10 +1,11 @@
-const leaveRoutes = require("./routes/leaveRoutes");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
 const authRoutes = require("./routes/authRoutes");
 const profileRoutes = require("./routes/profileRoutes.js");
+const leaveRoutes = require("./routes/leaveRoutes");
+const managerLeaveRoutes = require("./routes/managerLeaveRoutes");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get("/api/profile/test", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/leave", leaveRoutes);
+app.use("/api/manager", managerLeaveRoutes);
 require("./config/db");
 
 app.get("/", (req, res) => {

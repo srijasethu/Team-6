@@ -389,103 +389,34 @@ function ManagerDashboard({ onLogout }) {
   });
   const [tempProfileData, setTempProfileData] = useState({ ...profileData });
 
-  const [leaveRequests, setLeaveRequests] = useState([
-    {
-      id: "EMP045",
-      name: "Aarav Patel",
-      type: "Sick Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      photo: aaravPatelAvatar,
-      description:
-        "Taking leave for my younger sister's wedding in Mumbai. I have already coordinated with Sarah (EMP021) for project handovers. Will be available on email for emergencies.",
-      status: "Pending",
-    },
-    {
-      id: "EMP021",
-      name: "Sarah Raman",
-      type: "Casual Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      photo: sarahRamanAvatar,
-      description: "Going to my hometown for family gathering.",
-      status: "Pending",
-    },
-    {
-      id: "EMP033",
-      name: "Rina Sharma",
-      type: "Vacation Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      photo: rinaSharmaAvatar,
-      description:
-        "Annual vacation trip with family. Will be available on phone if needed.",
-      status: "Pending",
-    },
-    {
-      id: "EMP048",
-      name: "Aarav Patel",
-      type: "Sick Leave",
-      dates: "Sep 28 - Sep 30, 2026",
-      photo: aaravPatelAvatar,
-      description: "Medical checkup and dentist appointment.",
-      status: "Pending",
-    },
-    {
-      id: "EMP073",
-      name: "Sarah Pamest",
-      type: "Sick Leave",
-      dates: "Sep 20 - Sep 21, 2026",
-      photo: sarahPamestAvatar,
-      description: "Doctor's appointment for checking fever.",
-      status: "Pending",
-    },
-    {
-      id: "EMP088",
-      name: "Rina Sharma",
-      type: "Annual Leave",
-      dates: "Sep 01 - Sep 05, 2026",
-      photo: rinaSharmaAvatar,
-      description:
-        "Family vacation to Goa. Tasks handover completed with team lead.",
-      status: "Approved",
-    },
-    {
-      id: "EMP101",
-      name: "Aarav Patel",
-      type: "Casual Leave",
-      dates: "Aug 18 - Aug 19, 2026",
-      photo: aaravPatelAvatar,
-      description: "Personal errands and administrative work.",
-      status: "Approved",
-    },
-    {
-      id: "EMP115",
-      name: "Sarah Raman",
-      type: "Medical Leave",
-      dates: "Aug 10 - Aug 12, 2026",
-      photo: sarahRamanAvatar,
-      description: "Post-surgery recovery as advised by doctor.",
-      status: "Approved",
-    },
-    {
-      id: "EMP022",
-      name: "Sarah Pamest",
-      type: "Casual Leave",
-      dates: "Aug 05, 2026",
-      photo: sarahPamestAvatar,
-      description:
-        "Requested leave without proper notice period as per company policy.",
-      status: "Rejected",
-    },
-    {
-      id: "EMP059",
-      name: "Rina Sharma",
-      type: "Vacation Leave",
-      dates: "Jul 28 - Aug 02, 2026",
-      photo: rinaSharmaAvatar,
-      description:
-        "Overlapping with critical project deadline. Request denied for business continuity.",
-      status: "Rejected",
-    },
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+
+  const fetchManagerLeaves = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/manager/leaves");
+      const data = await response.json();
+      console.log("Manager leaves:", data.leaves);
+      if (data.success) {
+        const formattedLeaves = data.leaves.map((leave) => ({
+          dbId: leave.id,
+          id: `EMP${String(leave.employee_id).padStart(3, "0")}`,
+          name: leave.employee_name,
+          type: leave.leave_type,
+          dates: `${leave.start_date} - ${leave.end_date}`,
+          photo: null,
+          description: leave.reason,
+          status: leave.status,
+        }));
+        setLeaveRequests(formattedLeaves);
+      }
+    } catch (error) {
+      console.error("Fetch manager leaves error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchManagerLeaves();
+  }, []);
 
   const [selectedRequest, setSelectedRequest] = useState(null);
 
@@ -563,21 +494,41 @@ function ManagerDashboard({ onLogout }) {
     }));
   };
 
-  const handleApproveRequest = (id) => {
-    setLeaveRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "Approved" } : r)),
-    );
-    if (selectedRequest && selectedRequest.id === id) {
-      setSelectedRequest(null);
+  const handleApproveRequest = async (dbId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/manager/approve/${dbId}`, {
+        method: "PUT",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setLeaveRequests((prev) =>
+          prev.map((r) => (r.dbId === dbId || r.id === dbId ? { ...r, status: "Approved" } : r)),
+        );
+        if (selectedRequest && (selectedRequest.dbId === dbId || selectedRequest.id === dbId)) {
+          setSelectedRequest(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error approving request:", error);
     }
   };
 
-  const handleRejectRequest = (id) => {
-    setLeaveRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r)),
-    );
-    if (selectedRequest && selectedRequest.id === id) {
-      setSelectedRequest(null);
+  const handleRejectRequest = async (dbId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/manager/reject/${dbId}`, {
+        method: "PUT",
+      });
+      const data = await response.json();
+      if (data.success) {
+        setLeaveRequests((prev) =>
+          prev.map((r) => (r.dbId === dbId || r.id === dbId ? { ...r, status: "Rejected" } : r)),
+        );
+        if (selectedRequest && (selectedRequest.dbId === dbId || selectedRequest.id === dbId)) {
+          setSelectedRequest(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error rejecting request:", error);
     }
   };
 
@@ -1174,15 +1125,10 @@ function ManagerDashboard({ onLogout }) {
                       </tr>
                     ) : (
                       filteredLeaveRequests.map((request, index) => (
-                        <tr key={`${request.id}-${index}`}>
+                        <tr key={`${request.dbId || request.id}-${index}`}>
                           {/* Employee Name column */}
                           <td>
                             <div className="employee-info-cell">
-                              <img
-                                src={request.photo}
-                                alt={request.name}
-                                className="employee-photo-circle"
-                              />
                               <span className="employee-name-label">
                                 {request.name}
                               </span>
@@ -1246,7 +1192,7 @@ function ManagerDashboard({ onLogout }) {
                                     e.stopPropagation();
                                     setApprovalActionPopup(
                                       approvalActionPopup &&
-                                        approvalActionPopup.id === request.id
+                                        approvalActionPopup.dbId === request.dbId
                                         ? null
                                         : request,
                                     );
@@ -1255,7 +1201,7 @@ function ManagerDashboard({ onLogout }) {
                                   Take Action
                                 </button>
                                 {approvalActionPopup &&
-                                  approvalActionPopup.id === request.id && (
+                                  approvalActionPopup.dbId === request.dbId && (
                                     <div
                                       className="action-inline-popup"
                                       onClick={(e) => e.stopPropagation()}
@@ -1265,7 +1211,7 @@ function ManagerDashboard({ onLogout }) {
                                         type="button"
                                         className="popup-action-btn approve-action"
                                         onClick={() => {
-                                          handleApproveRequest(request.id);
+                                          handleApproveRequest(request.dbId || request.id);
                                           setApprovalActionPopup(null);
                                         }}
                                       >
@@ -1275,7 +1221,7 @@ function ManagerDashboard({ onLogout }) {
                                         type="button"
                                         className="popup-action-btn reject-action"
                                         onClick={() => {
-                                          handleRejectRequest(request.id);
+                                          handleRejectRequest(request.dbId || request.id);
                                           setApprovalActionPopup(null);
                                         }}
                                       >

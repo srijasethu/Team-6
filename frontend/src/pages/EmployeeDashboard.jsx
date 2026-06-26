@@ -514,7 +514,7 @@ function LeaveSummaryView() {
     rejected: 0,
     pending: 0,
     totalTaken: 0,
-    remaining: 20,
+    remaining: 36,
   });
 
   useEffect(() => {
@@ -553,7 +553,7 @@ function LeaveSummaryView() {
           rejected,
           pending,
           totalTaken: approved,
-          remaining: 20 - approved,
+          remaining: 36 - approved,
         });
       }
     } catch (error) {
@@ -577,7 +577,7 @@ function LeaveSummaryView() {
               </div>
               <strong>Total Allowed</strong>
             </div>
-            <div className="value">20 Days</div>
+            <div className="value">36 Days</div>
             <div className="muted">Annual leave allocation</div>
           </div>
           <div className="card">
@@ -855,6 +855,7 @@ function EmployeeDashboard({ onLogout }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [leaveRefreshKey, setLeaveRefreshKey] = useState(0);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
 
@@ -1033,7 +1034,7 @@ function EmployeeDashboard({ onLogout }) {
 
           <nav className="nav-list">
             <button
-              className={`nav-item ${activeView === "profile" || activeView === "logout" ? "active" : ""}`}
+              className={`nav-item ${activeView === "profile" ? "active" : ""}`}
               type="button"
               onClick={() => setActiveView("profile")}
             >
@@ -1063,7 +1064,7 @@ function EmployeeDashboard({ onLogout }) {
           <button
             className="logout"
             type="button"
-            onClick={() => setActiveView("logout")}
+            onClick={() => setShowLogoutModal(true)}
           >
             <FaSignOutAlt />
             <span>Logout</span>
@@ -1101,14 +1102,14 @@ function EmployeeDashboard({ onLogout }) {
             />
           )}
           {activeView === "leaveSummary" && <LeaveSummaryView />}
-          {activeView === "logout" && (
-            <LogoutView
-              onCancel={() => setActiveView("profile")}
-              onConfirm={onLogout}
-            />
-          )}
         </section>
       </div>
+      {showLogoutModal && (
+        <LogoutView
+          onCancel={() => setShowLogoutModal(false)}
+          onConfirm={onLogout}
+        />
+      )}
     </main>
   );
 }
