@@ -24,6 +24,7 @@ app.get("/api/profile/test", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/leave", leaveRoutes);
+app.use("/api/leaves", leaveRoutes);
 app.use("/api/manager", managerLeaveRoutes);
 require("./config/db");
 

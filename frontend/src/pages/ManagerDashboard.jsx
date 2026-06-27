@@ -399,10 +399,11 @@ function ManagerDashboard({ onLogout }) {
       if (data.success) {
         const formattedLeaves = data.leaves.map((leave) => ({
           dbId: leave.id,
-          id: `EMP${String(leave.employee_id).padStart(3, "0")}`,
+          id: leave.employee_code,
           name: leave.employee_name,
           type: leave.leave_type,
           dates: `${leave.start_date} - ${leave.end_date}`,
+          leaveDays: leave.leave_days,
           photo: null,
           description: leave.reason,
           status: leave.status,
@@ -507,9 +508,13 @@ function ManagerDashboard({ onLogout }) {
         if (selectedRequest && (selectedRequest.dbId === dbId || selectedRequest.id === dbId)) {
           setSelectedRequest(null);
         }
+      } else {
+        // Show exact backend error (e.g. insufficient balance)
+        alert(data.message || "Unable to approve this leave request.");
       }
     } catch (error) {
       console.error("Error approving request:", error);
+      alert("Backend connection failed. Please try again.");
     }
   };
 
@@ -538,6 +543,7 @@ function ManagerDashboard({ onLogout }) {
     pending: leaveRequests.filter((r) => r.status === "Pending").length,
     approved: leaveRequests.filter((r) => r.status === "Approved").length,
     rejected: leaveRequests.filter((r) => r.status === "Rejected").length,
+    cancelled: leaveRequests.filter((r) => r.status === "Cancelled").length,
   };
 
   // Filter employee summaries
@@ -966,7 +972,6 @@ function ManagerDashboard({ onLogout }) {
                 <FaFileAlt className="profile-title-icon" />
                 <h1>Leave Approval</h1>
               </div>
-
               {/* Stats Panel */}
               <div className="stats-grid">
                 {/* Stats Card 1: Total Requests */}
@@ -1022,6 +1027,20 @@ function ManagerDashboard({ onLogout }) {
                       <FaRegTimesCircle />
                     </div>
                     <span className="stats-number">{stats.rejected}</span>
+                  </div>
+                </div>
+
+                {/* Stats Card 5: Cancelled Requests */}
+                <div className="stats-card cancelled-card">
+                  <div className="stats-card-header cancelled-header">
+                    <FaTimes />
+                    <span>Cancelled Requests</span>
+                  </div>
+                  <div className="stats-card-body">
+                    <div className="stats-circle cancelled-circle">
+                      <FaTimes />
+                    </div>
+                    <span className="stats-number">{stats.cancelled}</span>
                   </div>
                 </div>
               </div>
@@ -1089,6 +1108,19 @@ function ManagerDashboard({ onLogout }) {
                       }
                     </span>
                   </button>
+                  <button
+                    type="button"
+                    className={`approval-pill cancelled ${approvalStatusFilter === "Cancelled" ? "active" : ""}`}
+                    onClick={() => setApprovalStatusFilter("Cancelled")}
+                  >
+                    Cancelled
+                    <span className="pill-count">
+                      {
+                        leaveRequests.filter((r) => r.status === "Cancelled")
+                          .length
+                      }
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -1101,23 +1133,16 @@ function ManagerDashboard({ onLogout }) {
                       <th>Employee ID</th>
                       <th>Leave Type</th>
                       <th>Date Range</th>
+                      <th>Days</th>
                       <th>Status</th>
-                      {(approvalStatusFilter === "Pending" ||
-                        approvalStatusFilter === "Rejected") && (
-                        <th style={{ textAlign: "center" }}>Action</th>
-                      )}
+                      <th style={{ textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredLeaveRequests.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={
-                            approvalStatusFilter === "Pending" ||
-                            approvalStatusFilter === "Rejected"
-                              ? 6
-                              : 5
-                          }
+                          colSpan={7}
                           className="empty-table-message"
                         >
                           No requests found.
@@ -1162,6 +1187,12 @@ function ManagerDashboard({ onLogout }) {
                               {request.dates}
                             </span>
                           </td>
+                          {/* Days column */}
+                          <td>
+                            <span className="days-label">
+                              {request.leaveDays} {request.leaveDays === 1 ? "Day" : "Days"}
+                            </span>
+                          </td>
                           {/* Status column */}
                           <td>
                             <span
@@ -1176,13 +1207,15 @@ function ManagerDashboard({ onLogout }) {
                               {request.status === "Rejected" && (
                                 <span className="status-dot rejected-dot" />
                               )}
+                              {request.status === "Cancelled" && (
+                                <span className="status-dot cancelled-dot" />
+                              )}
                               {request.status}
                             </span>
                           </td>
-                          {/* Action column — only for Pending / Rejected filters */}
-                          {(approvalStatusFilter === "Pending" ||
-                            approvalStatusFilter === "Rejected") && (
-                            <td className="action-col-cell">
+                          {/* Action column */}
+                          <td className="action-col-cell">
+                            {request.status === "Pending" ? (
                               <div className="action-popup-wrapper">
                                 <button
                                   type="button"
@@ -1227,20 +1260,17 @@ function ManagerDashboard({ onLogout }) {
                                       >
                                         ✗ Reject
                                       </button>
-                                      <button
-                                        type="button"
-                                        className="popup-action-btn cancel-action"
-                                        onClick={() =>
-                                          setApprovalActionPopup(null)
-                                        }
-                                      >
-                                        ✕ Cancel
-                                      </button>
                                     </div>
                                   )}
                               </div>
-                            </td>
-                          )}
+                            ) : request.status === "Cancelled" ? (
+                              <span style={{ color: "#64748b", fontWeight: 600, fontSize: "14px" }}>
+                                Cancelled by Employee
+                              </span>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
                         </tr>
                       ))
                     )}

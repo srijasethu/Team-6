@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -7,6 +9,7 @@ import {
   FaCheck,
   FaChevronDown,
   FaEnvelope,
+  FaExclamationTriangle,
   FaFileAlt,
   FaPencilAlt,
   FaPhoneAlt,
@@ -17,6 +20,7 @@ import {
   FaRegClock,
   FaRegEdit,
   FaRegUser,
+  FaShieldAlt,
   FaSignOutAlt,
   FaSuitcase,
   FaTimes,
@@ -177,332 +181,485 @@ function BrandIcon() {
   );
 }
 
-function ApplyLeaveForm({ onApplyLeave }) {
-  const [formData, setFormData] = useState({
-    leaveType: "Personal Leave",
-    fromDate: "",
-    fromTime: "09:00",
-    toDate: "",
-    toTime: "17:00",
-    reason: "",
-  });
+const TIME_OPTIONS = [
+  "09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM",
+  "01:00 PM", "01:30 PM", "02:00 PM", "02:30 PM",
+  "03:00 PM", "03:30 PM", "04:00 PM", "04:30 PM",
+  "05:00 PM", "05:30 PM", "06:00 PM",
+];
 
-  const handleChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+function formatDDMMYYYY(date) {
+  if (!date) return "";
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}-${m}-${y}`;
+}
+
+function toMySQLDate(date) {
+  if (!date) return null;
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${y}-${m}-${d}`;
+}
+
+function calcLeaveDays(from, to) {
+  if (!from || !to) return 0;
+  const msPerDay = 86400000;
+  const diff = Math.round((to - from) / msPerDay) + 1;
+  return diff > 0 ? diff : 0;
+}
+
+function ApplyLeaveForm({ onApplyLeave, onBack }) {
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+  const [fromTime, setFromTime] = useState("09:00 AM");
+  const [toTime, setToTime] = useState("05:00 PM");
+  const [leaveType, setLeaveType] = useState("Personal Leave");
+  const [reason, setReason] = useState("");
+  const [charCount, setCharCount] = useState(0);
+  const [balance, setBalance] = useState({ total: 36, remaining: 36 });
+  const [submitting, setSubmitting] = useState(false);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+
+  const isFlexibleLeave = leaveType === "Medical Leave" || leaveType === "Personal Leave";
+  const fromMinDate = isFlexibleLeave ? startOfCurrentMonth : today;
+  const fromMaxDate = isFlexibleLeave ? null : endOfNextMonth;
+  const toMinDate = fromDate ? fromDate : fromMinDate;
+  const toMaxDate = isFlexibleLeave ? null : endOfNextMonth;
+
+  const leaveDays = calcLeaveDays(fromDate, toDate);
+  const exceedsBalance = leaveDays > balance.remaining;
+  const canSubmit = fromDate && toDate && reason.trim() && !exceedsBalance && !submitting;
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) return;
+    fetch(`http://localhost:5000/api/leave/summary/${user.id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) {
+          setBalance({
+            total: d.summary.totalAllowed,
+            remaining: d.summary.remaining,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleReset = () => {
+    setLeaveType("Personal Leave");
+    setFromDate(null);
+    setToDate(null);
+    setFromTime("09:00 AM");
+    setToTime("05:00 PM");
+    setReason("");
+    setCharCount(0);
   };
-  const formatDateForMySQL = (date) => {
-    if (!date) return null;
 
-    if (date.includes("-")) {
-      const parts = date.split("-");
-      if (parts[0].length === 4) return date;
-      return `${parts[2]}-${parts[1]}-${parts[0]}`;
-    }
-
-    return date;
-  };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canSubmit) return;
 
     const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) { alert("User not found. Please login again."); return; }
 
-    if (!user) {
-      alert("User not found. Please login again.");
-      return;
-    }
-
-    if (!formData.fromDate || !formData.toDate || !formData.reason) {
-      alert("Please fill all required fields");
-      return;
-    }
-
+    setSubmitting(true);
     try {
       const response = await fetch("http://localhost:5000/api/leave/apply", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           employee_id: user.id,
-          leave_type: formData.leaveType,
-          start_date: formatDateForMySQL(formData.fromDate),
-          end_date: formatDateForMySQL(formData.toDate),
-          reason: formData.reason,
+          leave_type: leaveType,
+          start_date: toMySQLDate(fromDate),
+          end_date: toMySQLDate(toDate),
+          reason,
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         alert("Leave applied successfully");
+        handleReset();
         if (onApplyLeave) onApplyLeave();
       } else {
-        alert("Leave application failed");
+        alert(data.message || "Leave application failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Apply leave error:", error);
-      alert("Backend connection failed");
+    } catch (err) {
+      console.error("Apply leave error:", err);
+      alert("Backend connection failed. Please check your network.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="leave-content">
       <form className="new-leave-form" onSubmit={handleSubmit}>
-        <div className="section-title leave-form-title">
-          <FaRegEdit />
-          <h1>Apply Leave</h1>
+        <div className="apply-leave-header-row">
+          <div className="section-title leave-form-title">
+            <FaRegEdit />
+            <div>
+              <h1>Apply Leave</h1>
+              <p className="leave-form-subtitle">Fill in the details below to request a leave</p>
+            </div>
+          </div>
+          <div className="apply-leave-header-right">
+            {onBack && (
+              <button
+                type="button"
+                className="apply-leave-back-btn"
+                onClick={onBack}
+              >
+                <FaArrowLeft /> Back to History
+              </button>
+            )}
+            <div className="available-balance-card">
+              <div className="balance-card-icon"><FaRegCalendarAlt /></div>
+              <div className="balance-card-text">
+                <span className="balance-card-label">Available Balance</span>
+                <span className="balance-card-days">{balance.remaining} Days</span>
+                <span className="balance-card-total">out of {balance.total} Days</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <label className="leave-form-field leave-form-field-wide">
-          <span>Leave Type</span>
-          <select
-            value={formData.leaveType}
-            onChange={(e) => handleChange("leaveType", e.target.value)}
+        <div className="leave-form-step">
+          <div className="step-badge">1</div>
+          <span className="step-label">Leave Type</span>
+        </div>
+        <div className="leave-form-field leave-form-field-wide leave-type-field">
+          <div className="select-icon-wrap">
+            <FaRegUser className="select-prefix-icon" />
+            <select
+              value={leaveType}
+              onChange={(e) => {
+                setLeaveType(e.target.value);
+                setFromDate(null);
+                setToDate(null);
+              }}
+            >
+              <option>Personal Leave</option>
+              <option>Medical Leave</option>
+              <option>Vacation Leave</option>
+              <option>Maternity Leave</option>
+              <option>Paternity Leave</option>
+              <option>Marriage Leave</option>
+            </select>
+            <FaChevronDown className="select-suffix-icon" />
+          </div>
+        </div>
+
+        <div className="leave-date-time-grid">
+          <div className="date-time-group">
+            <div className="leave-form-step">
+              <div className="step-badge">2</div>
+              <span className="step-label">From Date &amp; Time</span>
+            </div>
+            <div className="date-time-row">
+              <div className="leave-form-field datepicker-field">
+                <div className="datepicker-wrap">
+                  <FaRegCalendarAlt className="datepicker-icon" />
+                  <DatePicker
+                    selected={fromDate}
+                    onChange={(date) => {
+                      setFromDate(date);
+                      if (toDate && date && toDate < date) setToDate(null);
+                    }}
+                    minDate={fromMinDate}
+                    maxDate={fromMaxDate}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    dateFormat="dd-MM-yyyy"
+                    placeholderText="DD-MM-YYYY"
+                    className="datepicker-input"
+                    popperPlacement="bottom-start"
+                    showPopperArrow={false}
+                  />
+                </div>
+              </div>
+              <div className="leave-form-field">
+                <div className="select-icon-wrap time-select-wrap">
+                  <FaRegClock className="select-prefix-icon" />
+                  <select value={fromTime} onChange={(e) => setFromTime(e.target.value)}>
+                    {TIME_OPTIONS.map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                  <FaChevronDown className="select-suffix-icon" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="date-time-group">
+            <div className="leave-form-step">
+              <div className="step-badge">3</div>
+              <span className="step-label">To Date &amp; Time</span>
+            </div>
+            <div className="date-time-row">
+              <div className="leave-form-field datepicker-field">
+                <div className="datepicker-wrap">
+                  <FaRegCalendarAlt className="datepicker-icon" />
+                  <DatePicker
+                    selected={toDate}
+                    onChange={(date) => setToDate(date)}
+                    minDate={toMinDate}
+                    maxDate={toMaxDate}
+                    showMonthDropdown
+                    showYearDropdown
+                    dropdownMode="select"
+                    dateFormat="dd-MM-yyyy"
+                    placeholderText="DD-MM-YYYY"
+                    className="datepicker-input"
+                    popperPlacement="bottom-start"
+                    showPopperArrow={false}
+                  />
+                </div>
+              </div>
+              <div className="leave-form-field">
+                <div className="select-icon-wrap time-select-wrap">
+                  <FaRegClock className="select-prefix-icon" />
+                  <select value={toTime} onChange={(e) => setToTime(e.target.value)}>
+                    {TIME_OPTIONS.map((t) => <option key={t}>{t}</option>)}
+                  </select>
+                  <FaChevronDown className="select-suffix-icon" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {leaveDays > 0 && (
+          <div className={`leave-days-summary ${exceedsBalance ? "exceeds" : ""}` }>
+            <span className="leave-days-count">
+              {leaveDays} {leaveDays === 1 ? "Day" : "Days"} Selected
+            </span>
+            {exceedsBalance && (
+              <span className="leave-days-warning">
+                <FaExclamationTriangle />
+                Requested leave exceeds your available balance.
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="leave-form-step">
+          <div className="step-badge">4</div>
+          <span className="step-label">Reason for Leave</span>
+        </div>
+        <div className="leave-form-field leave-form-field-wide reason-field">
+          <div className="reason-wrap">
+            <div className="reason-icon-box"><FaFileAlt /></div>
+            <textarea
+              value={reason}
+              maxLength={300}
+              onChange={(e) => { setReason(e.target.value); setCharCount(e.target.value.length); }}
+              placeholder="Enter reason for leave..."
+            />
+          </div>
+          <span className="reason-char-count">{charCount} / 300</span>
+        </div>
+
+        <div className="leave-form-actions">
+          <button
+            className="apply-leave-submit"
+            type="submit"
+            disabled={!canSubmit}
           >
-            <option>Personal Leave</option>
-            <option>Medical Leave</option>
-            <option>Vacation Leave</option>
-            <option>Maternity Leave</option>
-            <option>Paternity Leave</option>
-            <option>Marriage Leave</option>
-          </select>
-        </label>
-
-        <div className="leave-form-grid">
-          <label className="leave-form-field">
-            <span>From Date</span>
-            <input
-              type="date"
-              value={formData.fromDate}
-              onChange={(e) => handleChange("fromDate", e.target.value)}
-            />
-          </label>
-          <label className="leave-form-field">
-            <span>From Time</span>
-            <input
-              type="time"
-              value={formData.fromTime}
-              onChange={(e) => handleChange("fromTime", e.target.value)}
-            />
-          </label>
-          <label className="leave-form-field">
-            <span>To Date</span>
-            <input
-              type="date"
-              value={formData.toDate}
-              onChange={(e) => handleChange("toDate", e.target.value)}
-            />
-          </label>
-          <label className="leave-form-field">
-            <span>To Time</span>
-            <input
-              type="time"
-              value={formData.toTime}
-              onChange={(e) => handleChange("toTime", e.target.value)}
-            />
-          </label>
+            {submitting ? "Submitting..." : "Apply Leave"}
+          </button>
+          <button
+            className="apply-leave-reset"
+            type="button"
+            onClick={handleReset}
+          >
+            Reset
+          </button>
         </div>
 
-        <label className="leave-form-field leave-form-field-wide">
-          <span>Reason</span>
-          <textarea
-            value={formData.reason}
-            onChange={(e) => handleChange("reason", e.target.value)}
-            placeholder="Enter reason for leave..."
-          />
-        </label>
-
-        <button className="apply-leave-submit" type="submit">
-          <FaPlus />
-          Apply Leave
-        </button>
+        <div className="apply-leave-notice">
+          <FaShieldAlt />
+          Please ensure all details are correct before applying. You can track your leave status in Leave Summary.
+        </div>
       </form>
     </div>
   );
 }
 
+// Format ISO date → "22 June 2026"
+function fmtDate(raw) {
+  if (!raw) return "—";
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
 function ProfileView({
   profileData,
-  tempProfileData,
-  isEditing,
-  onEdit,
-  onSave,
-  onCancel,
-  onChange,
   profilePhoto,
   profilePhotoInputRef,
   handleProfilePhotoChange,
   handleProfilePhotoRemove,
 }) {
+  const [stats, setStats] = useState({ total: 36, taken: 0, pending: 0, approved: 0 });
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) return;
+    fetch(`http://localhost:5000/api/leave/summary/${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.success) return;
+        setStats({
+          total: data.summary.totalAllowed,
+          taken: data.summary.leavesTaken,
+          pending: data.summary.pendingRequests,
+          approved: data.summary.approvedRequests,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="profile-content">
+      {/* Heading */}
       <div className="section-title">
         <FaRegUser />
         <h1>My Profile</h1>
       </div>
 
-      <div className="profile-hero">
-        <EmployeeAvatar
-          large
-          photoUrl={profilePhoto}
-          fileInputRef={profilePhotoInputRef}
-          onPhotoChange={handleProfilePhotoChange}
-          onRemovePhoto={handleProfilePhotoRemove}
-        />
-        <div className="hero-details">
-          <div className="employee-name">
-            {isEditing ? (
-              <input
-                type="text"
-                className="edit-name-input"
-                value={tempProfileData.name}
-                onChange={(e) => onChange("name", e.target.value)}
-                placeholder="Enter name"
-              />
-            ) : (
+      {/* ── Hero card ─────────────────────────── */}
+      <div className="profile-hero-card">
+        {/* Left */}
+        <div className="profile-hero-left">
+          <EmployeeAvatar
+            large
+            photoUrl={profilePhoto}
+            fileInputRef={profilePhotoInputRef}
+            onPhotoChange={handleProfilePhotoChange}
+            onRemovePhoto={handleProfilePhotoRemove}
+          />
+          <div className="hero-details">
+            <div className="employee-name">
               <h2>{profileData.name}</h2>
-            )}
-            <span className="role-badge">{profileData.designation}</span>
-          </div>
-          <div className="employee-meta">
-            <span>
-              <FaRegCalendarAlt />
-              Employee ID: {profileData.employeeId}
-            </span>
-            <span>
-              <FaBuilding />
-              {isEditing ? (
-                <input
-                  type="text"
-                  className="edit-meta-input"
-                  value={tempProfileData.department}
-                  onChange={(e) => onChange("department", e.target.value)}
-                  placeholder="Enter department"
-                />
-              ) : (
-                `${profileData.department} Department`
-              )}
-            </span>
+              <span className="role-badge">{profileData.designation}</span>
+            </div>
+            <div className="employee-meta">
+              <span>
+                <FaRegCalendarAlt />
+                Employee ID:&nbsp;<strong className="emp-id-val">{profileData.employeeId}</strong>
+              </span>
+              <span>
+                <FaBuilding />
+                {profileData.department} Department
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Right: quote box */}
+        <div className="profile-hero-right">
+          <span className="pq-icon">&ldquo;</span>
+          <p className="pq-text">
+            {profileData.about || "Every successful team is built on responsibility, trust, and consistency. — LeaveWise"}
+          </p>
+        </div>
       </div>
+
+      {/* ── Account Details ───────────────────── */}
+      <p className="account-details-heading">Account Details</p>
 
       <div className="info-grid">
-        {/* Email */}
         <div className="info-card">
-          <FaEnvelope />
+          <div className="ic-icon-wrap ic-blue"><FaEnvelope /></div>
           <div className="card-body">
             <strong>Email</strong>
-            {isEditing ? (
-              <input
-                type="email"
-                className="edit-card-input"
-                value={tempProfileData.email}
-                onChange={(e) => onChange("email", e.target.value)}
-              />
-            ) : (
-              <span>{profileData.email}</span>
-            )}
+            <span>{profileData.email}</span>
           </div>
         </div>
 
-        {/* Phone */}
         <div className="info-card">
-          <FaPhoneAlt />
+          <div className="ic-icon-wrap ic-blue"><FaPhoneAlt /></div>
           <div className="card-body">
             <strong>Phone</strong>
-            {isEditing ? (
-              <input
-                type="text"
-                className="edit-card-input"
-                value={tempProfileData.phone}
-                onChange={(e) => onChange("phone", e.target.value)}
-              />
-            ) : (
-              <span>{profileData.phone}</span>
-            )}
+            <span>{profileData.phone}</span>
           </div>
         </div>
 
-        {/* Joining Date */}
         <div className="info-card">
-          <FaRegCalendarAlt />
+          <div className="ic-icon-wrap ic-blue"><FaRegCalendarAlt /></div>
           <div className="card-body">
             <strong>Joining Date</strong>
-            {isEditing ? (
-              <input
-                type="text"
-                className="edit-card-input"
-                value={tempProfileData.joiningDate}
-                onChange={(e) => onChange("joiningDate", e.target.value)}
-              />
-            ) : (
-              <span>{profileData.joiningDate}</span>
-            )}
+            <span>{fmtDate(profileData.joiningDate)}</span>
           </div>
         </div>
 
-        {/* Department */}
         <div className="info-card">
-          <FaRegBuilding />
+          <div className="ic-icon-wrap ic-blue"><FaRegBuilding /></div>
           <div className="card-body">
             <strong>Department</strong>
-            {isEditing ? (
-              <input
-                type="text"
-                className="edit-card-input"
-                value={tempProfileData.department}
-                onChange={(e) => onChange("department", e.target.value)}
-              />
-            ) : (
-              <span>{profileData.department}</span>
-            )}
+            <span>{profileData.department}</span>
           </div>
         </div>
 
-        {/* Designation */}
         <div className="info-card">
-          <FaSuitcase />
+          <div className="ic-icon-wrap ic-blue"><FaSuitcase /></div>
           <div className="card-body">
             <strong>Designation</strong>
-            {isEditing ? (
-              <input
-                type="text"
-                className="edit-card-input"
-                value={tempProfileData.designation}
-                onChange={(e) => onChange("designation", e.target.value)}
-              />
-            ) : (
-              <span>{profileData.designation}</span>
-            )}
+            <span>{profileData.designation}</span>
+          </div>
+        </div>
+
+        <div className="info-card">
+          <div className="ic-icon-wrap ic-blue"><FaUser /></div>
+          <div className="card-body">
+            <strong>Employee Type</strong>
+            <span>{profileData.employeeType || "Full-Time"}</span>
           </div>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="action-buttons-container">
-        {isEditing ? (
-          <div className="edit-actions-group">
-            <button className="save-profile-btn" type="button" onClick={onSave}>
-              Save Changes
-            </button>
-            <button
-              className="cancel-edit-btn"
-              type="button"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
+      {/* ── Stats bar ─────────────────────────── */}
+      <div className="profile-stats-bar">
+        <div className="ps-item">
+          <div className="ps-icon ps-blue"><FaRegCalendarAlt /></div>
+          <div>
+            <div className="ps-num">{stats.total}</div>
+            <div className="ps-label">Total Leave<br/>Allowed</div>
           </div>
-        ) : (
-          <button className="edit-profile" type="button" onClick={onEdit}>
-            <FaPencilAlt />
-            Edit Profile
-          </button>
-        )}
+        </div>
+        <div className="ps-divider" />
+        <div className="ps-item">
+          <div className="ps-icon ps-green"><FaCheck /></div>
+          <div>
+            <div className="ps-num">{stats.taken}</div>
+            <div className="ps-label">Leaves<br/>Taken</div>
+          </div>
+        </div>
+        <div className="ps-divider" />
+        <div className="ps-item">
+          <div className="ps-icon ps-orange"><FaRegClock /></div>
+          <div>
+            <div className="ps-num">{stats.pending}</div>
+            <div className="ps-label">Pending<br/>Requests</div>
+          </div>
+        </div>
+        <div className="ps-divider" />
+        <div className="ps-item">
+          <div className="ps-icon ps-purple"><FaRegCalendarAlt /></div>
+          <div>
+            <div className="ps-num">{stats.approved}</div>
+            <div className="ps-label">Approved<br/>Requests</div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -513,6 +670,7 @@ function LeaveSummaryView() {
     approved: 0,
     rejected: 0,
     pending: 0,
+    cancelled: 0,
     totalTaken: 0,
     remaining: 36,
   });
@@ -528,32 +686,19 @@ function LeaveSummaryView() {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/leave/history/${user.id}`
+        `http://localhost:5000/api/leave/summary/${user.id}`
       );
 
       const data = await response.json();
 
       if (data.success) {
-        const leaves = data.leaves;
-
-        const approved = leaves.filter(
-          (leave) => leave.status.toLowerCase() === "approved"
-        ).length;
-
-        const rejected = leaves.filter(
-          (leave) => leave.status.toLowerCase() === "rejected"
-        ).length;
-
-        const pending = leaves.filter(
-          (leave) => leave.status.toLowerCase() === "pending"
-        ).length;
-
         setSummary({
-          approved,
-          rejected,
-          pending,
-          totalTaken: approved,
-          remaining: 36 - approved,
+          approved: data.summary.approvedRequests,
+          rejected: data.summary.rejectedRequests,
+          pending: data.summary.pendingRequests,
+          cancelled: data.summary.cancelledRequests,
+          totalTaken: data.summary.leavesTaken,
+          remaining: data.summary.remaining,
         });
       }
     } catch (error) {
@@ -657,6 +802,21 @@ function LeaveSummaryView() {
               <span className="badge pending">Pending</span>
             </div>
           </div>
+
+          <div className="summary-item">
+            <div className="left">
+              <div className="icon-wrap cancelled">
+                <FaTimes />
+              </div>
+              <div className="labels">
+                <strong>Cancelled Requests</strong>
+              </div>
+            </div>
+            <div className="right">
+              <div className="count">{summary.cancelled}</div>
+              <span className="badge cancelled">Cancelled</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -667,10 +827,16 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedRange, setSelectedRange] = useState("all");
   const [leaveHistory, setLeaveHistory] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
     fetchLeaveHistory();
   }, [refreshKey]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus, selectedRange, leaveHistory, itemsPerPage]);
 
   const fetchLeaveHistory = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -689,6 +855,27 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
       }
     } catch (error) {
       console.error("Fetch leave history error:", error);
+    }
+  };
+
+  const handleCancelClick = async (leaveId) => {
+    const confirmCancel = window.confirm("Are you sure you want to cancel this leave request?");
+    if (!confirmCancel) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/leaves/cancel/${leaveId}`, {
+        method: "PUT",
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert("Leave cancelled successfully");
+        fetchLeaveHistory();
+      } else {
+        alert(data.message || "Failed to cancel leave");
+      }
+    } catch (error) {
+      console.error("Error cancelling leave:", error);
+      alert("Backend connection failed.");
     }
   };
 
@@ -718,23 +905,111 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
     return true;
   });
 
+  const totalPages = Math.ceil(filteredRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const pagedRows = filteredRows.slice(startIndex, startIndex + itemsPerPage);
+
+  const getDayOfWeek = (dateStr) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return "";
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const year = parseInt(parts[2], 10);
+    const date = new Date(year, month - 1, day);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString("en-US", { weekday: "short" });
+  };
+
+  const getLeaveTypeIcon = (type) => {
+    const lower = type.toLowerCase();
+    if (lower.includes("personal")) {
+      return (
+        <div className="leave-type-icon-box personal">
+          <FaRegUser />
+        </div>
+      );
+    }
+    if (lower.includes("medical") || lower.includes("sick")) {
+      return (
+        <div className="leave-type-icon-box medical">
+          <FaShieldAlt />
+        </div>
+      );
+    }
+    if (lower.includes("vacation")) {
+      return (
+        <div className="leave-type-icon-box vacation">
+          <FaSuitcase />
+        </div>
+      );
+    }
+    return (
+      <div className="leave-type-icon-box other">
+        <FaRegCalendarAlt />
+      </div>
+    );
+  };
+
+  const getStatusBadge = (status) => {
+    const lower = status.toLowerCase();
+    if (lower === "pending") {
+      return (
+        <span className="status-pill pending">
+          <FaRegClock className="status-icon" /> Pending
+        </span>
+      );
+    }
+    if (lower === "approved") {
+      return (
+        <span className="status-pill approved">
+          <FaCheck className="status-icon" /> Approved
+        </span>
+      );
+    }
+    if (lower === "rejected") {
+      return (
+        <span className="status-pill rejected">
+          <FaTimes className="status-icon" /> Rejected
+        </span>
+      );
+    }
+    if (lower === "cancelled") {
+      return (
+        <span className="status-pill cancelled">
+          <FaTimes className="status-icon" /> Cancelled
+        </span>
+      );
+    }
+    return <span className={`status-pill ${lower}`}>{status}</span>;
+  };
+
   return (
     <div className="leave-content">
-      <div className="leave-top">
-        <div className="section-title leave-title">
-          <FaRegCalendarAlt />
-          <h1>Leave History</h1>
+      <div className="leave-history-header-card">
+        <div className="header-card-left">
+          <div className="header-icon-box">
+            <FaRegCalendarAlt className="header-icon" />
+          </div>
+          <div className="header-text">
+            <h1>Leave History</h1>
+            <p>View and manage all your leave requests</p>
+          </div>
         </div>
-        <div className="leave-actions">
-          <button
-            className="new-leave-btn"
-            type="button"
-            onClick={onNewLeaveClick}
-          >
-            <FaPlus />
-            New Leave
-          </button>
-          <div className="leave-filters">
+      </div>
+
+      <div className="leave-top-bar">
+        <button
+          className="new-leave-btn-primary"
+          type="button"
+          onClick={onNewLeaveClick}
+        >
+          <FaPlus />
+          New Leave
+        </button>
+
+        <div className="leave-filters-group">
+          <div className="filter-select-wrap">
             <select
               aria-label="Filter leave status"
               value={selectedStatus}
@@ -744,7 +1019,13 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
               <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
             </select>
+            <FaChevronDown className="filter-select-chevron" />
+          </div>
+
+          <div className="filter-select-wrap date-range-filter">
+            <FaRegCalendarAlt className="filter-select-calendar-icon" />
             <select
               aria-label="Select date range"
               value={selectedRange}
@@ -754,39 +1035,74 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
               <option value="month">This Month</option>
               <option value="year">This Year</option>
             </select>
+            <FaChevronDown className="filter-select-chevron" />
           </div>
         </div>
       </div>
 
-      <div className="leave-table-wrap">
-        <table className="leave-table">
+      <div className="leave-table-container">
+        <table className="leave-table-modern">
           <thead>
             <tr>
-              <th>S.No</th>
+              <th style={{ width: "80px" }}>S.No</th>
               <th>Leave Type</th>
               <th>From</th>
               <th>To</th>
+              <th>Days</th>
               <th>Reason</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <tr>
-                <td colSpan="6">No leave history found</td>
+                <td colSpan="8" className="no-data-td">No leave history found</td>
               </tr>
             ) : (
-              filteredRows.map((leave, index) => (
+              pagedRows.map((leave, index) => (
                 <tr key={leave.id}>
-                  <td>{index + 1}</td>
-                  <td>{leave.leave_type}</td>
-                  <td>{leave.start_date}</td>
-                  <td>{leave.end_date}</td>
-                  <td>{leave.reason}</td>
                   <td>
-                    <span className={`status-pill ${leave.status.toLowerCase()}`}>
-                      {leave.status}
+                    <span className="sno-circle-badge">
+                      {startIndex + index + 1}
                     </span>
+                  </td>
+                  <td>
+                    <div className="leave-type-td-cell">
+                      {getLeaveTypeIcon(leave.leave_type)}
+                      <span className="leave-type-text-span">{leave.leave_type}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="date-td-cell">
+                      <span className="date-main-span">{leave.start_date}</span>
+                      <span className="date-day-span">{getDayOfWeek(leave.start_date)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="date-td-cell">
+                      <span className="date-main-span">{leave.end_date}</span>
+                      <span className="date-day-span">{getDayOfWeek(leave.end_date)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="days-highlight-blue">
+                      {leave.leave_days} {leave.leave_days === 1 ? 'Day' : 'Days'}
+                    </span>
+                  </td>
+                  <td className="reason-td-cell">{leave.reason}</td>
+                  <td>{getStatusBadge(leave.status)}</td>
+                  <td>
+                    {leave.status.toLowerCase() === "pending" ? (
+                      <button
+                        className="cancel-leave-btn-red"
+                        onClick={() => handleCancelClick(leave.id)}
+                      >
+                        <FaTimes className="cancel-icon-btn" /> Cancel
+                      </button>
+                    ) : (
+                      <span className="no-action-hyphen">-</span>
+                    )}
                   </td>
                 </tr>
               ))
@@ -795,23 +1111,66 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
         </table>
       </div>
 
-      <div className="table-footer">
-        <div className="pagination">
-          <button type="button" aria-label="Previous page">
+      <div className="leave-footer-bar">
+        <div className="entries-count-display">
+          Showing {filteredRows.length > 0 ? startIndex + 1 : 0} to{" "}
+          {Math.min(startIndex + itemsPerPage, filteredRows.length)} of{" "}
+          {filteredRows.length} entries
+        </div>
+
+        <div className="pagination-controls-modern">
+          <button
+            type="button"
+            aria-label="Previous page"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            className="pag-btn"
+          >
             <FaArrowLeft />
           </button>
-          {[1, 2, 3, 4, 5].map((page) => (
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
-              className={page === 1 ? "active" : ""}
+              className={`pag-btn ${page === currentPage ? "active" : ""}`}
               type="button"
               key={page}
+              onClick={() => setCurrentPage(page)}
             >
               {page}
             </button>
           ))}
-          <button type="button" aria-label="Next page">
+          <button
+            type="button"
+            aria-label="Next page"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            className="pag-btn"
+          >
             <FaArrowRight />
           </button>
+        </div>
+
+        <div className="rows-per-page-container">
+          <span className="rows-label">Rows per page:</span>
+          <div className="rows-select-wrap">
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
+            <FaChevronDown className="rows-select-chevron" />
+          </div>
+        </div>
+      </div>
+
+      <div className="leave-info-alert-banner">
+        <div className="info-alert-icon-box">
+          <span>i</span>
+        </div>
+        <div className="info-alert-message">
+          <strong>Note:</strong> You can only cancel leave requests that are currently pending.
         </div>
       </div>
     </div>
@@ -867,6 +1226,7 @@ function EmployeeDashboard({ onLogout }) {
     phone: loggedInUser?.phone || "",
     joiningDate: loggedInUser?.joining_date || "",
     designation: loggedInUser?.designation || "Employee",
+    employeeType: loggedInUser?.employee_type || "Full-Time",
   });
 
   const [tempProfileData, setTempProfileData] = useState({ ...profileData });
@@ -995,6 +1355,7 @@ function EmployeeDashboard({ onLogout }) {
             ? data.user.joining_date.substring(0, 10)
             : "",
           designation: data.user.designation || "Employee",
+          employeeType: data.user.employee_type || "Full-Time",
         });
 
         setIsEditing(false);
@@ -1075,12 +1436,6 @@ function EmployeeDashboard({ onLogout }) {
           {activeView === "profile" && (
             <ProfileView
               profileData={profileData}
-              tempProfileData={tempProfileData}
-              isEditing={isEditing}
-              onEdit={handleEditClick}
-              onSave={handleSaveClick}
-              onCancel={handleCancelClick}
-              onChange={handleChange}
               profilePhoto={profilePhoto}
               profilePhotoInputRef={profilePhotoInputRef}
               handleProfilePhotoChange={handleProfilePhotoChange}
@@ -1099,6 +1454,7 @@ function EmployeeDashboard({ onLogout }) {
                 setLeaveRefreshKey((prev) => prev + 1);
                 setActiveView("leave");
               }}
+              onBack={() => setActiveView("leave")}
             />
           )}
           {activeView === "leaveSummary" && <LeaveSummaryView />}

@@ -67,104 +67,221 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
 
   return (
     <div className="login-container">
-      <div className="dot-pattern dot-pattern-left"></div>
-      <div className="dot-pattern dot-pattern-right"></div>
-      <div className="soft-circle soft-circle-left"></div>
-      <div className="soft-circle soft-circle-right"></div>
+      <div className="login-split-card">
 
-      <form className="login-card" onSubmit={handleSubmit}>
-        <div className="logo">
-          <FaCalendarAlt className="calendar-icon" />
-          <FaUser className="logo-user" />
-          <span className="logo-check">
-            <FaCheck />
-          </span>
-        </div>
+        {/* ── Left: Welcome Panel ── */}
+        <div className="login-left-panel">
+          <div className="company-brand">
+            <svg className="company-logo-svg" width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="6" width="8" height="20" rx="4" fill="#ffffff" />
+              <path d="M14 16C14 10.4772 18.4772 6 24 6V26C18.4772 26 14 21.5228 14 16Z" fill="#ffffff" />
+            </svg>
+            <span className="company-name">Touchmark Technologies</span>
+          </div>
 
-        <h1 className="title">Employee Leave Management</h1>
+          {/* Enhanced calendar illustration */}
+          <div className="calendar-visual-container">
+            <svg className="calendar-svg" viewBox="0 0 380 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Calendar card background with rounded corners */}
+              <rect x="30" y="28" width="320" height="254" rx="18" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
 
-        <div className="title-line"></div>
+              {/* Ring pulls (filled circles on top) */}
+              <circle cx="95"  cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="95"  cy="28" r="4" fill="rgba(255,255,255,0.15)" />
+              <circle cx="148" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="148" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
+              <circle cx="201" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="201" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
+              <circle cx="254" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="254" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
+              <circle cx="307" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="307" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
 
-        <h3 className="role-title">Select Role</h3>
+              {/* Header separator */}
+              <line x1="30" y1="72" x2="350" y2="72" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
 
-        <div className="role-container">
-          <label className="role-box">
-            <input
-              type="radio"
-              name="role"
-              value="employee"
-              checked={role === "employee"}
-              onChange={(event) => setRole(event.target.value)}
-            />
-            <FaUser className="role-icon" />
-            <span>Employee</span>
-          </label>
+              {/* Day header labels */}
+              <text x="71.4"  y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Mon</text>
+              <text x="117.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Tue</text>
+              <text x="163.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Wed</text>
+              <text x="209.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Thu</text>
+              <text x="255.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Fri</text>
+              <text x="301.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Sat</text>
+              <text x="335"   y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Sun</text>
 
-          <label className="role-box">
-            <input
-              type="radio"
-              name="role"
-              value="manager"
-              checked={role === "manager"}
-              onChange={(event) => setRole(event.target.value)}
-            />
-            <FaUsers className="role-icon" />
-            <span>Manager</span>
-          </label>
-        </div>
+              {/* Vertical grid lines */}
+              <line x1="94.4"  y1="72" x2="94.4"  y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="140.4" y1="72" x2="140.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="186.4" y1="72" x2="186.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="232.4" y1="72" x2="232.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="278.4" y1="72" x2="278.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="318"   y1="72" x2="318"   y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
 
-        <div className="input-group">
-          <label>Email / ID</label>
+              {/* Horizontal grid lines */}
+              <line x1="30" y1="112" x2="350" y2="112" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="30" y1="152" x2="350" y2="152" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="30" y1="192" x2="350" y2="192" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="30" y1="232" x2="350" y2="232" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
 
-          <div className="input-box">
-            <FaEnvelope className="input-icon" />
-            <input
-              type="text"
-              placeholder="Enter your email or ID"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
+              {/* Day cells (rounded rectangles, week 1) */}
+              <rect x="36"  y="78" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99"  y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="145" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="191" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="237" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="283" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="323" y="78" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+
+              {/* Day cells (week 2) */}
+              <rect x="36"  y="118" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99"  y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="145" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              {/* Wednesday cell highlighted with checkmark */}
+              <rect x="191" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.9)" />
+              <polyline points="199,133 204,138 214,126" stroke="#1d68d4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              <rect x="237" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="283" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="323" y="118" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+
+              {/* Day cells (week 3) */}
+              <rect x="36"  y="158" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99"  y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="145" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="191" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="237" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="283" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="323" y="158" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+
+              {/* Day cells (week 4) */}
+              <rect x="36"  y="198" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99"  y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="145" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="191" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="237" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="283" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="323" y="198" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+
+              {/* Day cells (week 5) */}
+              <rect x="36"  y="238" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99"  y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="145" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="191" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="237" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+            </svg>
+          </div>
+
+          <div className="welcome-message-block">
+            <h2>Welcome!</h2>
+            <p>LeaveWise · Technology That Works for People.</p>
           </div>
         </div>
 
-        <div className="input-group">
-          <label>Password</label>
+        {/* ── Right: Login Form ── */}
+        <div className="login-right-panel">
+          {/* Subtle wave background overlay */}
+          <svg className="right-panel-wave-svg" viewBox="0 0 520 560" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMin meet">
+            <path d="M520 0 Q420 80 520 160 Q620 240 520 320 Q420 400 520 480 L520 0Z" fill="rgba(8,104,239,0.04)" />
+            <path d="M520 0 Q460 100 520 200 Q580 300 520 400 L520 0Z" fill="rgba(8,104,239,0.03)" />
+            <circle cx="490" cy="60"  r="40" fill="rgba(8,104,239,0.025)" />
+            <circle cx="510" cy="130" r="28" fill="rgba(8,104,239,0.025)" />
+            <circle cx="480" cy="190" r="20" fill="rgba(8,104,239,0.02)" />
+          </svg>
 
-          <div className="input-box">
-            <FaLock className="input-icon" />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-            <button
-              type="button"
-              className="eye-icon-btn"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? (
-                <FaEyeSlash className="eye-icon" />
-              ) : (
-                <FaEye className="eye-icon" />
-              )}
-            </button>
-          </div>
+          <form className="login-form-card" onSubmit={handleSubmit}>
+            <div className="login-header-group">
+              <h1 className="login-main-title">Log In</h1>
+              <p className="login-helper-text">
+                Have an account?{" "}
+                <a href="mailto:leavetechsupport@gmail.com" className="admin-link">Contact Administrator</a>
+              </p>
+            </div>
+
+            <div className="login-field-section">
+              <h3 className="select-role-label">Select Role</h3>
+              <div className="role-cards-container">
+                <label className={`role-card ${role === "employee" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="employee"
+                    checked={role === "employee"}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="role-radio-hidden"
+                  />
+                  <span className="role-radio-indicator"></span>
+                  <FaUser className="role-card-icon" />
+                  <span className="role-card-text">Employee</span>
+                </label>
+
+                <label className={`role-card ${role === "manager" ? "active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="role"
+                    value="manager"
+                    checked={role === "manager"}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="role-radio-hidden"
+                  />
+                  <span className="role-radio-indicator"></span>
+                  <FaUsers className="role-card-icon" />
+                  <span className="role-card-text">Manager</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="login-input-group">
+              <label className="input-field-label">Email <span className="required-star">*</span></label>
+              <div className="login-input-wrapper">
+                <FaEnvelope className="login-input-prefix-icon" />
+                <input
+                  type="text"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="login-field-input"
+                />
+              </div>
+            </div>
+
+            <div className="login-input-group">
+              <label className="input-field-label">Password <span className="required-star">*</span></label>
+              <div className="login-input-wrapper">
+                <FaLock className="login-input-prefix-icon" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="login-field-input"
+                />
+                <button
+                  type="button"
+                  className="login-password-toggle-btn"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="login-error-message">{error}</p>}
+
+            <div className="login-action-footer">
+              <button className="login-submit-btn" type="submit">
+                <FaSignInAlt />
+                <span>Log In</span>
+              </button>
+
+              <div className="forgot-password-block">
+                <span className="forgot-text">Forgot your password?</span>
+                <a href="mailto:leavetechsupport@gmail.com" className="admin-link">Contact Administrator</a>
+              </div>
+            </div>
+          </form>
         </div>
 
-        {error && <p className="login-error">{error}</p>}
-
-        <button className="login-btn" type="submit">
-          <FaSignInAlt />
-          Login
-        </button>
-
-        <div className="footer">
-          <p>Don't have an account?</p>
-          <a href="/">Contact administrator (email)</a>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }

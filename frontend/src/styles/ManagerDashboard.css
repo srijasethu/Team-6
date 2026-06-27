@@ -875,10 +875,29 @@
   border-color: #dc2626;
 }
 
+/* Cancelled pill */
+.approval-pill.cancelled {
+  color: #475569;
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+.approval-pill.cancelled .pill-count {
+  background: #cbd5e1;
+  color: #475569;
+}
+.approval-pill.cancelled:hover,
+.approval-pill.cancelled.active {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+.approval-pill.cancelled.active {
+  color: #0f172a;
+}
+
 /* --- Stats Cards --- */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -911,6 +930,7 @@
 .pending-header  { background: #f59e0b; }
 .approved-header { background: #16a34a; }
 .rejected-header { background: #dc2626; }
+.cancelled-header { background: #64748b; }
 
 /* White body with tinted icon + big number */
 .stats-card-body {
@@ -937,6 +957,7 @@
 .pending-circle  { background: rgba(245,158,11,0.12); color: #f59e0b; }
 .approved-circle { background: rgba(22,163,74,0.1);   color: #16a34a; }
 .rejected-circle { background: rgba(220,38,38,0.1);   color: #dc2626; }
+.cancelled-circle { background: rgba(100,116,139,0.1); color: #64748b; }
 
 .stats-number {
   font-size: 46px;
@@ -2307,6 +2328,12 @@
   border: 1px solid #fda4af;
 }
 
+.approval-status-badge.cancelled {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
 .status-dot {
   width: 7px;
   height: 7px;
@@ -2318,6 +2345,7 @@
 .pending-dot  { background: #f59e0b; }
 .approved-dot { background: #10b981; }
 .rejected-dot { background: #ef4444; }
+.cancelled-dot { background: #64748b; }
 
 /* ============================================
    LEAVE APPROVAL — ACTION COLUMN & POPUP
