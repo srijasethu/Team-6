@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+const MONTHLY_PAID_LIMIT = 3;
+const ANNUAL_PAID_ALLOCATION = 36;
 import {
   FaUser,
   FaUsers,
@@ -84,6 +86,30 @@ function ManagerDashboard({ onLogout }) {
     };
   }, [showPhotoMenu]);
 
+  // Scroll-triggered orange glow on profile cards
+  useEffect(() => {
+    if (activeView !== "profile") return;
+    const timeout = setTimeout(() => {
+      const cards = document.querySelectorAll(".profile-hero-card, .info-card-ro");
+      if (!cards.length) return;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in-view");
+            } else {
+              entry.target.classList.remove("in-view");
+            }
+          });
+        },
+        { threshold: 0.15 }
+      );
+      cards.forEach((card) => observer.observe(card));
+      return () => observer.disconnect();
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [activeView]);
+
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files[0];
     const user = JSON.parse(localStorage.getItem("user"));
@@ -152,6 +178,7 @@ function ManagerDashboard({ onLogout }) {
   // Leave Approval states
   const [approvalSearchQuery, setApprovalSearchQuery] = useState("");
   const [approvalStatusFilter, setApprovalStatusFilter] = useState(""); // "", "Pending", "Approved", "Rejected"
+  const [approvalPaymentTypeFilter, setApprovalPaymentTypeFilter] = useState(""); // "", "Paid", "Partly Paid", "Unpaid"
 
   // Leave Requests state for Mockup 2 & 3
   const [requestsList, setRequestsList] = useState([
@@ -404,6 +431,10 @@ function ManagerDashboard({ onLogout }) {
           type: leave.leave_type,
           dates: `${leave.start_date} - ${leave.end_date}`,
           leaveDays: leave.leave_days,
+          paid_days: leave.paid_days ?? leave.leave_days,
+          unpaid_days: leave.unpaid_days ?? 0,
+          payment_type: leave.payment_type || "Paid",
+          alert_message: leave.alert_message,
           photo: null,
           description: leave.reason,
           status: leave.status,
@@ -502,14 +533,12 @@ function ManagerDashboard({ onLogout }) {
       });
       const data = await response.json();
       if (data.success) {
-        setLeaveRequests((prev) =>
-          prev.map((r) => (r.dbId === dbId || r.id === dbId ? { ...r, status: "Approved" } : r)),
-        );
+        // Close the detail popup and re-fetch fresh recalculated data from server
         if (selectedRequest && (selectedRequest.dbId === dbId || selectedRequest.id === dbId)) {
           setSelectedRequest(null);
         }
+        await fetchManagerLeaves();
       } else {
-        // Show exact backend error (e.g. insufficient balance)
         alert(data.message || "Unable to approve this leave request.");
       }
     } catch (error) {
@@ -525,12 +554,11 @@ function ManagerDashboard({ onLogout }) {
       });
       const data = await response.json();
       if (data.success) {
-        setLeaveRequests((prev) =>
-          prev.map((r) => (r.dbId === dbId || r.id === dbId ? { ...r, status: "Rejected" } : r)),
-        );
+        // Close the detail popup and re-fetch fresh recalculated data from server
         if (selectedRequest && (selectedRequest.dbId === dbId || selectedRequest.id === dbId)) {
           setSelectedRequest(null);
         }
+        await fetchManagerLeaves();
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
@@ -622,7 +650,12 @@ function ManagerDashboard({ onLogout }) {
     const matchesStatus =
       approvalStatusFilter === "" ? true : req.status === approvalStatusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesPaymentType =
+      approvalPaymentTypeFilter === ""
+        ? true
+        : req.payment_type === approvalPaymentTypeFilter;
+
+    return matchesSearch && matchesStatus && matchesPaymentType;
   });
 
   return (
@@ -694,274 +727,194 @@ function ManagerDashboard({ onLogout }) {
         <section className="profile-panel">
           {activeView === "profile" && (
             <div className="profile-content">
+              {/* Page Title */}
               <div className="section-title">
                 <FaRegUser className="profile-title-icon" />
-                <h1>My Profile</h1>
+                <div>
+                  <h1>My Profile</h1>
+                  <p className="profile-subtitle">Profile Information</p>
+                </div>
               </div>
 
-              <div className="profile-hero">
-                <div className="avatar-wrapper" ref={photoMenuRef}>
-                  <img
-                    src={profilePhoto || defaultManagerAvatar}
-                    alt="Manager Avatar"
-                    className="manager-avatar"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = defaultManagerAvatar;
-                    }}
-                  />
-                  {/* Hidden file input */}
-                  <input
-                    ref={profilePhotoInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      handleProfilePhotoChange(e);
-                      setShowPhotoMenu(false);
-                    }}
-                  />
-                  {/* Pencil overlay button — now toggles dropdown */}
-                  <button
-                    type="button"
-                    className="avatar-edit-btn"
-                    title="Edit profile photo"
-                    onClick={() => setShowPhotoMenu((prev) => !prev)}
-                  >
-                    <FaPencilAlt />
-                  </button>
-
-                  {showPhotoMenu && (
-                    <div className="manager-avatar-menu">
-                      <button
-                        type="button"
-                        className="manager-avatar-menu-item"
-                        onClick={() => {
-                          if (profilePhotoInputRef.current) {
-                            profilePhotoInputRef.current.click();
-                          }
-                          setShowPhotoMenu(false);
-                        }}
-                      >
-                        Change profile photo
-                      </button>
-                      <button
-                        type="button"
-                        className="manager-avatar-menu-item remove"
-                        onClick={handleProfilePhotoRemove}
-                      >
-                        Remove photo
-                      </button>
+              {/* Profile Hero Card */}
+              <div className="profile-hero-card">
+                {/* Left — Avatar + Name */}
+                <div className="profile-hero-left">
+                  <div className="avatar-wrapper-ro">
+                    <img
+                      src={profilePhoto || defaultManagerAvatar}
+                      alt="Manager Avatar"
+                      className="manager-avatar"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = defaultManagerAvatar;
+                      }}
+                    />
+                  </div>
+                  <div className="hero-details">
+                    <h2 className="profile-name">{profileData.name}</h2>
+                    <div className="manager-meta">
+                      <span>
+                        <FaRegCalendarAlt />
+                        Manager ID: {profileData.managerId}
+                      </span>
+                      <span>
+                        <FaBuilding />
+                        {profileData.department} Department
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
-                <div className="hero-details">
-                  <div className="manager-name-row">
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        className="edit-name-input"
-                        value={tempProfileData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="Enter name"
-                      />
-                    ) : (
-                      <h2>{profileData.name}</h2>
-                    )}
-                    <span className="role-badge">Manager</span>
+
+                {/* Right — Role Card */}
+                <div className="profile-role-card">
+                  <div className="role-icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="role-shield-icon">
+                      <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V6L12 2z"/>
+                      <path d="M9 12l2 2 4-4"/>
+                    </svg>
                   </div>
-                  <div className="manager-meta">
-                    <span>
-                      <FaRegCalendarAlt />
-                      Manager ID: {profileData.managerId}
-                    </span>
-                    <span>
-                      <FaBuilding />
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          className="edit-meta-input"
-                          value={tempProfileData.department}
-                          onChange={(e) =>
-                            handleChange("department", e.target.value)
-                          }
-                          placeholder="Enter department"
-                        />
-                      ) : (
-                        `${profileData.department} Department`
-                      )}
-                    </span>
-                  </div>
+                  <span className="role-label">Role</span>
+                  <span className="role-value">Manager</span>
                 </div>
               </div>
 
+              {/* Info Cards Grid */}
               <div className="info-grid">
-                {/* Email card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaEnvelope />
                   <div className="card-body">
                     <strong>Email</strong>
-                    {isEditing ? (
-                      <input
-                        type="email"
-                        value={tempProfileData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.email}</span>
-                    )}
+                    <span>{profileData.email}</span>
                   </div>
                 </div>
 
-                {/* Phone card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaPhoneAlt />
                   <div className="card-body">
                     <strong>Phone</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.phone}
-                        onChange={(e) => handleChange("phone", e.target.value)}
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.phone}</span>
-                    )}
+                    <span>{profileData.phone}</span>
                   </div>
                 </div>
 
-                {/* Joining Date card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaRegCalendarAlt />
                   <div className="card-body">
                     <strong>Joining Date</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.joiningDate}
-                        onChange={(e) =>
-                          handleChange("joiningDate", e.target.value)
-                        }
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.joiningDate}</span>
-                    )}
+                    <span>{profileData.joiningDate}</span>
                   </div>
                 </div>
 
-                {/* Department card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaBuilding />
                   <div className="card-body">
                     <strong>Department</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.department}
-                        onChange={(e) =>
-                          handleChange("department", e.target.value)
-                        }
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.department}</span>
-                    )}
+                    <span>{profileData.department}</span>
                   </div>
                 </div>
 
-                {/* Designation card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaSuitcase />
                   <div className="card-body">
                     <strong>Designation</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.designation}
-                        onChange={(e) =>
-                          handleChange("designation", e.target.value)
-                        }
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.designation}</span>
-                    )}
+                    <span>{profileData.designation}</span>
                   </div>
                 </div>
 
-                {/* Team Size card */}
-                <div className="info-card">
+                <div className="info-card info-card-ro">
                   <FaUsers />
                   <div className="card-body">
                     <strong>Team Size</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.teamSize}
-                        onChange={(e) =>
-                          handleChange("teamSize", e.target.value)
-                        }
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.teamSize}</span>
-                    )}
+                    <span>{profileData.teamSize}</span>
                   </div>
                 </div>
 
-                {/* Office Location card (Full width) */}
-                <div className="info-card full-width">
+                {/* Office Location — full width with skyline decoration */}
+                <div className="info-card info-card-ro full-width office-card">
                   <FaMapMarkerAlt />
                   <div className="card-body">
                     <strong>Office Location</strong>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        value={tempProfileData.officeLocation}
-                        onChange={(e) =>
-                          handleChange("officeLocation", e.target.value)
-                        }
-                        className="edit-card-input"
-                      />
-                    ) : (
-                      <span>{profileData.officeLocation}</span>
-                    )}
+                    <span>{profileData.officeLocation}</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="action-buttons-container">
-                {isEditing ? (
-                  <div className="edit-actions-group">
-                    <button
-                      className="save-profile-btn"
-                      type="button"
-                      onClick={handleSaveClick}
-                    >
-                      Save Changes
-                    </button>
-                    <button
-                      className="cancel-edit-btn"
-                      type="button"
-                      onClick={handleCancelClick}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    className="edit-profile-btn"
-                    type="button"
-                    onClick={handleEditClick}
+                  {/* Decorative City Skyline SVG */}
+                  <svg
+                    className="skyline-deco"
+                    viewBox="0 0 600 120"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
                   >
-                    <FaPencilAlt />
-                    Edit Profile
-                  </button>
-                )}
+                    {/* Buildings */}
+                    <rect x="10"  y="60" width="30" height="60" rx="2"/>
+                    <rect x="15"  y="50" width="20" height="10" rx="1"/>
+                    <rect x="18"  y="40" width="14" height="10" rx="1"/>
+                    <rect x="21"  y="33" width="8"  height="7"  rx="1"/>
+                    <rect x="48"  y="70" width="24" height="50" rx="2"/>
+                    <rect x="52"  y="58" width="16" height="12" rx="1"/>
+                    <rect x="80"  y="45" width="36" height="75" rx="2"/>
+                    <rect x="85"  y="35" width="26" height="10" rx="1"/>
+                    <rect x="90"  y="25" width="16" height="10" rx="1"/>
+                    <rect x="95"  y="15" width="6"  height="10" rx="1"/>
+                    <rect x="98"  y="8"  width="2"  height="7"  rx="1"/>
+                    <rect x="124" y="65" width="28" height="55" rx="2"/>
+                    <rect x="128" y="55" width="20" height="10" rx="1"/>
+                    <rect x="160" y="55" width="40" height="65" rx="2"/>
+                    <rect x="165" y="40" width="30" height="15" rx="1"/>
+                    <rect x="170" y="30" width="20" height="10" rx="1"/>
+                    <rect x="208" y="72" width="22" height="48" rx="2"/>
+                    <rect x="238" y="50" width="32" height="70" rx="2"/>
+                    <rect x="242" y="38" width="24" height="12" rx="1"/>
+                    <rect x="246" y="28" width="16" height="10" rx="1"/>
+                    <rect x="250" y="20" width="8"  height="8"  rx="1"/>
+                    <rect x="278" y="68" width="26" height="52" rx="2"/>
+                    <rect x="312" y="48" width="38" height="72" rx="2"/>
+                    <rect x="317" y="36" width="28" height="12" rx="1"/>
+                    <rect x="322" y="26" width="18" height="10" rx="1"/>
+                    <rect x="327" y="18" width="8"  height="8"  rx="1"/>
+                    <rect x="330" y="10" width="2"  height="8"  rx="1"/>
+                    <rect x="358" y="62" width="28" height="58" rx="2"/>
+                    <rect x="362" y="52" width="20" height="10" rx="1"/>
+                    <rect x="394" y="55" width="34" height="65" rx="2"/>
+                    <rect x="398" y="43" width="26" height="12" rx="1"/>
+                    <rect x="402" y="32" width="18" height="11" rx="1"/>
+                    <rect x="436" y="70" width="24" height="50" rx="2"/>
+                    <rect x="468" y="52" width="36" height="68" rx="2"/>
+                    <rect x="472" y="40" width="28" height="12" rx="1"/>
+                    <rect x="476" y="28" width="20" height="12" rx="1"/>
+                    <rect x="480" y="18" width="12" height="10" rx="1"/>
+                    <rect x="512" y="65" width="26" height="55" rx="2"/>
+                    <rect x="516" y="53" width="18" height="12" rx="1"/>
+                    <rect x="546" y="58" width="30" height="62" rx="2"/>
+                    <rect x="550" y="46" width="22" height="12" rx="1"/>
+                    {/* Windows */}
+                    <rect x="84"  y="52" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="93"  y="52" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="102" y="52" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="84"  y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="93"  y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="102" y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="165" y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="175" y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="185" y="62" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="316" y="56" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="326" y="56" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="336" y="56" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="316" y="66" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="326" y="66" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="472" y="48" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="482" y="48" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    <rect x="492" y="48" width="5" height="5" rx="1" fill="white" fillOpacity="0.4"/>
+                    {/* Ground line */}
+                    <line x1="0" y1="120" x2="600" y2="120" stroke="currentColor" strokeWidth="2"/>
+                    {/* Trees */}
+                    <circle cx="70"  cy="113" r="6"/>
+                    <rect   cx="70"  cy="115" width="2" height="5" x="-1" fill="currentColor"/>
+                    <circle cx="230" cy="112" r="7"/>
+                    <circle cx="302" cy="114" r="5"/>
+                    <circle cx="450" cy="113" r="6"/>
+                    <circle cx="565" cy="112" r="7"/>
+                  </svg>
+                </div>
               </div>
             </div>
           )}
@@ -1059,6 +1012,23 @@ function ManagerDashboard({ onLogout }) {
                   />
                 </div>
 
+                {/* Payment Type Filter */}
+                <div className="filter-select-field-wrapper" style={{ marginLeft: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "8px 12px", backgroundColor: "#ffffff" }}>
+                  <FaCoins className="field-icon" style={{ marginRight: "8px", color: "#64748b" }} />
+                  <select
+                    value={approvalPaymentTypeFilter}
+                    onChange={(e) => setApprovalPaymentTypeFilter(e.target.value)}
+                    className="report-select-input"
+                    style={{ border: "none", outline: "none", fontSize: "14px", fontWeight: "600", color: "#1e293b", backgroundColor: "transparent", cursor: "pointer", minWidth: "170px" }}
+                    aria-label="Filter by payment type"
+                  >
+                    <option value="">Payment Type: All</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Partly Paid">Partly Paid</option>
+                    <option value="Unpaid">Unpaid</option>
+                  </select>
+                </div>
+
                 {/* Status Pills */}
                 <div className="approval-status-pills">
                   <button
@@ -1129,12 +1099,12 @@ function ManagerDashboard({ onLogout }) {
                 <table className="requests-table">
                   <thead>
                     <tr>
-                      <th>Employee Name</th>
-                      <th>Employee ID</th>
-                      <th>Leave Type</th>
-                      <th>Date Range</th>
-                      <th>Days</th>
-                      <th>Status</th>
+                      <th style={{ textAlign: "center" }}>Employee Name</th>
+                      <th style={{ textAlign: "center" }}>Employee ID</th>
+                      <th style={{ textAlign: "center" }}>Leave Type</th>
+                      <th style={{ textAlign: "center" }}>Date Range</th>
+                      <th style={{ textAlign: "center" }}>Days</th>
+                      <th style={{ textAlign: "center" }}>Status</th>
                       <th style={{ textAlign: "center" }}>Action</th>
                     </tr>
                   </thead>
@@ -1165,8 +1135,7 @@ function ManagerDashboard({ onLogout }) {
                               {request.id}
                             </span>
                           </td>
-                          {/* Leave Type column */}
-                          <td>
+                          {/* Leave Type column */}                           <td>
                             <div className="leave-type-cell">
                               <button
                                 className="info-icon-btn"
@@ -1179,6 +1148,53 @@ function ManagerDashboard({ onLogout }) {
                               <span className="leave-type-text">
                                 {request.type}
                               </span>
+                              
+                              {/* Payment Type Badge */}
+                              <div style={{ marginTop: "5px", display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+                                <span style={{
+                                  display: "inline-flex", alignItems: "center", gap: "4px",
+                                  backgroundColor:
+                                    request.payment_type === "Partly Paid" ? "#ffe4e6" :
+                                    request.payment_type === "Unpaid" ? "#fef2f2" : "#f0fdf4",
+                                  color:
+                                    request.payment_type === "Partly Paid" ? "#be123c" :
+                                    request.payment_type === "Unpaid" ? "#b91c1c" : "#15803d",
+                                  border: `1px solid ${
+                                    request.payment_type === "Partly Paid" ? "#fecaca" :
+                                    request.payment_type === "Unpaid" ? "#fecaca" : "#86efac"}`,
+                                  padding: "3px 9px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  letterSpacing: "0.02em",
+                                }}>
+                                  <span style={{
+                                    width: "6px", height: "6px", borderRadius: "50%",
+                                    background:
+                                      request.payment_type === "Partly Paid" ? "#e11d48" :
+                                      request.payment_type === "Unpaid" ? "#ef4444" : "#22c55e",
+                                    flexShrink: 0,
+                                    display: "inline-block"
+                                  }} />
+                                  {request.payment_type || "Paid"}
+                                </span>
+
+                                {(request.payment_type === "Partly Paid" || request.payment_type === "Unpaid") && (
+                                  <span style={{
+                                    display: "inline-flex", alignItems: "center", gap: "4px",
+                                    backgroundColor: "#fff1f2",
+                                    color: "#be123c",
+                                    border: "1px solid #fda4af",
+                                    padding: "3px 8px",
+                                    borderRadius: "6px",
+                                    fontSize: "11px",
+                                    fontWeight: "600",
+                                  }}>
+                                    <FaExclamationTriangle style={{ fontSize: "10px", flexShrink: 0 }} />
+                                    {request.payment_type === "Unpaid" ? "Fully Unpaid" : `${request.paid_days}P + ${request.unpaid_days}U`}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
                           {/* Date Range column */}
@@ -1189,9 +1205,14 @@ function ManagerDashboard({ onLogout }) {
                           </td>
                           {/* Days column */}
                           <td>
-                            <span className="days-label">
+                            <span className="days-label" style={{ display: "block" }}>
                               {request.leaveDays} {request.leaveDays === 1 ? "Day" : "Days"}
                             </span>
+                            {request.unpaid_days > 0 && (
+                              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
+                                ({request.paid_days} Paid + {request.unpaid_days} Unpaid)
+                              </span>
+                            )}
                           </td>
                           {/* Status column */}
                           <td>
@@ -1308,6 +1329,77 @@ function ManagerDashboard({ onLogout }) {
                       </button>
                     </div>
                     <div className="popup-card-body">
+                      {(selectedRequest.payment_type === "Partly Paid" || selectedRequest.payment_type === "Unpaid") && (
+                        <div style={{
+                          padding: "14px 16px",
+                          borderRadius: "10px",
+                          backgroundColor: "#fff1f2",
+                          border: "1.5px solid #fda4af",
+                          marginBottom: "18px",
+                          display: "flex", alignItems: "flex-start", gap: "12px"
+                        }}>
+                          <div style={{
+                            width: "34px", height: "34px", borderRadius: "8px", flexShrink: 0,
+                            backgroundColor: "#fecdd3",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            color: "#be123c",
+                            fontSize: "15px"
+                          }}>
+                            <FaExclamationTriangle />
+                          </div>
+                          <div>
+                            <div style={{
+                              fontWeight: "700", fontSize: "13px",
+                              color: "#be123c",
+                              marginBottom: "3px"
+                            }}>
+                              {selectedRequest.payment_type === "Unpaid" ? "Unpaid Leave" : "Partly Paid Leave"}
+                            </div>
+                            <div style={{ fontSize: "12.5px", color: "#64748b", lineHeight: "1.5" }}>
+                              {selectedRequest.alert_message || (
+                                selectedRequest.payment_type === "Unpaid"
+                                  ? "This leave is unpaid because the monthly paid leave limit has already been used."
+                                  : "This leave is partly unpaid because the monthly paid leave limit is exceeded."
+                              )}
+                            </div>
+                            {selectedRequest.unpaid_days > 0 && (
+                              <div style={{ marginTop: "8px", display: "flex", gap: "10px" }}>
+                                <span style={{ fontSize: "12px", fontWeight: "700", color: "#15803d", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "999px", padding: "2px 10px" }}>
+                                  ✓ {selectedRequest.paid_days ?? 0} Paid
+                                </span>
+                                <span style={{ fontSize: "12px", fontWeight: "700", color: "#b91c1c", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "999px", padding: "2px 10px" }}>
+                                  ✕ {selectedRequest.unpaid_days} Unpaid
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div style={{ marginBottom: "16px", display: "flex", gap: "16px", fontSize: "14px", alignItems: "center", flexWrap: "wrap" }}>
+                        <div><strong>Total Days:</strong> {selectedRequest.leaveDays || selectedRequest.total_days}</div>
+                        <div>
+                          <strong>Payment Type:</strong>{' '}
+                          <span style={{
+                            display: "inline-flex", alignItems: "center", gap: "4px",
+                            backgroundColor: selectedRequest.payment_type === "Partly Paid" ? "#ffe4e6" : selectedRequest.payment_type === "Unpaid" ? "#fef2f2" : "#f0fdf4",
+                            color: selectedRequest.payment_type === "Partly Paid" ? "#be123c" : selectedRequest.payment_type === "Unpaid" ? "#b91c1c" : "#15803d",
+                            border: `1px solid ${selectedRequest.payment_type === "Partly Paid" ? "#fecaca" : selectedRequest.payment_type === "Unpaid" ? "#fecaca" : "#86efac"}`,
+                            padding: "3px 10px",
+                            borderRadius: "999px",
+                            fontSize: "12px",
+                            fontWeight: "700"
+                          }}>
+                            <span style={{
+                              width: "6px", height: "6px", borderRadius: "50%",
+                              background: selectedRequest.payment_type === "Partly Paid" ? "#e11d48" : selectedRequest.payment_type === "Unpaid" ? "#ef4444" : "#22c55e",
+                              display: "inline-block", flexShrink: 0
+                            }} />
+                            {selectedRequest.payment_type || "Paid"}
+                          </span>
+                        </div>
+                      </div>
+
                       <p className="popup-desc-label">
                         <strong>Description:</strong>
                       </p>
@@ -1328,99 +1420,83 @@ function ManagerDashboard({ onLogout }) {
                 <h1>View Employee Report</h1>
               </div>
 
-              {/* Stats Cards */}
-              <div className="report-stats-grid">
-                {/* Card 1: Total Leave Balance */}
-                <div className="report-stats-card team-balance">
-                  <div className="report-card-header orange-bg">
-                    <FaCoins />
-                    <span>Total Leave Balance</span>
-                  </div>
-                  <div className="report-card-body">
-                    <div className="report-card-icon-wrap orange-tint">
-                      <FaCoins />
-                    </div>
-                    <div className="report-card-text">
-                      <span className="report-card-num">1,420</span>
-                      <span className="report-card-unit">Days</span>
-                    </div>
-                  </div>
-                </div>
+              {/* Stats Cards — 2 real-data cards */}
+              {(() => {
+                // Compute leave type breakdown from real leaveRequests (approved)
+                const approvedLeaves = leaveRequests.filter(r => r.status === "Approved");
+                const totalApproved = approvedLeaves.reduce((sum, r) => sum + (r.leaveDays || 0), 0);
+                const typeGroups = {};
+                approvedLeaves.forEach((r) => {
+                  const t = r.type || "Other";
+                  typeGroups[t] = (typeGroups[t] || 0) + (r.leaveDays || 0);
+                });
+                const typeBreakdown = Object.entries(typeGroups)
+                  .map(([label, days]) => ({
+                    label,
+                    days,
+                    pct: totalApproved > 0 ? Math.round((days / totalApproved) * 100) : 0,
+                  }))
+                  .sort((a, b) => b.days - a.days)
+                  .slice(0, 4);
 
-                {/* Card 2: Leave Type Breakdown */}
-                <div className="report-stats-card type-breakdown">
-                  <div className="report-card-header yellow-bg">
-                    <FaChartPie />
-                    <span>Leave Type Breakdown</span>
-                  </div>
-                  <div className="report-card-body flex-row">
-                    <div className="pie-chart-visual" />
-                    <div className="pie-chart-legend">
-                      <div className="legend-item">
-                        <span className="legend-dot sick" />
-                        <span>Sick (25%)</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot casual" />
-                        <span>Casual (35%)</span>
-                      </div>
-                      <div className="legend-item">
-                        <span className="legend-dot annual" />
-                        <span>Annual (40%)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                // Count employees that have at least one leave request that is Partly Paid or Unpaid
+                const unpaidAlertSet = new Set(
+                  leaveRequests
+                    .filter(r => r.payment_type === "Partly Paid" || r.payment_type === "Unpaid")
+                    .map(r => r.id)
+                );
+                const unpaidAlertCount = unpaidAlertSet.size;
 
-                {/* Card 3: Top Departmental Usage */}
-                <div className="report-stats-card dept-usage">
-                  <div className="report-card-header green-bg">
-                    <FaRegChartBar />
-                    <span>Top Departmental Usage</span>
-                  </div>
-                  <div className="report-card-body flex-row">
-                    <div className="report-card-icon-wrap green-tint">
-                      <FaRegChartBar />
-                    </div>
-                    <div className="dept-stats-list">
-                      <div className="dept-stat-row">
-                        <span className="dept-name">Sales</span>
-                        <span className="dept-value">(35 days avg)</span>
-                      </div>
-                      <div className="dept-stat-row">
-                        <span className="dept-name">R&D</span>
-                        <span className="dept-value">(28 days avg)</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                const DOT_COLORS = ["#4f46e5", "#0d9488", "#e11d48", "#ea580c"];
 
-                {/* Card 4: Leave Balance Alerts */}
-                <div
-                  className="report-stats-card balance-alerts clickable-stat-card"
-                  onClick={() => setShowLowBalanceAlert(true)}
-                  title="Click to view employees with low leave balance"
-                >
-                  <div className="report-card-header red-bg">
-                    <FaExclamationTriangle />
-                    <span>Leave Balance Alerts</span>
-                  </div>
-                  <div className="report-card-body">
-                    <div className="report-card-icon-wrap red-tint">
-                      <FaExclamationTriangle />
+                return (
+                  <div className="report-stats-grid">
+                    {/* Card 2: Leave Type Breakdown (dynamic) */}
+                    <div className="report-stats-card type-breakdown">
+                      <div className="report-card-header yellow-bg">
+                        <FaChartPie />
+                        <span>Leave Type Breakdown</span>
+                      </div>
+                      <div className="report-card-body flex-row">
+                        <div className="pie-chart-visual" />
+                        <div className="pie-chart-legend">
+                          {typeBreakdown.length === 0 ? (
+                            <span style={{ fontSize: "12px", color: "#64748b" }}>No approved leaves yet</span>
+                          ) : (
+                            typeBreakdown.map((item, idx) => (
+                              <div key={item.label} className="legend-item">
+                                <span className="legend-dot" style={{ backgroundColor: DOT_COLORS[idx % DOT_COLORS.length] }} />
+                                <span>{item.label} ({item.pct}%)</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="report-card-text">
-                      <span className="report-card-num">
-                        {
-                          employeesData.filter((e) => e.remainingBalance < 20)
-                            .length
-                        }
-                      </span>
-                      <span className="report-card-unit">Employees</span>
+
+                    {/* Card 4: Unpaid Leave Alerts (real count) */}
+                    <div
+                      className="report-stats-card balance-alerts clickable-stat-card"
+                      onClick={() => setShowLowBalanceAlert(true)}
+                      title="Click to view employees with unpaid leaves"
+                    >
+                      <div className="report-card-header red-bg">
+                        <FaExclamationTriangle />
+                        <span>Unpaid Leave Alerts</span>
+                      </div>
+                      <div className="report-card-body">
+                        <div className="report-card-icon-wrap red-tint">
+                          <FaExclamationTriangle />
+                        </div>
+                        <div className="report-card-text">
+                          <span className="report-card-num">{unpaidAlertCount}</span>
+                          <span className="report-card-unit">Employees</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Filters Bar */}
               <div className="report-filters-bar">
@@ -1495,7 +1571,7 @@ function ManagerDashboard({ onLogout }) {
                   <thead>
                     <tr>
                       <th>Employee Name</th>
-                      <th>Department</th>
+                      <th>Employee ID</th>
                       <th>Total Entitlement</th>
                       <th>Used Leaves</th>
                       <th>Remaining Balance</th>
@@ -1528,49 +1604,50 @@ function ManagerDashboard({ onLogout }) {
                           .split(" ")
                           .map((n) => n[0])
                           .join("");
+                        const hasUnpaidLeave = leaveRequests.some(
+                          (r) => r.id === emp.id && (r.payment_type === "Partly Paid" || r.payment_type === "Unpaid")
+                        );
+                        
+                        // Calculate actual leave stats dynamically from real leaves database
+                        const empLeaves = leaveRequests.filter(
+                          (r) => r.id === emp.id && r.status === "Approved"
+                        );
+                        const totalPaid = empLeaves.reduce((sum, r) => sum + (r.paid_days || 0), 0);
+                        const totalUnpaid = empLeaves.reduce((sum, r) => sum + (r.unpaid_days || 0), 0);
+                        const actualUsed = totalPaid + totalUnpaid;
+                        const actualRemaining = Math.max(0, ANNUAL_PAID_ALLOCATION - totalPaid);
+
                         return (
                           <tr
                             key={emp.id}
                             className={`report-row ${isSelected ? "selected-active-row" : ""}`}
+                            style={hasUnpaidLeave ? { backgroundColor: "#fff1f2", borderLeft: "3px solid #ef4444" } : {}}
                             onClick={() => setReportSelectedEmpId(emp.id)}
                           >
+                            <td>{emp.name}</td>
+                            <td>{emp.id}</td>
+                            <td>{ANNUAL_PAID_ALLOCATION} days</td>
                             <td>
-                              <div className="employee-info-cell">
-                                {emp.photo ? (
-                                  <img
-                                    src={emp.photo}
-                                    alt={emp.name}
-                                    className="employee-photo-circle"
-                                  />
-                                ) : (
-                                  <div
-                                    className="employee-initials-circle"
-                                    style={{ backgroundColor: initialsBg }}
-                                  >
-                                    {initials}
-                                  </div>
-                                )}
-                                <div className="employee-name-id">
-                                  <span className="employee-name-label">
-                                    {emp.name}
-                                  </span>
-                                  <span className="employee-id-label">
-                                    {emp.id}
-                                  </span>
+                              <div>{actualUsed} days</div>
+                              {totalUnpaid > 0 && (
+                                <div style={{ fontSize: "11px", color: "#dc2626", fontWeight: "600" }}>
+                                  ({totalPaid} Paid + {totalUnpaid} Unpaid)
                                 </div>
-                              </div>
+                              )}
                             </td>
-                            <td>{emp.department}</td>
-                            <td>{emp.totalEntitlement} days</td>
-                            <td>{emp.usedLeaves} days</td>
-                            <td>{emp.remainingBalance} days</td>
+                            <td>{actualRemaining} days</td>
                             <td>
                               <button
                                 type="button"
                                 className="report-action-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedEmpReport(emp);
+                                  setSelectedEmpReport({
+                                    ...emp,
+                                    totalEntitlement: ANNUAL_PAID_ALLOCATION,
+                                    usedLeaves: actualUsed,
+                                    remainingBalance: actualRemaining,
+                                  });
                                 }}
                               >
                                 <FaRegChartBar />
@@ -1585,7 +1662,7 @@ function ManagerDashboard({ onLogout }) {
                 </table>
               </div>
 
-              {/* Low Balance Alert Modal */}
+              {/* Unpaid Leave Alert Modal */}
               {showLowBalanceAlert && (
                 <div
                   className="popup-overlay"
@@ -1604,7 +1681,7 @@ function ManagerDashboard({ onLogout }) {
                           color: "#c0392b",
                         }}
                       >
-                        <FaExclamationTriangle /> Leave Balance Alerts
+                        <FaExclamationTriangle /> Unpaid Leave Alerts
                       </h3>
                       <button
                         className="close-popup-btn"
@@ -1615,18 +1692,17 @@ function ManagerDashboard({ onLogout }) {
                       </button>
                     </div>
                     <p className="low-balance-subtitle">
-                      Employees with remaining leave balance less than 20 days
+                      Employees with unpaid leave requests
                     </p>
                     <div className="low-balance-list">
-                      {employeesData.filter((e) => e.remainingBalance < 20)
-                        .length === 0 ? (
+                      {leaveRequests.filter((r) => r.unpaid_days > 0).length === 0 ? (
                         <p className="low-balance-empty">
-                          No employees with low leave balance.
+                          No employees with unpaid leave requests.
                         </p>
                       ) : (
-                        employeesData
-                          .filter((e) => e.remainingBalance < 20)
-                          .map((emp) => {
+                        leaveRequests
+                          .filter((r) => r.unpaid_days > 0)
+                          .map((req) => {
                             const bgColors = [
                               "#ff5722",
                               "#4f46e5",
@@ -1635,7 +1711,7 @@ function ManagerDashboard({ onLogout }) {
                               "#7c3aed",
                               "#2563eb",
                             ];
-                            const charSum = emp.name
+                            const charSum = req.name
                               .split("")
                               .reduce(
                                 (acc, char) => acc + char.charCodeAt(0),
@@ -1643,51 +1719,41 @@ function ManagerDashboard({ onLogout }) {
                               );
                             const initialsBg =
                               bgColors[charSum % bgColors.length];
-                            const initials = emp.name
+                            const initials = req.name
                               .split(" ")
                               .map((n) => n[0])
                               .join("");
-                            const urgency =
-                              emp.remainingBalance <= 5
-                                ? "critical"
-                                : emp.remainingBalance <= 10
-                                  ? "low"
-                                  : "moderate";
                             return (
                               <div
-                                key={emp.id}
-                                className={`low-balance-row low-balance-${urgency}`}
+                                key={req.dbId}
+                                className="low-balance-row low-balance-critical"
+                                style={{ borderLeft: "4px solid #ef4444" }}
                               >
                                 <div className="employee-info-cell">
-                                  {emp.photo ? (
-                                    <img
-                                      src={emp.photo}
-                                      alt={emp.name}
-                                      className="employee-photo-circle"
-                                    />
-                                  ) : (
-                                    <div
-                                      className="employee-initials-circle"
-                                      style={{ backgroundColor: initialsBg }}
-                                    >
-                                      {initials}
-                                    </div>
-                                  )}
+                                  <div
+                                    className="employee-initials-circle"
+                                    style={{ backgroundColor: initialsBg }}
+                                  >
+                                    {initials}
+                                  </div>
                                   <div className="employee-name-id">
                                     <span className="employee-name-label">
-                                      {emp.name}
+                                      {req.name}
                                     </span>
                                     <span className="employee-id-label">
-                                      {emp.id} &bull; {emp.department}
+                                      {req.id} &bull; {req.type}
+                                    </span>
+                                    <span style={{ fontSize: "11px", color: "#e11d48", fontWeight: "600", display: "block" }}>
+                                      {req.alert_message || "Leave request for unpaid leave"}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="low-balance-badge">
-                                  <span className="low-balance-days">
-                                    {emp.remainingBalance}
+                                  <span className="low-balance-days" style={{ color: "#ef4444" }}>
+                                    {req.unpaid_days}
                                   </span>
                                   <span className="low-balance-unit">
-                                    days left
+                                    unpaid days
                                   </span>
                                 </div>
                               </div>

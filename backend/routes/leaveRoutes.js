@@ -1,29 +1,67 @@
 const express = require("express");
 const db = require("../config/db");
+const { recalculateForEmployee, MONTHLY_PAID_LIMIT, ANNUAL_PAID_ALLOCATION } = require("../utils/recalculate");
 
 const router = express.Router();
 
-const TOTAL_LEAVE_DAYS = 36; // Annual leave allowance
-
-// Helper: calculate inclusive day count between two date values (Date objects or YYYY-MM-DD strings)
-function daysBetween(startVal, endVal) {
-  const toDateStr = (v) =>
-    v instanceof Date ? v.toISOString().substring(0, 10) : String(v).substring(0, 10);
-  const start = new Date(toDateStr(startVal));
-  const end = new Date(toDateStr(endVal));
-  return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+// ─── Shared helpers (kept for computePaidUnpaid during insert preview) ─────────
+function toMonthKey(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
+function buildMonthlyCounters(existingLeaves) {
+  const counters = {};
+  const sorted = [...existingLeaves].sort(
+    (a, b) => new Date(a.start_date) - new Date(b.start_date) || a.id - b.id
+  );
+  sorted.forEach((leave) => {
+    let curr = new Date(leave.start_date);
+    const end = new Date(leave.end_date);
+    while (curr <= end) {
+      const mk = toMonthKey(curr);
+      if (!counters[mk]) counters[mk] = 0;
+      if (counters[mk] < MONTHLY_PAID_LIMIT) counters[mk]++;
+      curr.setDate(curr.getDate() + 1);
+    }
+  });
+  return counters;
+}
+
+function computePaidUnpaid(startDate, endDate, counters) {
+  let paid = 0, unpaid = 0, total = 0;
+  let curr = new Date(startDate);
+  const end = new Date(endDate);
+  while (curr <= end) {
+    const mk = toMonthKey(curr);
+    if (!counters[mk]) counters[mk] = 0;
+    if (counters[mk] < MONTHLY_PAID_LIMIT) { paid++; counters[mk]++; } else { unpaid++; }
+    total++;
+    curr.setDate(curr.getDate() + 1);
+  }
+  return { paid, unpaid, total };
+}
+
+function resolvePaymentMeta(paid, unpaid) {
+  if (paid > 0 && unpaid === 0) return { payment_type: "Paid", alert_message: null };
+  if (paid > 0 && unpaid > 0) return {
+    payment_type: "Partly Paid",
+    alert_message: "This leave is partly unpaid because your monthly paid leave limit is exceeded.",
+  };
+  return {
+    payment_type: "Unpaid",
+    alert_message: "This leave is unpaid because your monthly paid leave limit has already been used.",
+  };
+}
+
+// ─── POST /apply ───────────────────────────────────────────────────────────────
 router.post("/apply", (req, res) => {
   const { employee_id, leave_type, start_date, end_date, reason } = req.body;
-
-  console.log("Leave data received:", req.body);
 
   if (!employee_id || !leave_type || !start_date || !end_date || !reason) {
     return res.status(400).json({ success: false, message: "All fields are required." });
   }
 
-  // Step 1: Check for overlapping leaves (Pending or Approved)
+  // Step 1: overlap check
   const overlapSql = `
     SELECT id FROM leave_requests
     WHERE employee_id = ?
@@ -32,174 +70,182 @@ router.post("/apply", (req, res) => {
       AND ? >= start_date
     LIMIT 1
   `;
-
   db.query(overlapSql, [employee_id, start_date, end_date], (overlapErr, overlapResult) => {
-    if (overlapErr) {
-      console.error("Overlap check error:", overlapErr);
-      return res.status(500).json({ success: false, message: "Server error during overlap check." });
-    }
-
+    if (overlapErr) return res.status(500).json({ success: false, message: "Server error during overlap check." });
     if (overlapResult.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: "You already have a leave request for these dates.",
-      });
+      return res.status(400).json({ success: false, message: "You already have a leave request for these dates." });
     }
 
-    // Step 2: Calculate used (Approved) leave days to check balance
-    const balanceSql = `
-      SELECT start_date, end_date FROM leave_requests
-      WHERE employee_id = ?
-        AND status = 'Approved'
+    // Step 2: fetch existing Approved/Pending leaves for this employee
+    const existingSql = `
+      SELECT id, start_date, end_date FROM leave_requests
+      WHERE employee_id = ? AND status IN ('Approved', 'Pending')
+      ORDER BY start_date ASC, id ASC
     `;
+    db.query(existingSql, [employee_id], (balErr, existingLeaves) => {
+      if (balErr) return res.status(500).json({ success: false, message: "Server error fetching existing leaves." });
 
-    db.query(balanceSql, [employee_id], (balErr, approvedLeaves) => {
-      if (balErr) {
-        console.error("Balance check error:", balErr);
-        return res.status(500).json({ success: false, message: "Server error during balance check." });
-      }
+      // Step 3: compute preview paid/unpaid for the new request
+      const counters = buildMonthlyCounters(existingLeaves);
+      const { paid, unpaid, total } = computePaidUnpaid(start_date, end_date, counters);
+      const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid);
 
-      const usedDays = approvedLeaves.reduce((total, leave) => {
-        return total + daysBetween(leave.start_date, leave.end_date);
-      }, 0);
-
-      const remaining = TOTAL_LEAVE_DAYS - usedDays;
-      const requested = daysBetween(start_date, end_date);
-
-      if (requested > remaining) {
-        const dayStr = remaining === 1 ? "day" : "days";
-        return res.status(400).json({
-          success: false,
-          message: `You have only ${remaining} ${dayStr} remaining. Please apply leave within your allocated leave limit.`,
-        });
-      }
-
-      // Step 3: All checks passed — insert leave request
-      const sql = `
-        INSERT INTO leave_requests 
-        (employee_id, leave_type, start_date, end_date, reason, status)
-        VALUES (?, ?, ?, ?, ?, 'Pending')
+      // Step 4: insert
+      const insertSql = `
+        INSERT INTO leave_requests
+        (employee_id, leave_type, start_date, end_date, reason, status,
+         total_days, paid_days, unpaid_days, payment_type, alert_message)
+        VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?)
       `;
+      db.query(
+        insertSql,
+        [employee_id, leave_type, start_date, end_date, reason, total, paid, unpaid, payment_type, alert_message],
+        (insertErr, result) => {
+          if (insertErr) {
+            console.error("Apply leave error:", insertErr);
+            return res.status(500).json({ success: false, message: insertErr.message });
+          }
 
-      db.query(sql, [employee_id, leave_type, start_date, end_date, reason], (err, result) => {
-        if (err) {
-          console.error("Apply leave error:", err);
-          return res.status(500).json({ success: false, message: err.message });
+          // Step 5: recalculate ALL leaves for this employee to ensure consistency
+          recalculateForEmployee(employee_id, db, (recalcErr) => {
+            if (recalcErr) console.error("Recalculate after apply error:", recalcErr);
+
+            res.json({
+              success: true,
+              message: "Leave applied successfully",
+              leaveId: result.insertId,
+              total_days: total,
+              paid_days: paid,
+              unpaid_days: unpaid,
+              payment_type,
+              alert_message,
+            });
+          });
         }
-
-        res.json({
-          success: true,
-          message: "Leave applied successfully",
-          leaveId: result.insertId,
-        });
-      });
+      );
     });
   });
 });
 
+// ─── GET /history/:employeeId ──────────────────────────────────────────────────
 router.get("/history/:employeeId", (req, res) => {
-  const employeeId = req.params.employeeId;
+  const { employeeId } = req.params;
 
   const sql = `
     SELECT
       id,
       leave_type,
       DATE_FORMAT(start_date, '%d-%m-%Y') AS start_date,
-      DATE_FORMAT(end_date, '%d-%m-%Y') AS end_date,
-      DATEDIFF(end_date, start_date) + 1 AS leave_days,
+      DATE_FORMAT(end_date,   '%d-%m-%Y') AS end_date,
+      DATEDIFF(end_date, start_date) + 1  AS leave_days,
+      total_days,
+      paid_days,
+      unpaid_days,
+      payment_type,
+      alert_message,
       reason,
       status
     FROM leave_requests
     WHERE employee_id = ?
     ORDER BY applied_at DESC
   `;
-
   db.query(sql, [employeeId], (err, result) => {
     if (err) {
       console.error("Fetch leave history error:", err);
       return res.status(500).json({ success: false, error: err.message });
     }
-
     res.json({ success: true, leaves: result });
   });
 });
 
-// Cancel leave request
+// ─── PUT /cancel/:id ───────────────────────────────────────────────────────────
 router.put("/cancel/:id", (req, res) => {
-  const leaveId = req.params.id;
+  const { id } = req.params;
 
-  const sql = `
-    UPDATE leave_requests 
-    SET status = 'Cancelled' 
-    WHERE id = ? AND status = 'Pending'
-  `;
-
-  db.query(sql, [leaveId], (err, result) => {
-    if (err) {
-      console.error("Cancel leave error:", err);
-      return res.status(500).json({ success: false, error: err.message });
+  // First get the employee_id so we can recalculate after cancelling
+  db.query("SELECT employee_id FROM leave_requests WHERE id = ?", [id], (fetchErr, fetchResult) => {
+    if (fetchErr) return res.status(500).json({ success: false, error: fetchErr.message });
+    if (!fetchResult || fetchResult.length === 0) {
+      return res.status(404).json({ success: false, message: "Leave request not found." });
     }
 
-    if (result.affectedRows === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Leave request cannot be cancelled because it is not pending or does not exist.",
-      });
-    }
+    const employeeId = fetchResult[0].employee_id;
 
-    res.json({ success: true, message: "Leave cancelled successfully" });
+    db.query(
+      "UPDATE leave_requests SET status = 'Cancelled' WHERE id = ? AND status = 'Pending'",
+      [id],
+      (err, result) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (result.affectedRows === 0) {
+          return res.status(400).json({
+            success: false,
+            message: "Leave request cannot be cancelled because it is not pending or does not exist.",
+          });
+        }
+
+        // Recalculate all remaining leaves for this employee — freed paid slots may upgrade other leaves
+        recalculateForEmployee(employeeId, db, (recalcErr) => {
+          if (recalcErr) console.error("Recalculate after cancel error:", recalcErr);
+          res.json({ success: true, message: "Leave cancelled successfully" });
+        });
+      }
+    );
   });
 });
 
-// Get leave summary statistics for an employee
+// ─── GET /summary/:employeeId ─────────────────────────────────────────────────
 router.get("/summary/:employeeId", (req, res) => {
-  const employeeId = req.params.employeeId;
+  const { employeeId } = req.params;
 
   const sql = `
-    SELECT status, DATEDIFF(end_date, start_date) + 1 AS leave_days FROM leave_requests
+    SELECT id, status, start_date, end_date,
+           total_days, paid_days, unpaid_days, payment_type
+    FROM leave_requests
     WHERE employee_id = ?
   `;
-
   db.query(sql, [employeeId], (err, results) => {
-    if (err) {
-      console.error("Fetch leave summary error:", err);
-      return res.status(500).json({ success: false, error: err.message });
-    }
+    if (err) return res.status(500).json({ success: false, error: err.message });
 
-    let leavesTaken = 0;
-    let pendingRequests = 0;
-    let approvedRequests = 0;
-    let rejectedRequests = 0;
-    let cancelledRequests = 0;
+    const currentYear = new Date().getFullYear();
+    let totalPaidTakenThisYear = 0;
+    let totalUnpaidTakenThisYear = 0;
+    let pending = 0, approved = 0, rejected = 0, cancelled = 0;
 
     results.forEach((leave) => {
       const status = leave.status.toLowerCase();
-      const leave_days = leave.leave_days || 0;
-      if (status === "pending") {
-        pendingRequests++;
-      } else if (status === "approved") {
-        approvedRequests++;
-        leavesTaken += leave_days;
-      } else if (status === "rejected") {
-        rejectedRequests++;
-      } else if (status === "cancelled") {
-        cancelledRequests++;
+      const startYear = new Date(leave.start_date).getFullYear();
+
+      if (status === "pending")   pending++;
+      else if (status === "approved") {
+        approved++;
+        if (startYear === currentYear) {
+          totalPaidTakenThisYear   += leave.paid_days   || 0;
+          totalUnpaidTakenThisYear += leave.unpaid_days || 0;
+        }
       }
+      else if (status === "rejected")  rejected++;
+      else if (status === "cancelled") cancelled++;
     });
 
-    const remaining = TOTAL_LEAVE_DAYS - leavesTaken;
+    const totalAllowed = ANNUAL_PAID_ALLOCATION;
+    const remaining   = Math.max(0, totalAllowed - totalPaidTakenThisYear);
 
     res.json({
       success: true,
       summary: {
-        totalAllowed: TOTAL_LEAVE_DAYS,
-        leavesTaken,
+        totalAllowed,
+        paidLeaveAllowedPerMonth: MONTHLY_PAID_LIMIT,
+        leavesTaken: totalPaidTakenThisYear,
+        totalPaidTakenThisYear,
+        totalUnpaidTakenThisYear,
         remaining,
-        pendingRequests,
-        approvedRequests,
-        rejectedRequests,
-        cancelledRequests,
+        pendingRequests:   pending,
+        approvedRequests:  approved,
+        rejectedRequests:  rejected,
+        cancelledRequests: cancelled,
+        totalRequests:     results.length,
       },
+      leaves: results,
     });
   });
 });
