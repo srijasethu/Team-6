@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+const MONTHLY_PAID_LIMIT = 3;
+const ANNUAL_PAID_ALLOCATION = 36;
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -25,6 +27,7 @@ import {
   FaSuitcase,
   FaTimes,
   FaUser,
+  FaInfoCircle,
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
 
@@ -220,8 +223,10 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const [leaveType, setLeaveType] = useState("Personal Leave");
   const [reason, setReason] = useState("");
   const [charCount, setCharCount] = useState(0);
-  const [balance, setBalance] = useState({ total: 36, remaining: 36 });
+  const [balance, setBalance] = useState({ total: ANNUAL_PAID_ALLOCATION, remaining: ANNUAL_PAID_ALLOCATION });
+  const [existingLeaves, setExistingLeaves] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, type: null, paid: 0, unpaid: 0 });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -229,14 +234,88 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
 
   const isFlexibleLeave = leaveType === "Medical Leave" || leaveType === "Personal Leave";
-  const fromMinDate = isFlexibleLeave ? startOfCurrentMonth : today;
+  // Medical & Personal: can go back to start of current month, no future cap
+  // All other leave types: current month + next month only
+  const fromMinDate = startOfCurrentMonth;
   const fromMaxDate = isFlexibleLeave ? null : endOfNextMonth;
   const toMinDate = fromDate ? fromDate : fromMinDate;
   const toMaxDate = isFlexibleLeave ? null : endOfNextMonth;
 
-  const leaveDays = calcLeaveDays(fromDate, toDate);
-  const exceedsBalance = leaveDays > balance.remaining;
-  const canSubmit = fromDate && toDate && reason.trim() && !exceedsBalance && !submitting;
+  const calculatePreview = (from, to) => {
+    if (!from || !to) return { total: 0, paid: 0, unpaid: 0 };
+    
+    const parseLocal = (dVal) => {
+      if (!dVal) return null;
+      const d = new Date(dVal);
+      if (isNaN(d.getTime())) return null;
+      if (typeof dVal === 'string') {
+        const parts = dVal.split('T')[0].split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          } else if (parts[2].length === 4) {
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          }
+        }
+      }
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+
+    const toYYYYMM = (d) => {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0');
+    };
+
+    const toYYYYMMDD = (d) => {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+    };
+
+    const approvedOrPendingDaysByMonth = {};
+    existingLeaves.forEach((leave) => {
+      const status = leave.status.toLowerCase();
+      if (status !== "approved" && status !== "pending") return;
+
+      let curr = parseLocal(leave.start_date);
+      const end = parseLocal(leave.end_date);
+      if (!curr || !end) return;
+
+      while (curr <= end) {
+        const monthKey = toYYYYMM(curr);
+        if (!approvedOrPendingDaysByMonth[monthKey]) {
+          approvedOrPendingDaysByMonth[monthKey] = new Set();
+        }
+        approvedOrPendingDaysByMonth[monthKey].add(toYYYYMMDD(curr));
+        curr.setDate(curr.getDate() + 1);
+      }
+    });
+
+    let paid = 0;
+    let unpaid = 0;
+    let total = 0;
+
+    let curr = parseLocal(from);
+    const end = parseLocal(to);
+    while (curr <= end) {
+      const monthKey = toYYYYMM(curr);
+      if (!approvedOrPendingDaysByMonth[monthKey]) {
+        approvedOrPendingDaysByMonth[monthKey] = new Set();
+      }
+      const dateStr = toYYYYMMDD(curr);
+      const countInMonth = approvedOrPendingDaysByMonth[monthKey].size;
+      if (countInMonth < MONTHLY_PAID_LIMIT) {
+        paid++;
+        approvedOrPendingDaysByMonth[monthKey].add(dateStr);
+      } else {
+        unpaid++;
+      }
+      total++;
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    return { total, paid, unpaid };
+  };
+
+  const preview = calculatePreview(fromDate, toDate);
+  const canSubmit = fromDate && toDate && reason.trim() && !submitting;
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -249,6 +328,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
             total: d.summary.totalAllowed,
             remaining: d.summary.remaining,
           });
+          setExistingLeaves(d.leaves || []);
         }
       })
       .catch(() => {});
@@ -264,13 +344,11 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setCharCount(0);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-
+  // The actual API call — invoked either directly (Paid) or after modal confirmation
+  const doSubmit = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) { alert("User not found. Please login again."); return; }
-
+    setConfirmModal({ show: false, type: null, paid: 0, unpaid: 0 });
     setSubmitting(true);
     try {
       const response = await fetch("http://localhost:5000/api/leave/apply", {
@@ -300,6 +378,18 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    const paid = preview.paid;
+    const unpaid = preview.unpaid;
+    // Paid → submit directly, no popup needed
+    if (unpaid === 0) { doSubmit(); return; }
+    // Partly Paid or Unpaid → show styled modal
+    const type = paid > 0 ? "partly" : "unpaid";
+    setConfirmModal({ show: true, type, paid, unpaid });
+  };
+
   return (
     <div className="leave-content">
       <form className="new-leave-form" onSubmit={handleSubmit}>
@@ -326,7 +416,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               <div className="balance-card-text">
                 <span className="balance-card-label">Available Balance</span>
                 <span className="balance-card-days">{balance.remaining} Days</span>
-                <span className="balance-card-total">out of {balance.total} Days</span>
+                <span className="balance-card-total">out of {balance.total} Paid Days</span>
               </div>
             </div>
           </div>
@@ -437,17 +527,12 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
           </div>
         </div>
 
-        {leaveDays > 0 && (
-          <div className={`leave-days-summary ${exceedsBalance ? "exceeds" : ""}` }>
-            <span className="leave-days-count">
-              {leaveDays} {leaveDays === 1 ? "Day" : "Days"} Selected
-            </span>
-            {exceedsBalance && (
-              <span className="leave-days-warning">
-                <FaExclamationTriangle />
-                Requested leave exceeds your available balance.
-              </span>
-            )}
+        {preview.total > 0 && (
+          <div className="leave-days-summary" style={{ padding: "16px", borderRadius: "10px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", marginTop: "20px" }}>
+            <div className="preview-row" style={{ display: "flex", justifyContent: "space-between", margin: "4px 0", fontSize: "15px", fontWeight: "600", color: "#1e293b" }}>
+              <span>Selected Leave:</span>
+              <span>{preview.total} {preview.total === 1 ? "Day" : "Days"}</span>
+            </div>
           </div>
         )}
 
@@ -490,6 +575,124 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
           Please ensure all details are correct before applying. You can track your leave status in Leave Summary.
         </div>
       </form>
+
+      {/* ── Confirmation Modal ──────────────────────────────────── */}
+      {confirmModal.show && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.50)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            maxWidth: "440px", width: "90%",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.20)",
+            fontFamily: "'Poppins', sans-serif",
+            overflow: "hidden",
+            borderLeft: "5px solid #dc2626"
+          }}>
+
+            {/* Header strip */}
+            <div style={{
+              padding: "22px 28px 18px",
+              background: "linear-gradient(135deg, #fff1f2 0%, #fff 100%)",
+              borderBottom: "1px solid #fecaca"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{
+                  width: "42px", height: "42px", borderRadius: "10px",
+                  background: "#fecaca",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#b91c1c",
+                  fontSize: "18px", flexShrink: 0
+                }}>
+                  <FaExclamationTriangle />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#b91c1c" }}>
+                    {confirmModal.type === "partly" ? "Partly Paid Leave" : "Unpaid Leave"}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#ef4444", fontWeight: "500", marginTop: "2px" }}>
+                    {confirmModal.type === "unpaid"
+                      ? "This leave will not reduce your paid balance"
+                      : "This leave is partially unpaid"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: "22px 28px" }}>
+              {confirmModal.type === "partly" ? (
+                <div style={{ color: "#475569", fontSize: "14px", lineHeight: "1.7", marginBottom: "20px" }}>
+                  <p style={{ margin: "0 0 14px", color: "#334155" }}>Your selected dates span across the <strong>{MONTHLY_PAID_LIMIT}-day monthly paid leave limit</strong>.</p>
+                  <div style={{
+                    background: "#f8fafc", borderRadius: "10px",
+                    padding: "14px 18px", marginBottom: "14px",
+                    border: "1px solid #e2e8f0",
+                    display: "flex", justifyContent: "space-around"
+                  }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "22px", fontWeight: "800", color: "#16a34a" }}>{confirmModal.paid}</div>
+                      <div style={{ fontSize: "12px", color: "#16a34a", fontWeight: "600" }}>Paid day(s)</div>
+                    </div>
+                    <div style={{ width: "1px", background: "#e2e8f0" }} />
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "22px", fontWeight: "800", color: "#dc2626" }}>{confirmModal.unpaid}</div>
+                      <div style={{ fontSize: "12px", color: "#dc2626", fontWeight: "600" }}>Unpaid day(s)</div>
+                    </div>
+                  </div>
+                  <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
+                    The unpaid days are beyond your monthly paid leave limit of {MONTHLY_PAID_LIMIT} days.
+                  </p>
+                  <p style={{ margin: "10px 0 0", fontWeight: "700", color: "#1e293b", fontSize: "13px" }}>Are you sure you want to apply this leave?</p>
+                </div>
+              ) : (
+                <div style={{ color: "#475569", fontSize: "14px", lineHeight: "1.7", marginBottom: "20px" }}>
+                  <p style={{ margin: "0 0 10px", fontWeight: "600", color: "#b91c1c" }}>
+                    Your monthly paid leave limit has already been fully used.
+                  </p>
+                  <p style={{ margin: "0 0 10px", color: "#64748b", fontSize: "13px" }}>
+                    This leave will be marked as <strong>Unpaid</strong> and will not reduce your yearly paid leave balance.
+                  </p>
+                  <p style={{ margin: 0, fontWeight: "700", color: "#1e293b", fontSize: "13px" }}>Are you sure you want to apply this leave?</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal({ show: false, type: null, paid: 0, unpaid: 0 })}
+                  style={{
+                    padding: "10px 22px", borderRadius: "8px", border: "1.5px solid #cbd5e1",
+                    background: "#ffffff", color: "#475569", fontFamily: "inherit",
+                    fontSize: "14px", fontWeight: "600", cursor: "pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={doSubmit}
+                  disabled={submitting}
+                  style={{
+                    padding: "10px 22px", borderRadius: "8px", border: "none",
+                    background: "#dc2626",
+                    color: "#ffffff", fontFamily: "inherit",
+                    fontSize: "14px", fontWeight: "700",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    opacity: submitting ? 0.7 : 1
+                  }}
+                >
+                  {submitting ? "Submitting..." : "Apply Anyway"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -509,7 +712,7 @@ function ProfileView({
   handleProfilePhotoChange,
   handleProfilePhotoRemove,
 }) {
-  const [stats, setStats] = useState({ total: 36, taken: 0, pending: 0, approved: 0 });
+  const [stats, setStats] = useState({ total: ANNUAL_PAID_ALLOCATION, taken: 0, pending: 0, approved: 0 });
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
@@ -632,7 +835,7 @@ function ProfileView({
         <div className="ps-item">
           <div className="ps-icon ps-blue"><FaRegCalendarAlt /></div>
           <div>
-            <div className="ps-num">{stats.total}</div>
+            <div className="ps-num">{stats.total} Days</div>
             <div className="ps-label">Total Leave<br/>Allowed</div>
           </div>
         </div>
@@ -640,16 +843,16 @@ function ProfileView({
         <div className="ps-item">
           <div className="ps-icon ps-green"><FaCheck /></div>
           <div>
-            <div className="ps-num">{stats.taken}</div>
+            <div className="ps-num">{stats.taken} Days</div>
             <div className="ps-label">Leaves<br/>Taken</div>
           </div>
         </div>
         <div className="ps-divider" />
         <div className="ps-item">
-          <div className="ps-icon ps-orange"><FaRegClock /></div>
+          <div className="ps-icon ps-orange"><FaRegChartBar /></div>
           <div>
-            <div className="ps-num">{stats.pending}</div>
-            <div className="ps-label">Pending<br/>Requests</div>
+            <div className="ps-num">{Math.max(0, stats.total - stats.taken)} Days</div>
+            <div className="ps-label">Total Balance<br/>Leave</div>
           </div>
         </div>
         <div className="ps-divider" />
@@ -671,9 +874,16 @@ function LeaveSummaryView() {
     rejected: 0,
     pending: 0,
     cancelled: 0,
-    totalTaken: 0,
-    remaining: 36,
+    totalPaidTakenThisYear: 0,
+    totalUnpaidTakenThisYear: 0,
+    remainingPaid: ANNUAL_PAID_ALLOCATION,
+    totalRequests: 0
   });
+  const [allLeaves, setAllLeaves] = useState([]);
+  
+  const todayDate = new Date();
+  const [currentYear, setCurrentYear] = useState(todayDate.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth()); // 0-indexed
 
   useEffect(() => {
     fetchLeaveSummary();
@@ -681,151 +891,368 @@ function LeaveSummaryView() {
 
   const fetchLeaveSummary = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
-
     if (!user) return;
-
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/leave/summary/${user.id}`
-      );
-
+      const response = await fetch(`http://localhost:5000/api/leave/summary/${user.id}`);
       const data = await response.json();
-
       if (data.success) {
         setSummary({
           approved: data.summary.approvedRequests,
           rejected: data.summary.rejectedRequests,
           pending: data.summary.pendingRequests,
           cancelled: data.summary.cancelledRequests,
-          totalTaken: data.summary.leavesTaken,
-          remaining: data.summary.remaining,
+          totalPaidTakenThisYear: data.summary.totalPaidTakenThisYear,
+          totalUnpaidTakenThisYear: data.summary.totalUnpaidTakenThisYear,
+          remainingPaid: data.summary.remaining,
+          totalRequests: data.summary.totalRequests,
         });
+        setAllLeaves(data.leaves || []);
       }
     } catch (error) {
       console.error("Fetch leave summary error:", error);
     }
   };
 
+  const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const getMonthlyLeaveDaysDetail = () => {
+    const parseLocal = (dVal) => {
+      if (!dVal) return null;
+      const d = new Date(dVal);
+      if (isNaN(d.getTime())) return null;
+      if (typeof dVal === 'string') {
+        const parts = dVal.split('T')[0].split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          } else if (parts[2].length === 4) {
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          }
+        }
+      }
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+
+    const days = [];
+    allLeaves.forEach((leave) => {
+      if (leave.status.toLowerCase() !== "approved") return;
+      
+      let curr = parseLocal(leave.start_date);
+      const end = parseLocal(leave.end_date);
+      if (!curr || !end) return;
+
+      while (curr <= end) {
+        if (curr.getFullYear() === currentYear && curr.getMonth() === currentMonth) {
+          days.push(new Date(curr));
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+    });
+
+    days.sort((a, b) => a - b);
+
+    const detail = {};
+    let paidCount = 0;
+    let unpaidCount = 0;
+
+    days.forEach((d, idx) => {
+      const dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+      if (idx < MONTHLY_PAID_LIMIT) {
+        detail[dateStr] = "Paid";
+        paidCount++;
+      } else {
+        detail[dateStr] = "Unpaid";
+        unpaidCount++;
+      }
+    });
+
+    return { detail, paidCount, unpaidCount, totalCount: days.length };
+  };
+
+  const { detail: leaveDaysDetail, paidCount, unpaidCount, totalCount } = getMonthlyLeaveDaysDetail();
+
+  const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+  const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const prevMonthTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+  
+  const cells = [];
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    cells.push({
+      day: prevMonthTotalDays - i,
+      isCurrentMonth: false,
+      date: new Date(currentYear, currentMonth - 1, prevMonthTotalDays - i)
+    });
+  }
+  for (let i = 1; i <= totalDays; i++) {
+    cells.push({
+      day: i,
+      isCurrentMonth: true,
+      date: new Date(currentYear, currentMonth, i)
+    });
+  }
+  const totalCells = cells.length;
+  const remainingCells = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let i = 1; i <= remainingCells; i++) {
+    cells.push({
+      day: i,
+      isCurrentMonth: false,
+      date: new Date(currentYear, currentMonth + 1, i)
+    });
+  }
+
   return (
     <div className="leave-content">
       <div className="leave-summary-header">
         <h1>Leave Summary</h1>
-        <p>Overview of your leave balance and requests</p>
+        <p>Overview of your leave balance, usage and requests</p>
       </div>
 
       <div className="leave-summary">
-        <div className="summary-cards">
-          <div className="card">
-            <div className="card-head">
-              <div className="card-icon">
-                <FaRegCalendarAlt />
-              </div>
-              <strong>Total Allowed</strong>
+        {/* Top 5 Summary Cards */}
+        <div className="summary-cards" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "24px" }}>
+          <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", marginBottom: "8px" }}>
+              <div className="card-icon" style={{ backgroundColor: "#eff6ff", padding: "6px", borderRadius: "8px" }}><FaRegCalendarAlt /></div>
+              <strong style={{ fontSize: "12px", fontWeight: "600" }}>Paid Leave Allowed Per Month</strong>
             </div>
-            <div className="value">36 Days</div>
-            <div className="muted">Annual leave allocation</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{MONTHLY_PAID_LIMIT} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Maximum paid leave every month</div>
           </div>
-          <div className="card">
-            <div className="card-head">
-              <div className="card-icon orange">
-                <FaCheck />
-              </div>
-              <strong>Leaves Taken</strong>
+          
+          <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", marginBottom: "8px" }}>
+              <div className="card-icon" style={{ backgroundColor: "#f0fdf4", padding: "6px", borderRadius: "8px" }}><FaRegCalendarAlt /></div>
+              <strong style={{ fontSize: "12px", fontWeight: "600" }}>Annual Allocated Leave (Paid)</strong>
             </div>
-            <div className="value">{summary.totalTaken} Days</div>
-            <div className="muted">Already used</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{ANNUAL_PAID_ALLOCATION} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Total paid leave allocated for this year</div>
           </div>
-          <div className="card">
-            <div className="card-head">
-              <div className="card-icon green">
-                <FaRegChartBar />
-              </div>
-              <strong>Remaining</strong>
+
+          <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", marginBottom: "8px" }}>
+              <div className="card-icon" style={{ backgroundColor: "#fff7ed", padding: "6px", borderRadius: "8px" }}><FaCheck /></div>
+              <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Paid Leave Taken (This Year)</strong>
             </div>
-            <div className="value">{summary.remaining} Days</div>
-            <div className="muted">Available balance</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.totalPaidTakenThisYear} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Includes all approved paid leaves</div>
           </div>
-          <div className="card">
-            <div className="card-head">
-              <div className="card-icon purple">
-                <FaRegCalendarAlt />
-              </div>
-              <strong>Pending Requests</strong>
+
+          <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#0d9488", marginBottom: "8px" }}>
+              <div className="card-icon" style={{ backgroundColor: "#f0fdfa", padding: "6px", borderRadius: "8px" }}><FaRegChartBar /></div>
+              <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Balance Leave (Paid Yearly)</strong>
             </div>
-            <div className="value">{summary.pending}</div>
-            <div className="muted">Awaiting approval</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.remainingPaid} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>{ANNUAL_PAID_ALLOCATION} - {summary.totalPaidTakenThisYear} = {summary.remainingPaid} days remaining</div>
+          </div>
+
+          <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7c3aed", marginBottom: "8px" }}>
+              <div className="card-icon" style={{ backgroundColor: "#f5f3ff", padding: "6px", borderRadius: "8px" }}><FaRegClock /></div>
+              <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Unpaid Leave (This Year)</strong>
+            </div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.totalUnpaidTakenThisYear} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Days taken beyond paid limit</div>
           </div>
         </div>
 
-        <div className="summary-list">
-          <div className="summary-item">
-            <div className="left">
-              <div className="icon-wrap approved">
+        {/* Calendar-style Monthly Display and Side Summary */}
+        <div className="calendar-section" style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "24px", marginBottom: "24px", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", backgroundColor: "#ffffff" }}>
+          
+          <div className="calendar-container">
+            <div className="calendar-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ color: "#2563eb" }}><FaRegCalendarAlt /></span>
+                <span style={{ fontSize: "15px", fontWeight: "700", color: "#1e293b" }}>Leave Usage Calendar (This Month)</span>
+              </div>
+              <div className="calendar-nav-controls" style={{ display: "flex", alignItems: "center", gap: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "4px 12px" }}>
+                <button onClick={handlePrevMonth} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748b" }}><FaArrowLeft /></button>
+                <span style={{ fontWeight: "700", color: "#1e293b", minWidth: "100px", textAlign: "center" }}>{MONTHS[currentMonth]} {currentYear}</span>
+                <button onClick={handleNextMonth} style={{ border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", color: "#64748b" }}><FaArrowRight /></button>
+              </div>
+            </div>
+
+            {/* Calendar Legend */}
+            <div className="calendar-legend" style={{ display: "flex", gap: "16px", marginBottom: "16px", fontSize: "12px", fontWeight: "600", color: "#64748b" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#16a34a" }} />
+                <span>Paid Leave (Within {MONTHLY_PAID_LIMIT} days)</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ef4444" }} />
+                <span>Unpaid Leave (Beyond {MONTHLY_PAID_LIMIT} days)</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#94a3b8" }} />
+                <span>No Leave Taken</span>
+              </div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="calendar-grid" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px" }}>
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div key={day} style={{ textAlign: "center", fontWeight: "700", color: "#475569", fontSize: "13px", padding: "8px 0" }}>{day}</div>
+              ))}
+              {cells.map((cell, index) => {
+                const dateStr = cell.date.getFullYear() + "-" + String(cell.date.getMonth() + 1).padStart(2, '0') + "-" + String(cell.date.getDate()).padStart(2, '0');
+                const leaveStatus = cell.isCurrentMonth ? leaveDaysDetail[dateStr] : null;
+                const isToday = cell.date.toDateString() === new Date().toDateString();
+                
+                return (
+                  <div 
+                    key={index} 
+                    style={{ 
+                      position: "relative",
+                      height: "54px", 
+                      border: leaveStatus === "Paid" ? "1px solid #bbf7d0" : leaveStatus === "Unpaid" ? "1px solid #fecaca" : (isToday ? "2px solid #2563eb" : "1px solid #e2e8f0"), 
+                      borderRadius: "8px", 
+                      padding: "8px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      backgroundColor: leaveStatus === "Paid" ? "#f0fdf4" : leaveStatus === "Unpaid" ? "#fef2f2" : (cell.isCurrentMonth ? "#ffffff" : "#f8fafc"),
+                      opacity: cell.isCurrentMonth ? 1 : 0.4
+                    }}
+                  >
+                    <span style={{ fontSize: "14px", fontWeight: "700", color: leaveStatus === "Paid" ? "#16a34a" : leaveStatus === "Unpaid" ? "#dc2626" : (cell.isCurrentMonth ? "#1e293b" : "#94a3b8") }}>{cell.day}</span>
+                    {leaveStatus === "Paid" && (
+                      <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#16a34a", alignSelf: "center" }} />
+                    )}
+                    {leaveStatus === "Unpaid" && (
+                      <span style={{ display: "inline-block", width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#ef4444", alignSelf: "center" }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Side Monthly Summary Panel */}
+          <div className="calendar-side-summary" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div>
+              <h4 style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b", marginBottom: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+                This Month Summary ({MONTHS[currentMonth]} {currentYear})
+              </h4>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+                  <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#16a34a" }} />
+                  <span>Paid Leave Used</span>
+                </div>
+                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{paidCount} Days</strong>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+                  <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ef4444" }} />
+                  <span>Unpaid Leave Used</span>
+                </div>
+                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{unpaidCount} {unpaidCount === 1 ? "Day" : "Days"}</strong>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+                  <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#3b82f6" }} />
+                  <span>Total Leave Used</span>
+                </div>
+                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{totalCount} {totalCount === 1 ? "Day" : "Days"}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px", backgroundColor: "#eff6ff", color: "#2563eb", borderRadius: "8px", fontSize: "12px", fontWeight: "600", marginTop: "16px" }}>
+              <FaInfoCircle />
+              <span>Monthly paid leave limit: {MONTHLY_PAID_LIMIT} Days</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Request Summary (All Time) at the bottom */}
+        <div style={{ marginTop: "24px" }}>
+          <h3 style={{ fontSize: "15px", fontWeight: "700", color: "#1e293b", marginBottom: "16px" }}>Request Summary (All Time)</h3>
+          
+          <div className="summary-cards" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "24px" }}>
+            <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+              <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", marginBottom: "8px" }}>
                 <FaCheck />
+                <strong style={{ fontSize: "12px", fontWeight: "600" }}>Approved Requests</strong>
               </div>
-              <div className="labels">
-                <strong>Approved Requests</strong>
-              </div>
+              <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#16a34a" }}>{summary.approved}</div>
+              <div className="muted" style={{ fontSize: "11px", color: "#16a34a", opacity: 0.8 }}>Total approved leaves</div>
             </div>
-            <div className="right">
-              <div className="count">{summary.approved}</div>
-              <span className="badge approved">Approved</span>
-            </div>
-          </div>
 
-          <div className="summary-item">
-            <div className="left">
-              <div className="icon-wrap rejected">
+            <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+              <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#dc2626", marginBottom: "8px" }}>
                 <FaTimes />
+                <strong style={{ fontSize: "12px", fontWeight: "600" }}>Rejected Requests</strong>
               </div>
-              <div className="labels">
-                <strong>Rejected Requests</strong>
-              </div>
+              <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#dc2626" }}>{summary.rejected}</div>
+              <div className="muted" style={{ fontSize: "11px", color: "#dc2626", opacity: 0.8 }}>Total rejected requests</div>
             </div>
-            <div className="right">
-              <div className="count">{summary.rejected}</div>
-              <span className="badge rejected">Rejected</span>
-            </div>
-          </div>
 
-          <div className="summary-item">
-            <div className="left">
-              <div className="icon-wrap pending">
+            <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#fff7ed", border: "1px solid #ffedd5" }}>
+              <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#ea580c", marginBottom: "8px" }}>
                 <FaRegClock />
+                <strong style={{ fontSize: "12px", fontWeight: "600" }}>Pending Requests</strong>
               </div>
-              <div className="labels">
-                <strong>Pending Requests</strong>
-              </div>
+              <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#ea580c" }}>{summary.pending}</div>
+              <div className="muted" style={{ fontSize: "11px", color: "#ea580c", opacity: 0.8 }}>Awaiting approval</div>
             </div>
-            <div className="right">
-              <div className="count">{summary.pending}</div>
-              <span className="badge pending">Pending</span>
-            </div>
-          </div>
 
-          <div className="summary-item">
-            <div className="left">
-              <div className="icon-wrap cancelled">
+            <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#faf5ff", border: "1px solid #f3e8ff" }}>
+              <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7c3aed", marginBottom: "8px" }}>
                 <FaTimes />
+                <strong style={{ fontSize: "12px", fontWeight: "600" }}>Cancelled Requests</strong>
               </div>
-              <div className="labels">
-                <strong>Cancelled Requests</strong>
-              </div>
+              <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#7c3aed" }}>{summary.cancelled}</div>
+              <div className="muted" style={{ fontSize: "11px", color: "#7c3aed", opacity: 0.8 }}>Total cancelled requests</div>
             </div>
-            <div className="right">
-              <div className="count">{summary.cancelled}</div>
-              <span className="badge cancelled">Cancelled</span>
+
+            <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#eff6ff", border: "1px solid #bfdbfe" }}>
+              <div className="card-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#2563eb", marginBottom: "8px" }}>
+                <FaFileAlt />
+                <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Requests</strong>
+              </div>
+              <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#2563eb" }}>{summary.totalRequests}</div>
+              <div className="muted" style={{ fontSize: "11px", color: "#2563eb", opacity: 0.8 }}>All time requests</div>
             </div>
           </div>
+        </div>
+
+        {/* Notice Section */}
+        <div className="apply-leave-notice" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 18px", borderRadius: "10px", backgroundColor: "#fffbeb", border: "1px solid #fef3c7", color: "#d97706", fontSize: "13px", fontWeight: "500", marginTop: "16px" }}>
+          <span>💡</span>
+          <strong>Note:</strong> If you take more than {MONTHLY_PAID_LIMIT} days of leave in a month, the extra days will be marked as unpaid leave.
         </div>
       </div>
     </div>
   );
 }
 
-function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
+function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedRange, setSelectedRange] = useState("all");
+  const [selectedPaymentType, setSelectedPaymentType] = useState("all");
   const [leaveHistory, setLeaveHistory] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -836,23 +1263,15 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatus, selectedRange, leaveHistory, itemsPerPage]);
+  }, [selectedStatus, selectedRange, selectedPaymentType, leaveHistory, itemsPerPage]);
 
   const fetchLeaveHistory = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
-
     if (!user) return;
-
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/leave/history/${user.id}`
-      );
-
+      const response = await fetch(`http://localhost:5000/api/leave/history/${user.id}`);
       const data = await response.json();
-
-      if (data.success) {
-        setLeaveHistory(data.leaves);
-      }
+      if (data.success) setLeaveHistory(data.leaves);
     } catch (error) {
       console.error("Fetch leave history error:", error);
     }
@@ -861,7 +1280,6 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
   const handleCancelClick = async (leaveId) => {
     const confirmCancel = window.confirm("Are you sure you want to cancel this leave request?");
     if (!confirmCancel) return;
-
     try {
       const response = await fetch(`http://localhost:5000/api/leaves/cancel/${leaveId}`, {
         method: "PUT",
@@ -869,7 +1287,10 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
       const data = await response.json();
       if (data.success) {
         alert("Leave cancelled successfully");
+        // Re-fetch history (other leaves may have been recalculated)
         fetchLeaveHistory();
+        // Also bubble up so parent can refresh balance / summary
+        if (onRefresh) onRefresh();
       } else {
         alert(data.message || "Failed to cancel leave");
       }
@@ -884,6 +1305,14 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
     const statusMatches = selectedStatus === "all" || status === selectedStatus;
 
     if (!statusMatches) return false;
+
+    // Filter by payment type
+    const paymentType = leave.payment_type || "Paid";
+    const paymentTypeMatches =
+      selectedPaymentType === "all" ||
+      paymentType.toLowerCase() === selectedPaymentType.toLowerCase();
+
+    if (!paymentTypeMatches) return false;
 
     if (selectedRange === "all") return true;
 
@@ -984,6 +1413,46 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
     return <span className={`status-pill ${lower}`}>{status}</span>;
   };
 
+  const getPaymentTypeBadge = (leave) => {
+    const paymentType = leave.payment_type || "Paid";
+    const paid = leave.paid_days ?? leave.leave_days ?? 0;
+    const unpaid = leave.unpaid_days ?? 0;
+
+    let style = {
+      backgroundColor: "#f0fdf4",
+      color: "#16a34a",
+      border: "1px solid #bbf7d0",
+      padding: "4px 8px",
+      borderRadius: "6px",
+      fontSize: "12px",
+      fontWeight: "600",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "fit-content"
+    };
+    let text = `${paid} Paid`;
+
+    if (paymentType === "Partly Paid") {
+      style.backgroundColor = "#ffe4e6";
+      style.color = "#be123c";
+      style.border = "1px solid #fecaca";
+      text = `${paid} Paid + ${unpaid} Unpaid`;
+    } else if (paymentType === "Unpaid") {
+      style.backgroundColor = "#fef2f2";
+      style.color = "#dc2626";
+      style.border = "1px solid #fecaca";
+      text = `${unpaid} Unpaid`;
+    }
+
+    return (
+      <div style={{ display: "inline-flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" }}>
+        <span style={style}>{paymentType}</span>
+        <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "500" }}>{text}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="leave-content">
       <div className="leave-history-header-card">
@@ -1009,6 +1478,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
         </button>
 
         <div className="leave-filters-group">
+          {/* Status Filter */}
           <div className="filter-select-wrap">
             <select
               aria-label="Filter leave status"
@@ -1024,6 +1494,22 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
             <FaChevronDown className="filter-select-chevron" />
           </div>
 
+          {/* Payment Type Filter */}
+          <div className="filter-select-wrap">
+            <select
+              aria-label="Filter payment type"
+              value={selectedPaymentType}
+              onChange={(e) => setSelectedPaymentType(e.target.value)}
+            >
+              <option value="all">Payment Type: All</option>
+              <option value="Paid">Paid</option>
+              <option value="Partly Paid">Partly Paid</option>
+              <option value="Unpaid">Unpaid</option>
+            </select>
+            <FaChevronDown className="filter-select-chevron" />
+          </div>
+
+          {/* Date Range Filter */}
           <div className="filter-select-wrap date-range-filter">
             <FaRegCalendarAlt className="filter-select-calendar-icon" />
             <select
@@ -1049,6 +1535,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
               <th>From</th>
               <th>To</th>
               <th>Days</th>
+              <th>Payment</th>
               <th>Reason</th>
               <th>Status</th>
               <th>Action</th>
@@ -1057,7 +1544,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
           <tbody>
             {pagedRows.length === 0 ? (
               <tr>
-                <td colSpan="8" className="no-data-td">No leave history found</td>
+                <td colSpan="9" className="no-data-td">No leave history found</td>
               </tr>
             ) : (
               pagedRows.map((leave, index) => (
@@ -1089,6 +1576,9 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey }) {
                     <span className="days-highlight-blue">
                       {leave.leave_days} {leave.leave_days === 1 ? 'Day' : 'Days'}
                     </span>
+                  </td>
+                  <td>
+                    {getPaymentTypeBadge(leave)}
                   </td>
                   <td className="reason-td-cell">{leave.reason}</td>
                   <td>{getStatusBadge(leave.status)}</td>
@@ -1446,6 +1936,7 @@ function EmployeeDashboard({ onLogout }) {
             <LeaveHistoryView
               onNewLeaveClick={() => setActiveView("newLeave")}
               refreshKey={leaveRefreshKey}
+              onRefresh={() => setLeaveRefreshKey((prev) => prev + 1)}
             />
           )}
           {activeView === "newLeave" && (

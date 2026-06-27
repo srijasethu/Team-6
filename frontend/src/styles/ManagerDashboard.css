@@ -395,7 +395,7 @@
 .profile-title-icon {
   width: 30px;
   height: 30px;
-  color: #0a70e7;
+  color: #f25c05;
   flex-shrink: 0;
 }
 
@@ -418,6 +418,152 @@
 
 .profile-content .section-title::after {
   display: none;
+}
+
+/* Profile subtitle */
+.profile-subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* ── Profile Hero Card ─────────────────────────────── */
+.profile-hero-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #ffffff;
+  border: 1.5px solid #f1e4dc;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin: 20px 0 20px;
+  box-shadow: 0 4px 20px rgba(242, 92, 5, 0.05);
+}
+
+.profile-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+/* Read-only avatar wrapper — no edit overlay */
+.avatar-wrapper-ro {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 8px 28px rgba(242, 92, 5, 0.18);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.avatar-wrapper-ro .manager-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-name {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0d121f;
+}
+
+/* ── Role Card (right side of hero) ─────────────────── */
+.profile-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #fff7f0 0%, #fff 100%);
+  border: 1.5px solid #ffd4b8;
+  border-radius: 14px;
+  padding: 22px 32px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.role-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f36e22, #ff9a56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.role-shield-icon {
+  width: 26px;
+  height: 26px;
+  color: #ffffff;
+}
+
+.role-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.role-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f25c05;
+}
+
+/* ── Read-only info cards ─────────────────────────── */
+.info-card-ro {
+  cursor: default !important;
+  pointer-events: none;
+}
+
+.info-card-ro:hover {
+  border-color: #f1e4dc !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ── Office card with skyline decoration ────────────── */
+.office-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 90px;
+}
+
+.skyline-deco {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  max-width: 55%;
+  opacity: 0.12;
+  color: #f25c05;
+  fill: currentColor;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ── Scroll-triggered orange glow ──────────────────── */
+@keyframes orangeGlow {
+  0%   { box-shadow: 0 0 0 rgba(242, 92, 5, 0); }
+  60%  { box-shadow: 0 4px 32px rgba(242, 92, 5, 0.18), 0 0 0 3px rgba(242, 92, 5, 0.06); }
+  100% { box-shadow: 0 4px 24px rgba(242, 92, 5, 0.12), 0 0 0 2px rgba(242, 92, 5, 0.04); }
+}
+
+.profile-hero-card.in-view,
+.info-card-ro.in-view {
+  animation: orangeGlow 0.7s ease-out forwards;
+  border-color: rgba(242, 92, 5, 0.22) !important;
 }
 
 .profile-hero {
@@ -1227,7 +1373,7 @@
 /* Stats Cards */
 .report-stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-bottom: 28px;
 }
@@ -1680,10 +1826,16 @@
 @media (max-width: 900px) {
   .report-filters-bar { flex-direction: column; align-items: stretch; }
   .toggle-history-btn { margin-left: 0; justify-content: center; }
+  .profile-hero-card { flex-direction: column; align-items: flex-start; padding: 22px 20px; }
+  .profile-role-card { width: 100%; flex-direction: row; justify-content: center; gap: 16px; padding: 16px 24px; }
 }
 
 @media (max-width: 600px) {
   .report-stats-grid { grid-template-columns: 1fr; }
+  .profile-hero-left { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .avatar-wrapper-ro { width: 88px; height: 88px; }
+  .profile-name { font-size: 20px; }
+  .skyline-deco { max-width: 70%; opacity: 0.08; }
 }
 
 /* ============================================
