@@ -10,6 +10,26 @@ router.get("/test", (req, res) => {
   res.json({ message: "Profile routes working" });
 });
 
+// ── GET /get/:id ─────────────────────────────────────────────────────────────
+router.get("/get/:id", (req, res) => {
+  const userId = req.params.id;
+  const sql = `
+    SELECT
+      id, name, email, role, employee_id,
+      department, phone,
+      DATE_FORMAT(joining_date, '%Y-%m-%d') AS joining_date,
+      designation, profile_photo, gender
+    FROM users
+    WHERE id = ?
+  `;
+  db.query(sql, [userId], (err, result) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (!result || result.length === 0)
+      return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, user: result[0] });
+  });
+});
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -131,7 +151,8 @@ router.put("/update/:id", (req, res) => {
           phone,
           DATE_FORMAT(joining_date, '%Y-%m-%d') AS joining_date,
           designation,
-          profile_photo
+          profile_photo,
+          gender
         FROM users
         WHERE id = ?
       `;

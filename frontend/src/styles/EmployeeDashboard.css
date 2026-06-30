@@ -1103,10 +1103,21 @@
   padding: 12px 0 8px !important;
 }
 
-.react-datepicker__current-month,
-.react-datepicker__day-name {
+.react-datepicker__current-month {
   color: #fff !important;
   font-weight: 700 !important;
+}
+
+.react-datepicker__day-names {
+  background: #ffffff !important;
+  padding: 8px 0 4px !important;
+  border-bottom: 1px solid #e8eff8 !important;
+}
+
+.react-datepicker__day-name {
+  color: #586077 !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
 }
 
 .react-datepicker__month-select,
@@ -1135,11 +1146,6 @@
   background: #ffffff !important;
   color: #071022 !important;
   font-weight: 500 !important;
-}
-
-.react-datepicker__day-name {
-  font-size: 12px !important;
-  font-weight: 600 !important;
 }
 
 .react-datepicker__navigation-icon::before {
@@ -2587,5 +2593,109 @@
     justify-content: space-between;
     flex-wrap: wrap;
     margin-top: 10px;
+  }
+}
+
+/* ============================================
+   ADDITIONAL RESPONSIVENESS OVERRIDES
+   ============================================ */
+
+/* Transform Sidebar into horizontal Top Nav Bar on smaller screens */
+@media (max-width: 768px) {
+  .employee-dashboard .dashboard-shell {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .employee-dashboard .sidebar {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    padding: 12px 18px !important;
+    gap: 12px !important;
+    border-radius: 12px !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+  
+  .employee-dashboard .sidebar::before,
+  .employee-dashboard .sidebar::after,
+  .employee-dashboard .sidebar-dot-grid {
+    display: none !important;
+  }
+  
+  .employee-dashboard .brand {
+    margin-bottom: 0 !important;
+    gap: 8px !important;
+  }
+  
+  .employee-dashboard .nav-list {
+    flex-direction: row !important;
+    display: flex !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+  
+  .employee-dashboard .nav-item {
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+    justify-content: center !important;
+  }
+  
+  .employee-dashboard .logout {
+    margin-top: 0 !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+    align-self: center !important;
+  }
+}
+
+/* On very narrow screens, hide text labels and only show icons to fit */
+@media (max-width: 560px) {
+  .employee-dashboard .brand-text {
+    display: none !important;
+  }
+  
+  .employee-dashboard .nav-item span,
+  .employee-dashboard .logout span {
+    display: none !important;
+  }
+  
+  .employee-dashboard .nav-item svg,
+  .employee-dashboard .logout svg {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+  
+  .employee-dashboard .nav-list {
+    justify-content: flex-end !important;
+  }
+  
+  .employee-dashboard .leave-summary .summary-cards {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+/* Tablet view grid adjustments */
+@media (min-width: 561px) and (max-width: 980px) {
+  .employee-dashboard .leave-summary .summary-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+}
+
+/* Modals responsiveness */
+@media (max-width: 600px) {
+  .employee-dashboard .new-leave-form {
+    padding: 16px !important;
+  }
+  .employee-dashboard .apply-leave-header-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
 }

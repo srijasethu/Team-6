@@ -2720,3 +2720,209 @@
   color: #64748b;
   margin-top: 2px;
 }
+
+/* ============================================
+   HOLIDAY CALENDAR VIEW
+   ============================================ */
+.holiday-calendar-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding-top: 18px;
+}
+
+.holiday-calendar-content .section-title::after {
+  display: none;
+}
+
+.add-holiday-btn {
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.add-holiday-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.add-holiday-btn:active {
+  transform: translateY(0);
+}
+
+.manager-calendar-grid div:hover {
+  filter: brightness(0.97);
+}
+
+.manager-calendar-grid {
+  user-select: none;
+}
+
+.details-card button:hover {
+  filter: brightness(0.95);
+}
+
+/* ============================================
+   ADDITIONAL RESPONSIVENESS OVERRIDES
+   ============================================ */
+
+/* Transform Sidebar into horizontal Top Nav Bar on smaller screens */
+@media (max-width: 768px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .sidebar {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    padding: 12px 18px !important;
+    gap: 12px !important;
+    border-radius: 12px !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .sidebar::before,
+  .sidebar::after,
+  .sidebar-dot-grid {
+    display: none !important;
+  }
+
+  .sidebar .brand {
+    margin-bottom: 0 !important;
+    gap: 8px !important;
+  }
+
+  .nav-list {
+    flex-direction: row !important;
+    display: flex !important;
+    gap: 6px !important;
+    flex: 1 !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+
+  .nav-item {
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    gap: 6px !important;
+  }
+
+  .logout {
+    margin-top: 0 !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+    align-self: center !important;
+  }
+
+  /* Profile panel padding reduction */
+  .profile-panel {
+    padding: 20px 16px !important;
+  }
+
+  /* Profile hero card stacking */
+  .profile-hero-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 20px 18px !important;
+  }
+
+  .profile-role-card {
+    width: 100% !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    padding: 14px 18px !important;
+  }
+
+  /* Info grid 2 columns on tablet */
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Make tables responsive with horizontal scrolling wrappers */
+  .requests-table-section,
+  .report-table-section {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .requests-table,
+  .report-table {
+    min-width: 750px !important;
+  }
+
+  /* Stats grid on tablet */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* On very narrow screens, hide text labels and only show icons to fit */
+@media (max-width: 560px) {
+  .brand-text {
+    display: none !important;
+  }
+
+  .nav-item span,
+  .logout span {
+    display: none !important;
+  }
+
+  .nav-item svg,
+  .logout svg {
+    width: 20px !important;
+    height: 20px !important;
+    margin: 0 !important;
+  }
+
+  .nav-list {
+    justify-content: flex-end !important;
+    flex: 1 !important;
+  }
+
+  /* Info grid single column on mobile */
+  .info-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Stats single column */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Profile hero left stacked */
+  .profile-hero-left {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+}
+
+/* Modal and Detail Views Adjustments */
+@media (max-width: 480px) {
+  .report-modal-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-filters-bar {
+    padding: 12px !important;
+  }
+
+  .action-modal-card {
+    padding: 20px 16px !important;
+  }
+
+  .popup-modal-actions {
+    flex-direction: column !important;
+  }
+
+  .modal-reject-action-btn,
+  .modal-approve-action-btn {
+    width: 100% !important;
+  }
+}
+

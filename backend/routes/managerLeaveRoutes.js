@@ -17,6 +17,8 @@ router.get("/leaves", (req, res) => {
       DATE_FORMAT(lr.end_date, '%d-%m-%Y') AS end_date,
       DATEDIFF(lr.end_date, lr.start_date) + 1 AS leave_days,
       lr.total_days,
+      lr.excluded_days,
+      lr.actual_leave_days,
       lr.paid_days,
       lr.unpaid_days,
       lr.payment_type,
