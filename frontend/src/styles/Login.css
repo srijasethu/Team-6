@@ -508,6 +508,30 @@ body {
    RESPONSIVE — Mobile ≤480px
    ════════════════════════════════ */
 @media (max-width: 480px) {
+  .login-container {
+    padding: 16px 12px !important;
+  }
+  
+  .login-split-card {
+    width: 100% !important;
+  }
+
+  .login-left-panel {
+    padding: 24px 20px 18px !important;
+  }
+
+  .welcome-message-block h2 {
+    font-size: 26px !important;
+  }
+
+  .login-right-panel {
+    padding: 28px 18px 32px !important;
+  }
+
+  .login-main-title {
+    font-size: 28px !important;
+  }
+
   .role-cards-container {
     grid-template-columns: 1fr;
     gap: 12px;

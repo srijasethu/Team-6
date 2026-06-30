@@ -13,13 +13,37 @@
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
 
+// Leave types that are fully paid and independent of the monthly paid leave limit
+const INDEPENDENT_PAID_TYPES = ["Maternity Leave", "Paternity Leave"];
+
 function toMonthKey(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-function resolvePaymentMeta(paid, unpaid) {
-  if (paid > 0 && unpaid === 0) {
+function resolvePaymentMeta(paid, unpaid, leaveType) {
+  if (leaveType === "Maternity Leave") {
+    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
+    return {
+      payment_type: "Partly Paid",
+      alert_message: `First 182 days are treated as Paid Maternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
+    };
+  }
+  if (leaveType === "Paternity Leave") {
+    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
+    return {
+      payment_type: "Partly Paid",
+      alert_message: `First 15 days are treated as Paid Paternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
+    };
+  }
+
+  if (paid === 0 && unpaid === 0) {
     return { payment_type: "Paid", alert_message: null };
+  }
+  if (paid > 0 && unpaid === 0) {
+    return {
+      payment_type: "Paid",
+      alert_message: null,
+    };
   }
   if (paid > 0 && unpaid > 0) {
     return {
@@ -45,7 +69,7 @@ function resolvePaymentMeta(paid, unpaid) {
 function recalculateForEmployee(employeeId, db, callback) {
   // 1. Fetch all Pending + Approved leaves sorted chronologically
   const fetchSql = `
-    SELECT id, start_date, end_date
+    SELECT id, start_date, end_date, leave_type
     FROM leave_requests
     WHERE employee_id = ?
       AND status IN ('Pending', 'Approved')
@@ -56,58 +80,109 @@ function recalculateForEmployee(employeeId, db, callback) {
     if (fetchErr) return callback(fetchErr);
     if (!leaves || leaves.length === 0) return callback(null);
 
-    // 2. Walk each leave in chronological order, tracking monthly paid usage
-    const monthlyUsed = {}; // { 'YYYY-MM': numberOfPaidDaysAllocatedSoFar }
-
-    const updates = leaves.map((leave) => {
-      let paid = 0;
-      let unpaid = 0;
-
-      let curr = new Date(leave.start_date);
-      const end = new Date(leave.end_date);
-
-      while (curr <= end) {
-        const mk = toMonthKey(curr);
-        if (!monthlyUsed[mk]) monthlyUsed[mk] = 0;
-
-        if (monthlyUsed[mk] < MONTHLY_PAID_LIMIT) {
-          paid++;
-          monthlyUsed[mk]++;
-        } else {
-          unpaid++;
-        }
-        curr.setDate(curr.getDate() + 1);
+    // Fetch all holidays from database to integrate data
+    const holidaysSql = "SELECT DATE_FORMAT(holiday_date, '%Y-%m-%d') AS holiday_date FROM company_holidays";
+    db.query(holidaysSql, (holidaysErr, holidayRows) => {
+      const holidayDates = new Set();
+      if (!holidaysErr && holidayRows) {
+        holidayRows.forEach(row => {
+          holidayDates.add(row.holiday_date);
+        });
       }
 
-      const total = paid + unpaid;
-      const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid);
+      const monthlyUsed = {}; // { 'YYYY-MM': numberOfPaidDaysAllocatedSoFar }
 
-      return { id: leave.id, paid, unpaid, total, payment_type, alert_message };
-    });
+      const updates = leaves.map((leave) => {
+        let paid = 0;
+        let unpaid = 0;
+        let total_calendar = 0;
+        let excluded = 0;
+        let actual_leave = 0;
+        let workingDayCount = 0;
 
-    // 3. Bulk-update each leave in the DB
-    let remaining = updates.length;
-    let firstErr = null;
+        const isIndependentPaid = INDEPENDENT_PAID_TYPES.includes(leave.leave_type);
+        const maxPaidDays = leave.leave_type === "Maternity Leave" ? 182 : (leave.leave_type === "Paternity Leave" ? 15 : 0);
 
-    updates.forEach((u) => {
-      const updateSql = `
-        UPDATE leave_requests
-        SET paid_days    = ?,
-            unpaid_days  = ?,
-            total_days   = ?,
-            payment_type = ?,
-            alert_message = ?
-        WHERE id = ?
-      `;
-      db.query(
-        updateSql,
-        [u.paid, u.unpaid, u.total, u.payment_type, u.alert_message, u.id],
-        (updateErr) => {
-          if (updateErr && !firstErr) firstErr = updateErr;
-          remaining--;
-          if (remaining === 0) callback(firstErr);
+        let curr = new Date(leave.start_date);
+        const end = new Date(leave.end_date);
+
+        while (curr <= end) {
+          total_calendar++;
+          const yyyy = curr.getFullYear();
+          const mm = String(curr.getMonth() + 1).padStart(2, "0");
+          const dd = String(curr.getDate()).padStart(2, "0");
+          const dateStr = `${yyyy}-${mm}-${dd}`;
+
+          const isSunday = curr.getDay() === 0;
+          const isHoliday = holidayDates.has(dateStr);
+
+          if (isSunday || isHoliday) {
+            excluded++;
+          } else {
+            actual_leave++;
+            const mk = toMonthKey(curr);
+            if (!monthlyUsed[mk]) monthlyUsed[mk] = 0;
+
+            if (isIndependentPaid) {
+              workingDayCount++;
+              if (workingDayCount <= maxPaidDays) {
+                paid++;
+              } else {
+                unpaid++;
+              }
+            } else {
+              // Personal/Medical: counted against monthly paid leave limit
+              if (monthlyUsed[mk] < MONTHLY_PAID_LIMIT) {
+                paid++;
+                monthlyUsed[mk]++;
+              } else {
+                unpaid++;
+              }
+            }
+          }
+          curr.setDate(curr.getDate() + 1);
         }
-      );
+
+        const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave.leave_type);
+
+        return { 
+          id: leave.id, 
+          paid, 
+          unpaid, 
+          total: total_calendar, 
+          excluded, 
+          actual_leave, 
+          payment_type, 
+          alert_message 
+        };
+      });
+
+      // 3. Bulk-update each leave in the DB
+      let remaining = updates.length;
+      let firstErr = null;
+
+      updates.forEach((u) => {
+        const updateSql = `
+          UPDATE leave_requests
+          SET paid_days         = ?,
+              unpaid_days       = ?,
+              total_days        = ?,
+              excluded_days     = ?,
+              actual_leave_days = ?,
+              payment_type      = ?,
+              alert_message     = ?
+          WHERE id = ?
+        `;
+        db.query(
+          updateSql,
+          [u.paid, u.unpaid, u.total, u.excluded, u.actual_leave, u.payment_type, u.alert_message, u.id],
+          (updateErr) => {
+            if (updateErr && !firstErr) firstErr = updateErr;
+            remaining--;
+            if (remaining === 0) callback(firstErr);
+          }
+        );
+      });
     });
   });
 }
