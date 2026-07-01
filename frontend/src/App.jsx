@@ -3,6 +3,10 @@ import EmployeeDashboard from "./pages/EmployeeDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import Login from "./pages/Login";
 
+// Apply saved theme immediately to prevent flash
+const savedTheme = localStorage.getItem("appTheme") || "light";
+document.documentElement.setAttribute("data-theme", savedTheme);
+
 function App() {
   const [activePage, setActivePage] = useState(() => {
     return localStorage.getItem("activePage") || "login";

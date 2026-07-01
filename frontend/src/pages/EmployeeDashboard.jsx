@@ -1849,38 +1849,38 @@ function LeaveSummaryView() {
           </div>
 
           {/* Side Monthly Summary Panel */}
-          <div className="calendar-side-summary" style={{ backgroundColor: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+          <div className="calendar-side-summary">
             <div>
-              <h4 style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b", marginBottom: "16px", borderBottom: "1px solid #e2e8f0", paddingBottom: "8px" }}>
+              <h4>
                 This Month Summary ({MONTHS[currentMonth]} {currentYear})
               </h4>
               
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+              <div className="summary-row">
+                <div className="summary-row-label">
                   <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#16a34a" }} />
                   <span>Paid Leave Used</span>
                 </div>
-                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{paidCount} Days</strong>
+                <strong className="summary-row-value">{paidCount} Days</strong>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+              <div className="summary-row">
+                <div className="summary-row-label">
                   <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ef4444" }} />
                   <span>Unpaid Leave Used</span>
                 </div>
-                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{unpaidCount} {unpaidCount === 1 ? "Day" : "Days"}</strong>
+                <strong className="summary-row-value">{unpaidCount} {unpaidCount === 1 ? "Day" : "Days"}</strong>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", backgroundColor: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#64748b", fontSize: "13px", fontWeight: "600" }}>
+              <div className="summary-row">
+                <div className="summary-row-label">
                   <span style={{ display: "inline-block", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#3b82f6" }} />
                   <span>Total Leave Used</span>
                 </div>
-                <strong style={{ fontSize: "14px", fontWeight: "700", color: "#1e293b" }}>{totalCount} {totalCount === 1 ? "Day" : "Days"}</strong>
+                <strong className="summary-row-value">{totalCount} {totalCount === 1 ? "Day" : "Days"}</strong>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px", backgroundColor: "#eff6ff", color: "#2563eb", borderRadius: "8px", fontSize: "12px", fontWeight: "600", marginTop: "16px" }}>
+            <div className="monthly-limit-alert">
               <FaInfoCircle />
               <span>Monthly paid leave limit: {MONTHLY_PAID_LIMIT} Days</span>
             </div>
@@ -2519,6 +2519,21 @@ function EmployeeDashboard({ onLogout }) {
     localStorage.setItem("employeeActiveView", activeView);
   }, [activeView]);
 
+  // ── Theme ────────────────────────────────────────────────
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem("appTheme") === "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      isDark ? "dark" : "light"
+    );
+    localStorage.setItem("appTheme", isDark ? "dark" : "light");
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark((prev) => !prev);
+
   const [isEditing, setIsEditing] = useState(false);
   const [leaveRefreshKey, setLeaveRefreshKey] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -2730,6 +2745,14 @@ function EmployeeDashboard({ onLogout }) {
               <span className="brand-title-main">Employee</span>
               <span className="brand-title-sub">Dashboard</span>
             </div>
+            <button
+              className="theme-toggle-emoji-btn"
+              type="button"
+              onClick={toggleTheme}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDark ? "🌞" : "🌙"}
+            </button>
           </div>
 
           <nav className="nav-list">

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
 import {
@@ -34,8 +34,10 @@ import {
   FaPlus,
   FaArrowLeft,
   FaArrowRight,
+  FaFilePdf,
 } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
+import { jsPDF } from "jspdf";
 import arunKumarAvatar from "../assets/arun_kumar.png";
 import defaultManagerAvatar from "../assets/default_manager_avatar.png";
 import aaravPatelAvatar from "../assets/aarav_patel.png";
@@ -46,12 +48,171 @@ import "../styles/ManagerDashboard.css";
 
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
-  return new Date(dateString).toLocaleDateString("en-IN", {
+  return new Date(dateString).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   });
 };
+
+const formatDateNicely = (dateStr) => {
+  if (!dateStr) return "N/A";
+  let dateObj;
+  if (typeof dateStr === "string" && dateStr.includes("-")) {
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+      } else {
+        dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    }
+  }
+  if (!dateObj || isNaN(dateObj.getTime())) dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return dateStr;
+  return dateObj.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
+
+function HistoryLoader({ empId }) {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/manager/reports/employee/${empId}`);
+        const data = await res.json();
+        if (data.success) {
+          setHistory(data.history || []);
+        }
+      } catch (err) {
+        console.error("Error fetching history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [empId]);
+
+  if (loading) return <div style={{ padding: "20px", textAlign: "center", color: "#f25c05", fontWeight: "600" }}>Loading history...</div>;
+  if (history.length === 0) return <p className="empty-history-text" style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>No recent leave requests found.</p>;
+
+  return (
+    <div className="modal-history-list">
+      {history.map((hist, idx) => (
+        <div key={hist.id || idx} className="history-list-item" style={{
+          padding: "12px",
+          borderBottom: "1px solid #e2e8f0",
+          marginBottom: "8px"
+        }}>
+          <div className="item-meta" style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+            <span className="history-item-dates" style={{ fontWeight: "600", fontSize: "13px" }}>{formatDateNicely(hist.start_date)} — {formatDateNicely(hist.end_date)}</span>
+            <span className="history-item-type" style={{
+              fontSize: "11px",
+              padding: "2px 8px",
+              borderRadius: "12px",
+              backgroundColor: "#f1f5f9",
+              color: "#475569",
+              fontWeight: "600"
+            }}>{hist.leave_type}</span>
+          </div>
+          <div className="item-status-reason" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}>{hist.status}</span>
+            <p className="history-item-reason" style={{ margin: 0, fontSize: "12px", color: "#475569" }}>{hist.reason}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DashboardGreetingCard({ name, leaveRequests, holidaysList }) {
+  const getGreetingText = () => {
+    const hr = new Date().getHours();
+    if (hr >= 5 && hr < 12) {
+      return { text: "Good Morning", emoji: "🌅" };
+    } else if (hr >= 12 && hr < 17) {
+      return { text: "Good Afternoon", emoji: "☀️" };
+    } else if (hr >= 17 && hr < 21) {
+      return { text: "Good Evening", emoji: "🌇" };
+    } else {
+      return { text: "Good Night", emoji: "🌙" };
+    }
+  };
+
+  const greeting = getGreetingText();
+  const todayStr = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  // Calculate statistics dynamically
+  const pendingCount = leaveRequests.filter((r) => r.status === "Pending").length;
+
+  const todayStrISO = new Date().toISOString().substring(0, 10);
+  const onLeaveCount = leaveRequests.filter((r) => {
+    if (r.status !== "Approved") return false;
+    const parts = r.dates ? r.dates.split(" - ") : [];
+    if (parts.length !== 2) return false;
+    const startStr = parts[0].trim().substring(0, 10);
+    const endStr = parts[1].trim().substring(0, 10);
+    return startStr <= todayStrISO && todayStrISO <= endStr;
+  }).length;
+
+  const todayDateObj = new Date();
+  const currentMonth = todayDateObj.getMonth();
+  const currentYear = todayDateObj.getFullYear();
+  const hasHolidayThisMonth = holidaysList.some((h) => {
+    if (!h.holiday_date) return false;
+    const hDate = new Date(h.holiday_date);
+    return hDate.getMonth() === currentMonth && hDate.getFullYear() === currentYear;
+  });
+
+  let subtext = "Everything looks up to date today.";
+  if (pendingCount > 0) {
+    subtext = `You have ${pendingCount} pending leave request${pendingCount > 1 ? "s" : ""} today.`;
+  } else if (onLeaveCount > 0) {
+    subtext = `${onLeaveCount} employee${onLeaveCount > 1 ? "s are" : " is"} currently on leave.`;
+  } else if (hasHolidayThisMonth) {
+    subtext = "Company holiday scheduled this month.";
+  }
+
+  const motivationalMessage = useMemo(() => {
+    const messages = [
+      "Hope you have a productive day ahead!",
+      "Every great achievement begins with a well-planned day.",
+      "Stay organized, stay productive.",
+      "Let's make today count!",
+      "Plan your leaves wisely and stay balanced.",
+      "Consistency turns small efforts into big results.",
+      "A well-managed day leads to a well-managed team.",
+      "Stay focused and make progress today."
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }, []);
+
+  return (
+    <div className="dashboard-greeting-card">
+      <div className="greeting-text-section">
+        <h1 className="greeting-title" style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <span>{greeting.emoji} {greeting.text}, {name}</span>
+          <span className="wave-hand">👋</span>
+        </h1>
+        <p className="greeting-subtext">{subtext}</p>
+        <p className="greeting-motivation">"{motivationalMessage}"</p>
+      </div>
+      <div className="greeting-date-section">
+        <FaRegClock />
+        <span>Today • {todayStr}</span>
+      </div>
+    </div>
+  );
+}
 
 function ManagerDashboard({ onLogout }) {
   const [activeView, setActiveView] = useState(() => {
@@ -64,6 +225,35 @@ function ManagerDashboard({ onLogout }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // ── Theme ────────────────────────────────────────────────
+  const [isDark, setIsDark] = useState(() => {
+    return localStorage.getItem("appTheme") === "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      isDark ? "dark" : "light"
+    );
+    localStorage.setItem("appTheme", isDark ? "dark" : "light");
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark((prev) => !prev);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [toast]);
+
+
 
   // Holiday Calendar states
   const [holidaysList, setHolidaysList] = useState([]);
@@ -80,8 +270,10 @@ function ManagerDashboard({ onLogout }) {
   const todayDate = new Date();
   const [calYear, setCalYear] = useState(todayDate.getFullYear());
   const [calMonth, setCalMonth] = useState(todayDate.getMonth()); // 0-indexed
+  const [holidaysLoading, setHolidaysLoading] = useState(false);
 
   const fetchHolidays = async () => {
+    setHolidaysLoading(true);
     try {
       const response = await fetch("http://localhost:5000/api/holidays");
       const data = await response.json();
@@ -90,6 +282,8 @@ function ManagerDashboard({ onLogout }) {
       }
     } catch (error) {
       console.error("Fetch holidays error:", error);
+    } finally {
+      setHolidaysLoading(false);
     }
   };
 
@@ -97,15 +291,329 @@ function ManagerDashboard({ onLogout }) {
     fetchHolidays();
   }, []);
 
-  // Employee Report states
+  // Employee Report states — all real backend data, no mock data
   const [reportSearchQuery, setReportSearchQuery] = useState("");
-  const [reportDepartmentFilter, setReportDepartmentFilter] = useState(""); // "" or department name
   const [reportLeaveTypeFilter, setReportLeaveTypeFilter] = useState("");
-  const [reportStatusFilter, setReportStatusFilter] = useState(""); // "", "Pending", "Approved", "Rejected"
-  const [reportSelectedEmpId, setReportSelectedEmpId] = useState("EMP045"); // Highlight Aarav Patel by default
-  const [showLeaveSummary, setShowLeaveSummary] = useState(true);
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
   const [selectedEmpReport, setSelectedEmpReport] = useState(null);
-  const [showLowBalanceAlert, setShowLowBalanceAlert] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyEmpData, setHistoryEmpData] = useState(null);
+  // Real backend report summary + employees table
+  const [reportSummary, setReportSummary] = useState(null);
+  const [reportEmployees, setReportEmployees] = useState([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportSelectedMonth, setReportSelectedMonth] = useState("");
+  // Real backend report data for the View Report modal
+  const [reportEmpData, setReportEmpData] = useState(null);
+  const [reportEmpDataLoading, setReportEmpDataLoading] = useState(false);
+
+  const handleMonthChange = (e) => {
+    const selectedMonth = e.target.value;
+    setReportSelectedMonth(selectedMonth);
+
+    if (!selectedMonth) {
+      setReportStartDate("");
+      setReportEndDate("");
+      fetchReportData("", "");
+      return;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const monthIndex = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ].indexOf(selectedMonth);
+
+    const formatNum = (n) => String(n).padStart(2, '0');
+    const startDateStr = `${currentYear}-${formatNum(monthIndex + 1)}-01`;
+
+    const lastDay = new Date(currentYear, monthIndex + 1, 0).getDate();
+    const endDateStr = `${currentYear}-${formatNum(monthIndex + 1)}-${formatNum(lastDay)}`;
+
+    setReportStartDate(startDateStr);
+    setReportEndDate(endDateStr);
+    fetchReportData(startDateStr, endDateStr);
+  };
+
+  const fetchReportData = async (startDate = "", endDate = "") => {
+    setReportLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      const [summaryRes, empRes] = await Promise.all([
+        fetch(`http://localhost:5000/api/manager/reports/summary${qs}`),
+        fetch(`http://localhost:5000/api/manager/reports/employees${qs}`),
+      ]);
+      const summaryData = await summaryRes.json();
+      const empData = await empRes.json();
+      if (summaryData.success) setReportSummary(summaryData);
+      if (empData.success) setReportEmployees(empData.employees || []);
+    } catch (error) {
+      console.error("Error fetching report data:", error);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleViewReport = async (empDbId) => {
+    setReportEmpData(null);
+    setReportEmpDataLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/manager/reports/employee/${empDbId}`);
+      const data = await response.json();
+      if (data.success) {
+        setReportEmpData(data);
+      } else {
+        showToast(data.message || "Failed to load report.", "error");
+      }
+    } catch (error) {
+      console.error("Error fetching employee report:", error);
+      showToast("Error connecting to backend.", "error");
+    } finally {
+      setReportEmpDataLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!reportEmpData) return;
+    const { employee, leaveTypeUsage, history } = reportEmpData;
+
+    const doc = new jsPDF();
+    const primaryColor = [242, 92, 5];
+    const textColor = [30, 41, 59];
+    const greyColor = [100, 116, 139];
+    const lightBgColor = [248, 250, 252];
+    const borderColor = [203, 213, 225];
+
+    const drawSectionHeader = (title, y) => {
+      doc.setFillColor(...primaryColor);
+      doc.rect(14, y, 3, 6, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...textColor);
+      doc.text(title, 20, y + 5);
+      doc.setDrawColor(...borderColor);
+      doc.setLineWidth(0.5);
+      doc.line(14, y + 9, 196, y + 9);
+      return y + 15;
+    };
+
+    // Orange header bar
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, 210, 8, "F");
+
+    // Brand
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...primaryColor);
+    doc.text("LeaveWise", 14, 24);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...greyColor);
+    doc.text("Touchmark Technologies | Leave Management System", 14, 29);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...textColor);
+    doc.text("Employee Leave Report", 115, 25);
+
+    doc.setDrawColor(...primaryColor);
+    doc.setLineWidth(1.5);
+    doc.line(14, 34, 196, 34);
+
+    // 1. Employee Info
+    let currentY = 42;
+    currentY = drawSectionHeader("Employee Information", currentY);
+
+    doc.setFontSize(10);
+    doc.setTextColor(...textColor);
+
+    const infoCol1 = [
+      ["Employee Name", employee.name],
+      ["Employee ID", employee.employee_id],
+      ["Department", employee.department || "N/A"],
+    ];
+    const infoCol2 = [
+      ["Designation", employee.designation || "Employee"],
+      ["Gender", employee.gender || "N/A"],
+      ["Joining Date", employee.joining_date ? new Date(employee.joining_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "N/A"],
+    ];
+
+    infoCol1.forEach((item, index) => {
+      const y = currentY + index * 8;
+      doc.setFont("helvetica", "bold");
+      doc.text(`${item[0]}:`, 15, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(item[1]), 50, y);
+    });
+    infoCol2.forEach((item, index) => {
+      const y = currentY + index * 8;
+      doc.setFont("helvetica", "bold");
+      doc.text(`${item[0]}:`, 110, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(String(item[1]), 140, y);
+    });
+
+    currentY += 28;
+
+    // 2. Leave Summary
+    currentY = drawSectionHeader("Leave Summary", currentY);
+
+    const summaryCards = [
+      { label: "Total Annual Entitlement", val: `${employee.totalEntitlement} Days`, x: 14, w: 42 },
+      { label: "Paid Leave Used", val: `${employee.paidLeavesTaken} Days`, x: 60, w: 42 },
+      { label: "Remaining Balance", val: `${employee.remainingBalance} Days`, x: 106, w: 42 },
+      { label: "Unpaid Leave Used", val: `${employee.unpaidLeavesTaken} Days`, x: 152, w: 44 },
+    ];
+    summaryCards.forEach((card) => {
+      doc.setFillColor(...lightBgColor);
+      doc.setDrawColor(...borderColor);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(card.x, currentY, card.w, 22, 2, 2, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...greyColor);
+      doc.text(doc.splitTextToSize(card.label, card.w - 4), card.x + 3, currentY + 6);
+      doc.setFontSize(12);
+      doc.setTextColor(...primaryColor);
+      doc.text(card.val, card.x + 3, currentY + 16);
+    });
+    currentY += 32;
+
+    // 3. Leave Type Distribution
+    currentY = drawSectionHeader("Leave Type Distribution", currentY);
+    const leaveTypes = ["Personal Leave", "Medical Leave", "Maternity Leave", "Paternity Leave"];
+    let distCount = 0;
+    leaveTypes.forEach((type) => {
+      const usage = leaveTypeUsage[type] || 0;
+      if ((type === "Maternity Leave" || type === "Paternity Leave") && usage === 0) return;
+      const x = 14 + distCount * 45;
+      doc.setDrawColor(...borderColor);
+      doc.setFillColor(...lightBgColor);
+      doc.rect(x, currentY, 40, 16, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(...textColor);
+      doc.text(type.replace(" Leave", ""), x + 3, currentY + 6);
+      doc.setFontSize(10);
+      doc.setTextColor(...primaryColor);
+      doc.text(`${usage} Days`, x + 3, currentY + 12);
+      distCount++;
+    });
+    currentY += 26;
+
+    // 4. Recent Leave History Table
+    currentY = drawSectionHeader("Recent Leave History", currentY);
+    const headers = ["Leave Type", "From Date", "To Date", "Actual Leave Days", "Paid Days", "Unpaid Days", "Status", "Reason"];
+    const colWidths = [28, 20, 20, 26, 16, 18, 16, 38];
+
+    doc.setFillColor(...textColor);
+    doc.rect(14, currentY, 182, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    let currentX = 14;
+    headers.forEach((h, i) => {
+      doc.text(h, currentX + 2, currentY + 5.5);
+      currentX += colWidths[i];
+    });
+    currentY += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textColor);
+    if (history.length === 0) {
+      doc.setDrawColor(...borderColor);
+      doc.rect(14, currentY, 182, 10, "D");
+      doc.text("No leave history records found.", 20, currentY + 6.5);
+      currentY += 10;
+    } else {
+      history.forEach((row, rowIndex) => {
+        if (currentY > 265) {
+          doc.addPage();
+          doc.setFillColor(...primaryColor);
+          doc.rect(0, 0, 210, 8, "F");
+          currentY = 20;
+          doc.setFillColor(...textColor);
+          doc.rect(14, currentY, 182, 8, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(255, 255, 255);
+          let tempX = 14;
+          headers.forEach((h, i) => { doc.text(h, tempX + 2, currentY + 5.5); tempX += colWidths[i]; });
+          currentY += 8;
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...textColor);
+        }
+        if (rowIndex % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(14, currentY, 182, 10, "F"); }
+        doc.setDrawColor(...borderColor);
+        doc.rect(14, currentY, 182, 10, "D");
+        let rowX = 14;
+        const rowData = [
+          row.leave_type || "N/A",
+          row.start_date || "N/A",
+          row.end_date || "N/A",
+          String(row.actual_leave_days || row.total_days || 0),
+          String(row.paid_days || 0),
+          String(row.unpaid_days || 0),
+          row.status || "N/A",
+          row.reason || "N/A",
+        ];
+        rowData.forEach((val, i) => {
+          let text = String(val);
+          if (i === 7 && text.length > 28) text = text.substring(0, 25) + "...";
+          doc.line(rowX, currentY, rowX, currentY + 10);
+          doc.setFontSize(7.5);
+          if (i === 6) {
+            doc.setFont("helvetica", "bold");
+            if (val === "Approved") doc.setTextColor(16, 185, 129);
+            else if (val === "Rejected" || val === "Cancelled") doc.setTextColor(239, 68, 68);
+            else doc.setTextColor(245, 158, 11);
+          } else { doc.setFont("helvetica", "normal"); doc.setTextColor(...textColor); }
+          doc.text(text, rowX + 2, currentY + 6);
+          rowX += colWidths[i];
+        });
+        currentY += 10;
+      });
+    }
+
+    // Footer
+    if (currentY > 250) { doc.addPage(); doc.setFillColor(...primaryColor); doc.rect(0, 0, 210, 8, "F"); currentY = 25; } else { currentY += 15; }
+    doc.setDrawColor(...borderColor);
+    doc.setLineWidth(0.5);
+    doc.line(14, currentY, 196, currentY);
+    currentY += 8;
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...textColor);
+    doc.text("Generated On:", 14, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }) + " at " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }), 38, currentY);
+
+    const loggedInUser = JSON.parse(localStorage.getItem("user")) || {};
+    doc.setFont("helvetica", "bold");
+    doc.text("Manager Name:", 110, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(loggedInUser.name || "System Manager", 135, currentY);
+    currentY += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...primaryColor);
+    doc.text("LeaveWise / Touchmark Technologies", 14, currentY);
+    currentY += 7;
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.setTextColor(...greyColor);
+    doc.text("This report is system generated by LeaveWise / Touchmark Technologies Leave Management System.", 14, currentY);
+
+    doc.save(`Employee_Report_${employee.employee_id}.pdf`);
+    showToast("Report downloaded successfully", "success");
+  };
 
   // Profile photo
   const managerLoggedInUser = JSON.parse(localStorage.getItem("user"));
@@ -177,13 +685,13 @@ function ManagerDashboard({ onLogout }) {
         const updatedUser = { ...user, profile_photo: data.profile_photo };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(data.profile_photo);
-        alert("Profile photo updated successfully");
+        showToast("Profile photo updated successfully", "success");
       } else {
-        alert("Failed to upload profile photo");
+        showToast("Failed to upload profile photo", "error");
       }
     } catch (error) {
       console.error("Photo upload error:", error);
-      alert("Backend connection failed");
+      showToast("Something went wrong. Backend connection failed.", "error");
     }
     setShowPhotoMenu(false);
   };
@@ -205,18 +713,21 @@ function ManagerDashboard({ onLogout }) {
         const updatedUser = { ...user, profile_photo: null };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(null);
-        alert("Profile photo removed successfully");
+        showToast("Profile photo removed successfully", "success");
       } else {
-        alert("Failed to remove profile photo");
+        showToast("Failed to remove profile photo", "error");
       }
     } catch (error) {
       console.error("Photo removal error:", error);
-      alert("Backend connection failed");
+      showToast("Something went wrong. Backend connection failed.", "error");
     }
   };
 
   // Active Take Action Modal Request
   const [activeRequestModal, setActiveRequestModal] = useState(null);
+  const [deleteHolidayConfirmation, setDeleteHolidayConfirmation] = useState({ show: false, holidayId: null });
+  const [approveConfirmation, setApproveConfirmation] = useState({ show: false, dbId: null, requestName: "" });
+  const [rejectConfirmation, setRejectConfirmation] = useState({ show: false, dbId: null, requestName: "" });
 
   // Leave Approval inline action popup
   const [approvalActionPopup, setApprovalActionPopup] = useState(null); // stores the request object
@@ -297,158 +808,12 @@ function ManagerDashboard({ onLogout }) {
     },
   ]);
 
-  // Mock employee summary data
-  const [employeesData, setEmployeesData] = useState([
-    {
-      id: "EMP045",
-      name: "Aarav Patel",
-      department: "Sales Dept",
-      totalEntitlement: 20,
-      usedLeaves: 12,
-      remainingBalance: 8,
-      attendance: "95%",
-      photo: aaravPatelAvatar,
-    },
-    {
-      id: "EMP021",
-      name: "Sarah Raman",
-      department: "HR Dept",
-      totalEntitlement: 20,
-      usedLeaves: 10,
-      remainingBalance: 10,
-      attendance: "97%",
-      photo: sarahRamanAvatar,
-    },
-    {
-      id: "EMP088",
-      name: "Rina Sharma",
-      department: "IT Dept",
-      totalEntitlement: 20,
-      usedLeaves: 5,
-      remainingBalance: 15,
-      attendance: "99%",
-      photo: rinaSharmaAvatar,
-    },
-    {
-      id: "EMP101",
-      name: "David Chen",
-      department: "R&D Dept",
-      totalEntitlement: 20,
-      usedLeaves: 7,
-      remainingBalance: 13,
-      attendance: "96%",
-      photo: null,
-    },
-    {
-      id: "EMP115",
-      name: "Kenji Tanaka",
-      department: "Marketing",
-      totalEntitlement: 20,
-      usedLeaves: 17,
-      remainingBalance: 3,
-      attendance: "90%",
-      photo: null,
-    },
-    {
-      id: "EMP073",
-      name: "Sarah Pamest",
-      department: "Sales Dept",
-      totalEntitlement: 20,
-      usedLeaves: 6,
-      remainingBalance: 14,
-      attendance: "98%",
-      photo: sarahPamestAvatar,
-    },
-  ]);
-
-  // Mock detailed leave history database
-  const [leaveHistoryData, setLeaveHistoryData] = useState([
-    {
-      id: "LH001",
-      employeeId: "EMP045",
-      name: "Aarav Patel",
-      department: "Sales Dept",
-      type: "Sick Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      days: 3,
-      status: "Pending",
-      reason: "Medical checkup and dentist appointment.",
-      photo: aaravPatelAvatar,
-    },
-    {
-      id: "LH002",
-      employeeId: "EMP021",
-      name: "Sarah Raman",
-      department: "HR Dept",
-      type: "Personal Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      days: 3,
-      status: "Pending",
-      reason: "Going to my hometown for family gathering.",
-      photo: sarahRamanAvatar,
-    },
-    {
-      id: "LH003",
-      employeeId: "EMP088",
-      name: "Rina Sharma",
-      department: "IT Dept",
-      type: "Personal Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      days: 3,
-      status: "Pending",
-      reason:
-        "Annual vacation trip with family. Will be available on phone if needed.",
-      photo: rinaSharmaAvatar,
-    },
-    {
-      id: "LH004",
-      employeeId: "EMP101",
-      name: "David Chen",
-      department: "R&D Dept",
-      type: "Medical Leave",
-      dates: "Sep 20 - Sep 21, 2026",
-      days: 2,
-      status: "Approved",
-      reason: "Medical checkup and dentist appointment.",
-      photo: null,
-    },
-    {
-      id: "LH005",
-      employeeId: "EMP115",
-      name: "Kenji Tanaka",
-      department: "Marketing",
-      type: "Personal Leave",
-      dates: "Sep 15 - Sep 18, 2026",
-      days: 4,
-      status: "Rejected",
-      reason: "Urgent project delivery requirement.",
-      photo: null,
-    },
-    {
-      id: "LH006",
-      employeeId: "EMP073",
-      name: "Sarah Pamest",
-      department: "Sales Dept",
-      type: "Medical Leave",
-      dates: "Oct 15 - Oct 17, 2026",
-      days: 3,
-      status: "Pending",
-      reason: "Doctor's appointment for checking fever.",
-      photo: sarahPamestAvatar,
-    },
-    {
-      id: "LH007",
-      employeeId: "EMP045",
-      name: "Aarav Patel",
-      department: "Sales Dept",
-      type: "Personal Leave",
-      dates: "Sep 01 - Sep 03, 2026",
-      days: 3,
-      status: "Approved",
-      reason: "Family event trip.",
-      photo: aaravPatelAvatar,
-    },
-  ]);
+  // Fetch real report data when employee-report view becomes active
+  useEffect(() => {
+    if (activeView === "employee-report") {
+      fetchReportData(reportStartDate, reportEndDate);
+    }
+  }, [activeView]);
 
   const [profileData, setProfileData] = useState({
     name: managerLoggedInUser?.name || "",
@@ -464,8 +829,10 @@ function ManagerDashboard({ onLogout }) {
   const [tempProfileData, setTempProfileData] = useState({ ...profileData });
 
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
 
   const fetchManagerLeaves = async () => {
+    setLeavesLoading(true);
     try {
       const response = await fetch("http://localhost:5000/api/manager/leaves");
       const data = await response.json();
@@ -493,6 +860,8 @@ function ManagerDashboard({ onLogout }) {
       }
     } catch (error) {
       console.error("Fetch manager leaves error:", error);
+    } finally {
+      setLeavesLoading(false);
     }
   };
 
@@ -554,13 +923,13 @@ function ManagerDashboard({ onLogout }) {
         });
 
         setIsEditing(false);
-        alert("Manager profile updated successfully");
+        showToast("Manager profile updated successfully", "success");
       } else {
-        alert("Manager profile update failed");
+        showToast("Manager profile update failed", "error");
       }
     } catch (error) {
       console.error("Manager profile update error:", error);
-      alert("Backend connection failed");
+      showToast("Something went wrong. Backend connection failed.", "error");
     }
   };
 
@@ -580,26 +949,24 @@ function ManagerDashboard({ onLogout }) {
     try {
       const response = await fetch(
         `http://localhost:5000/api/manager/approve/${dbId}`,
-        {
-          method: "PUT",
-        },
+        { method: "PUT" },
       );
       const data = await response.json();
       if (data.success) {
-        // Close the detail popup and re-fetch fresh recalculated data from server
         if (
           selectedRequest &&
           (selectedRequest.dbId === dbId || selectedRequest.id === dbId)
         ) {
           setSelectedRequest(null);
         }
+        showToast("Leave approved successfully", "success");
         await fetchManagerLeaves();
       } else {
-        alert(data.message || "Unable to approve this leave request.");
+        showToast(data.message || "Unable to approve this leave request.", "error");
       }
     } catch (error) {
       console.error("Error approving request:", error);
-      alert("Backend connection failed. Please try again.");
+      showToast("Backend connection failed. Please try again.", "error");
     }
   };
 
@@ -607,23 +974,24 @@ function ManagerDashboard({ onLogout }) {
     try {
       const response = await fetch(
         `http://localhost:5000/api/manager/reject/${dbId}`,
-        {
-          method: "PUT",
-        },
+        { method: "PUT" },
       );
       const data = await response.json();
       if (data.success) {
-        // Close the detail popup and re-fetch fresh recalculated data from server
         if (
           selectedRequest &&
           (selectedRequest.dbId === dbId || selectedRequest.id === dbId)
         ) {
           setSelectedRequest(null);
         }
+        showToast("Leave rejected successfully", "success");
         await fetchManagerLeaves();
+      } else {
+        showToast(data.message || "Unable to reject this leave request.", "error");
       }
     } catch (error) {
       console.error("Error rejecting request:", error);
+      showToast("Backend connection failed. Please try again.", "error");
     }
   };
 
@@ -643,7 +1011,7 @@ function ManagerDashboard({ onLogout }) {
       });
       const data = await response.json();
       if (data.success) {
-        alert("Holiday added successfully");
+        showToast("Holiday added successfully", "success");
         setShowAddModal(false);
         setAddHolidayForm({
           name: "",
@@ -661,27 +1029,8 @@ function ManagerDashboard({ onLogout }) {
     }
   };
 
-  const handleDeleteHoliday = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this holiday?",
-    );
-    if (!confirmDelete) return;
-    try {
-      const response = await fetch(`http://localhost:5000/api/holidays/${id}`, {
-        method: "DELETE",
-      });
-      const data = await response.json();
-      if (data.success) {
-        alert("Holiday deleted successfully");
-        setSelectedHoliday(null);
-        await fetchHolidays();
-      } else {
-        alert(data.message || "Failed to delete holiday.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Backend connection failed.");
-    }
+  const handleDeleteHoliday = (id) => {
+    setDeleteHolidayConfirmation({ show: true, holidayId: id });
   };
 
   // Computed stats from actual leave requests data
@@ -693,71 +1042,15 @@ function ManagerDashboard({ onLogout }) {
     cancelled: leaveRequests.filter((r) => r.status === "Cancelled").length,
   };
 
-  // Filter employee summaries
-  const filteredEmployees = employeesData.filter((emp) => {
+  // Filter real employees from backend
+  const filteredEmployees = reportEmployees.filter((emp) => {
     const matchesSearch =
-      emp.name.toLowerCase().includes(reportSearchQuery.toLowerCase()) ||
-      emp.id.toLowerCase().includes(reportSearchQuery.toLowerCase());
-
+      (emp.name || "").toLowerCase().includes(reportSearchQuery.toLowerCase()) ||
+      (emp.employee_id || "").toLowerCase().includes(reportSearchQuery.toLowerCase());
     const matchesLeaveType = reportLeaveTypeFilter
-      ? leaveHistoryData.some(
-          (h) => h.employeeId === emp.id && h.type === reportLeaveTypeFilter,
-        )
+      ? (emp.leaveTypesTaken || []).includes(reportLeaveTypeFilter)
       : true;
-
-    const matchesStatus = reportStatusFilter
-      ? leaveHistoryData.some(
-          (h) => h.employeeId === emp.id && h.status === reportStatusFilter,
-        )
-      : true;
-
-    const matchesDepartment = reportDepartmentFilter
-      ? emp.department === reportDepartmentFilter
-      : true;
-
-    return (
-      matchesSearch && matchesLeaveType && matchesStatus && matchesDepartment
-    );
-  });
-
-  // Filter detailed history log
-  const filteredHistory = leaveHistoryData.filter((hist) => {
-    const matchesSearch =
-      hist.name.toLowerCase().includes(reportSearchQuery.toLowerCase()) ||
-      hist.employeeId.toLowerCase().includes(reportSearchQuery.toLowerCase());
-
-    const matchesLeaveType = reportLeaveTypeFilter
-      ? hist.type === reportLeaveTypeFilter
-      : true;
-
-    const matchesStatus = reportStatusFilter
-      ? hist.status === reportStatusFilter
-      : true;
-
-    const matchesDepartment = reportDepartmentFilter
-      ? hist.department === reportDepartmentFilter
-      : true;
-
-    return (
-      matchesSearch && matchesLeaveType && matchesStatus && matchesDepartment
-    );
-  });
-
-  // Filter leave requests list
-  const filteredRequests = requestsList.filter((req) => {
-    const matchesSearch =
-      req.name.toLowerCase().includes(reportSearchQuery.toLowerCase()) ||
-      req.id.toLowerCase().includes(reportSearchQuery.toLowerCase());
-
-    const matchesLeaveType = reportLeaveTypeFilter
-      ? req.leaveType === reportLeaveTypeFilter
-      : true;
-
-    const matchesStatus = reportStatusFilter
-      ? req.status === reportStatusFilter
-      : true;
-
-    return matchesSearch && matchesLeaveType && matchesStatus;
+    return matchesSearch && matchesLeaveType;
   });
 
   // Filter leave requests for Leave Approval view
@@ -795,6 +1088,14 @@ function ManagerDashboard({ onLogout }) {
               <span className="brand-title-manager">Manager</span>
               <span className="brand-title-dashboard">Dashboard</span>
             </div>
+            <button
+              className="theme-toggle-emoji-btn"
+              type="button"
+              onClick={toggleTheme}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDark ? "🌞" : "🌙"}
+            </button>
           </div>
 
           <nav className="nav-list">
@@ -852,17 +1153,15 @@ function ManagerDashboard({ onLogout }) {
         </aside>
 
         <section className="profile-panel">
+          <div key={activeView} className="page-transition-wrapper">
           {activeView === "profile" && (
-            <div className="profile-content">
-              {/* Page Title */}
-              <div className="section-title">
-                <FaRegUser className="profile-title-icon" />
-                <div>
-                  <h1>My Profile</h1>
-                  <p className="profile-subtitle">Profile Information</p>
-                </div>
-              </div>
-
+            <>
+              <DashboardGreetingCard
+                name={profileData.name}
+                leaveRequests={leaveRequests}
+                holidaysList={holidaysList}
+              />
+              <div className="profile-content">
               {/* Profile Hero Card */}
               <div className="profile-hero-card">
                 {/* Left — Avatar + Name */}
@@ -1200,7 +1499,8 @@ function ManagerDashboard({ onLogout }) {
                 </div>
               </div>
             </div>
-          )}
+          </>
+        )}
 
           {activeView === "leave-approval" && (
             <div className="leave-approval-content">
@@ -1296,36 +1596,14 @@ function ManagerDashboard({ onLogout }) {
                 </div>
 
                 {/* Payment Type Filter */}
-                <div
-                  className="filter-select-field-wrapper"
-                  style={{
-                    marginLeft: "12px",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    padding: "8px 12px",
-                    backgroundColor: "#ffffff",
-                  }}
-                >
-                  <FaCoins
-                    className="field-icon"
-                    style={{ marginRight: "8px", color: "#64748b" }}
-                  />
+                <div className="filter-select-field-wrapper">
+                  <FaCoins className="field-icon" style={{ color: "#64748b" }} />
                   <select
                     value={approvalPaymentTypeFilter}
                     onChange={(e) =>
                       setApprovalPaymentTypeFilter(e.target.value)
                     }
                     className="report-select-input"
-                    style={{
-                      border: "none",
-                      outline: "none",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      color: "#1e293b",
-                      backgroundColor: "transparent",
-                      cursor: "pointer",
-                      minWidth: "170px",
-                    }}
                     aria-label="Filter by payment type"
                   >
                     <option value="">Payment Type: All</option>
@@ -1333,6 +1611,7 @@ function ManagerDashboard({ onLogout }) {
                     <option value="Partly Paid">Partly Paid</option>
                     <option value="Unpaid">Unpaid</option>
                   </select>
+                  <FaChevronDown className="select-chevron" />
                 </div>
 
                 {/* Status Pills */}
@@ -1415,10 +1694,29 @@ function ManagerDashboard({ onLogout }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredLeaveRequests.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="empty-table-message">
-                          No requests found.
+                    {leavesLoading ? (
+                      <tr className="manager-loading-row">
+                        <td colSpan={7}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "32px 0", color: "#ea580c", fontWeight: "600" }}>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 6v6l4 2" />
+                            </svg>
+                            <span>Loading leave requests...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredLeaveRequests.length === 0 ? (
+                      <tr className="manager-empty-row">
+                        <td colSpan={7}>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "48px 0", color: "#94a3b8" }}>
+                            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M9 11l3 3L22 4" />
+                              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                            </svg>
+                            <div style={{ fontWeight: "700", fontSize: "15px", color: "#64748b" }}>No leave requests available</div>
+                            <div style={{ fontSize: "13px", color: "#94a3b8" }}>Pending employee requests will appear here.</div>
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -1545,7 +1843,13 @@ function ManagerDashboard({ onLogout }) {
                           {/* Date Range column */}
                           <td>
                             <span className="date-range-label">
-                              {request.dates}
+                              {(() => {
+                                const parts = (request.dates || "").split(" - ");
+                                if (parts.length === 2) {
+                                  return `${formatDateNicely(parts[0].trim())} – ${formatDateNicely(parts[1].trim())}`;
+                                }
+                                return request.dates;
+                              })()}
                             </span>
                           </td>
                           {/* Days column */}
@@ -1628,9 +1932,7 @@ function ManagerDashboard({ onLogout }) {
                                         type="button"
                                         className="popup-action-btn approve-action"
                                         onClick={() => {
-                                          handleApproveRequest(
-                                            request.dbId || request.id,
-                                          );
+                                          setApproveConfirmation({ show: true, dbId: request.dbId || request.id, requestName: request.name || "this employee" });
                                           setApprovalActionPopup(null);
                                         }}
                                       >
@@ -1640,9 +1942,7 @@ function ManagerDashboard({ onLogout }) {
                                         type="button"
                                         className="popup-action-btn reject-action"
                                         onClick={() => {
-                                          handleRejectRequest(
-                                            request.dbId || request.id,
-                                          );
+                                          setRejectConfirmation({ show: true, dbId: request.dbId || request.id, requestName: request.name || "this employee" });
                                           setApprovalActionPopup(null);
                                         }}
                                       >
@@ -1887,114 +2187,140 @@ function ManagerDashboard({ onLogout }) {
                 <FaRegChartBar className="profile-title-icon" />
                 <h1>View Employee Report</h1>
               </div>
-
-              {/* Stats Cards — 2 real-data cards */}
-              {(() => {
-                // Compute leave type breakdown from real leaveRequests (approved)
-                const approvedLeaves = leaveRequests.filter(
-                  (r) => r.status === "Approved",
-                );
-                const totalApproved = approvedLeaves.reduce(
-                  (sum, r) => sum + (r.leaveDays || 0),
-                  0,
-                );
-                const typeGroups = {};
-                approvedLeaves.forEach((r) => {
-                  const t = r.type || "Other";
-                  typeGroups[t] = (typeGroups[t] || 0) + (r.leaveDays || 0);
-                });
-                const typeBreakdown = Object.entries(typeGroups)
-                  .map(([label, days]) => ({
-                    label,
-                    days,
-                    pct:
-                      totalApproved > 0
-                        ? Math.round((days / totalApproved) * 100)
-                        : 0,
-                  }))
-                  .sort((a, b) => b.days - a.days)
-                  .slice(0, 4);
-
-                // Count employees that have at least one leave request that is Partly Paid or Unpaid
-                const unpaidAlertSet = new Set(
-                  leaveRequests
-                    .filter(
-                      (r) =>
-                        r.payment_type === "Partly Paid" ||
-                        r.payment_type === "Unpaid",
-                    )
-                    .map((r) => r.id),
-                );
-                const unpaidAlertCount = unpaidAlertSet.size;
-
-                const DOT_COLORS = ["#4f46e5", "#0d9488", "#e11d48", "#ea580c"];
-
-                return (
-                  <div className="report-stats-grid">
-                    {/* Card 2: Leave Type Breakdown (dynamic) */}
-                    <div className="report-stats-card type-breakdown">
-                      <div className="report-card-header yellow-bg">
-                        <FaChartPie />
-                        <span>Leave Type Breakdown</span>
-                      </div>
-                      <div className="report-card-body flex-row">
-                        <div className="pie-chart-visual" />
-                        <div className="pie-chart-legend">
-                          {typeBreakdown.length === 0 ? (
-                            <span
-                              style={{ fontSize: "12px", color: "#64748b" }}
-                            >
-                              No approved leaves yet
-                            </span>
-                          ) : (
-                            typeBreakdown.map((item, idx) => (
-                              <div key={item.label} className="legend-item">
-                                <span
-                                  className="legend-dot"
-                                  style={{
-                                    backgroundColor:
-                                      DOT_COLORS[idx % DOT_COLORS.length],
-                                  }}
-                                />
-                                <span>
-                                  {item.label} ({item.pct}%)
-                                </span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card 4: Unpaid Leave Alerts (real count) */}
-                    <div
-                      className="report-stats-card balance-alerts clickable-stat-card"
-                      onClick={() => setShowLowBalanceAlert(true)}
-                      title="Click to view employees with unpaid leaves"
-                    >
-                      <div className="report-card-header red-bg">
-                        <FaExclamationTriangle />
-                        <span>Unpaid Leave Alerts</span>
-                      </div>
-                      <div className="report-card-body">
-                        <div className="report-card-icon-wrap red-tint">
-                          <FaExclamationTriangle />
-                        </div>
-                        <div className="report-card-text">
-                          <span className="report-card-num">
-                            {unpaidAlertCount}
-                          </span>
-                          <span className="report-card-unit">Employees</span>
-                        </div>
-                      </div>
-                    </div>
+              {/* ── Top 4 Summary Cards ── */}
+              <div className="report-summary-cards">
+                <div className="report-sum-card orange">
+                  <div className="report-sum-icon"><FaUsers /></div>
+                  <div className="report-sum-info">
+                    <span className="report-sum-label">Total Employees</span>
+                    <span className="report-sum-value">{reportSummary ? reportSummary.summary.totalEmployees : "—"}</span>
                   </div>
-                );
-              })()}
+                </div>
+                <div className="report-sum-card blue">
+                  <div className="report-sum-icon"><FaCalendarAlt /></div>
+                  <div className="report-sum-info">
+                    <span className="report-sum-label">Total Leaves Taken</span>
+                    <span className="report-sum-value">{reportSummary ? reportSummary.summary.totalLeavesTaken : "—"} Days</span>
+                  </div>
+                </div>
+                <div className="report-sum-card green">
+                  <div className="report-sum-icon"><FaCheckCircle /></div>
+                  <div className="report-sum-info">
+                    <span className="report-sum-label">Paid Leave Taken</span>
+                    <span className="report-sum-value">{reportSummary ? reportSummary.summary.paidLeaveTaken : "—"} Days</span>
+                  </div>
+                </div>
+                <div className="report-sum-card red">
+                  <div className="report-sum-icon"><FaExclamationTriangle /></div>
+                  <div className="report-sum-info">
+                    <span className="report-sum-label">Unpaid Leave Taken</span>
+                    <span className="report-sum-value">{reportSummary ? reportSummary.summary.unpaidLeaveTaken : "—"} Days</span>
+                  </div>
+                </div>
+              </div>
 
-              {/* Filters Bar */}
+              {/* ── 2 Chart Cards ── */}
+              <div className="report-charts-row">
+                {/* Chart 1: Leave Type Distribution */}
+                <div className="report-chart-card">
+                  <div className="report-chart-title"><FaChartPie style={{ color: "#f25c05", marginRight: "8px" }} />Leave Type Distribution</div>
+                  {reportSummary && Object.keys(reportSummary.typeDistribution || {}).length > 0 ? (() => {
+                    const originalDist = reportSummary.typeDistribution;
+                    const dist = {
+                      "Personal Leave": 0,
+                      "Medical Leave": 0,
+                      "Maternity Leave": 0,
+                      "Paternity Leave": 0,
+                      ...originalDist
+                    };
+                    const total = Object.values(originalDist).reduce((a, b) => a + b, 0);
+                    const TYPE_COLORS = {
+                      "Personal Leave": "#f25c05",
+                      "Medical Leave": "#4f46e5",
+                      "Maternity Leave": "#10b981",
+                      "Paternity Leave": "#e11d48"
+                    };
+                    const entries = Object.entries(dist).sort((a, b) => b[1] - a[1]);
+                    const conicEntries = entries.filter(e => e[1] > 0);
+                    return (
+                      <div className="dist-chart-flex">
+                        <div className="dist-donut-wrap">
+                          <div className="dist-donut" style={{
+                            background: conicEntries.length > 0 ? `conic-gradient(${conicEntries.map((e, i) => {
+                              const color = TYPE_COLORS[e[0]] || "#64748b";
+                              const startPct = conicEntries.slice(0, i).reduce((a, ee) => a + (total > 0 ? (ee[1] / total) * 100 : 0), 0);
+                              const endPct = conicEntries.slice(0, i + 1).reduce((a, ee) => a + (total > 0 ? (ee[1] / total) * 100 : 0), 0);
+                              return `${color} ${startPct}% ${endPct}%`;
+                            }).join(", ")})` : "#cbd5e1"
+                          }}>
+                            <div className="dist-donut-center">
+                              <span className="dist-donut-num">{total}</span>
+                              <span className="dist-donut-lbl">Days</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="dist-legend">
+                          {entries.map(([type, days]) => {
+                            const pct = total > 0 ? Math.round((days / total) * 100) : 0;
+                            const color = TYPE_COLORS[type] || "#64748b";
+                            return (
+                              <div key={type} className="dist-legend-row">
+                                <span className="dist-legend-dot" style={{ backgroundColor: color }} />
+                                <span className="dist-legend-label">{type} — {days} days — {pct}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })() : (
+                    <div className="chart-empty-msg">No approved leave data yet.</div>
+                  )}
+                </div>
+
+                {/* Chart 2: Paid vs Unpaid */}
+                <div className="report-chart-card">
+                  <div className="report-chart-title"><FaCoins style={{ color: "#f25c05", marginRight: "8px" }} />Paid vs Unpaid Leave</div>
+                  {reportSummary ? (() => {
+                    const paid = reportSummary.summary.paidLeaveTaken || 0;
+                    const unpaid = reportSummary.summary.unpaidLeaveTaken || 0;
+                    const total = paid + unpaid || 1;
+                    const paidPct = Math.round((paid / total) * 100);
+                    const unpaidPct = 100 - paidPct;
+                    return (
+                      <div className="pvu-chart-wrap">
+                        <div className="pvu-bar-section">
+                          <div className="pvu-bar-label-row">
+                            <span className="pvu-bar-label paid-lbl">Paid Leave</span>
+                            <span className="pvu-bar-days">{paid} Days</span>
+                          </div>
+                          <div className="pvu-bar-track">
+                            <div className="pvu-bar-fill paid-fill" style={{ width: `${paidPct}%` }} />
+                          </div>
+                          <div className="pvu-bar-pct">{paidPct}%</div>
+                        </div>
+                        <div className="pvu-bar-section" style={{ marginTop: "20px" }}>
+                          <div className="pvu-bar-label-row">
+                            <span className="pvu-bar-label unpaid-lbl">Unpaid Leave</span>
+                            <span className="pvu-bar-days">{unpaid} Days</span>
+                          </div>
+                          <div className="pvu-bar-track">
+                            <div className="pvu-bar-fill unpaid-fill" style={{ width: `${unpaidPct}%` }} />
+                          </div>
+                          <div className="pvu-bar-pct">{unpaidPct}%</div>
+                        </div>
+                        <div className="pvu-total-row">
+                          <span>Total Approved Leave Days</span>
+                          <strong>{paid + unpaid}</strong>
+                        </div>
+                      </div>
+                    );
+                  })() : <div className="chart-empty-msg">Loading data...</div>}
+                </div>
+              </div>
+
+              {/* ── Filters Bar ── */}
               <div className="report-filters-bar">
-                {/* Search */}
                 <div className="filter-search-wrapper">
                   <FaSearch className="search-icon" />
                   <input
@@ -2006,27 +2332,6 @@ function ManagerDashboard({ onLogout }) {
                   />
                 </div>
 
-                {/* Filter by Department */}
-                <div className="filter-select-field-wrapper">
-                  <FaFolder className="field-icon" />
-                  <select
-                    value={reportDepartmentFilter}
-                    onChange={(e) => setReportDepartmentFilter(e.target.value)}
-                    className="report-select-input"
-                  >
-                    <option value="">Filter by Department</option>
-                    {Array.from(
-                      new Set(employeesData.map((emp) => emp.department)),
-                    ).map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
-                  <FaChevronDown className="select-chevron" />
-                </div>
-
-                {/* Filter by Leave Type */}
                 <div className="filter-select-field-wrapper">
                   <FaFolder className="field-icon" />
                   <select
@@ -2043,610 +2348,332 @@ function ManagerDashboard({ onLogout }) {
                   <FaChevronDown className="select-chevron" />
                 </div>
 
-                {/* Leave Summary Button */}
-                <button
-                  type="button"
-                  className="toggle-history-btn active"
-                  onClick={() => {
-                    setReportSearchQuery("");
-                    setReportDepartmentFilter("");
-                    setReportLeaveTypeFilter("");
-                    setReportStatusFilter("");
-                    setShowLeaveSummary(true);
-                  }}
-                >
-                  <FaHistory />
-                  <span>Leave Summary</span>
-                </button>
+                <div className="filter-select-field-wrapper">
+                  <FaCalendarAlt className="field-icon" style={{ color: "#f25c05" }} />
+                  <select
+                    value={reportSelectedMonth}
+                    onChange={handleMonthChange}
+                    className="report-select-input"
+                  >
+                    <option value="">All Months</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                  </select>
+                  <FaChevronDown className="select-chevron" />
+                </div>
               </div>
 
-              {/* Data Table — Employee Summary */}
+              {/* ── Employee Table ── */}
               <div className="report-table-section">
-                <table className="report-table">
-                  <thead>
-                    <tr>
-                      <th>Employee Name</th>
-                      <th>Employee ID</th>
-                      <th>Total Entitlement</th>
-                      <th>Used Leaves</th>
-                      <th>Remaining Balance</th>
-                      <th>Report</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEmployees.length === 0 ? (
+                {reportLoading ? (
+                  <div className="report-loading-msg">Loading employee data...</div>
+                ) : (
+                  <table className="report-table">
+                    <thead>
                       <tr>
-                        <td colSpan="6" className="empty-table-message">
-                          No employees match current filters.
-                        </td>
+                        <th>Employee Name</th>
+                        <th>Employee ID</th>
+                        <th>Total Entitlement</th>
+                        <th>Leaves Taken (Paid)</th>
+                        <th>Remaining Balance</th>
+                        <th>Leaves Taken (Unpaid)</th>
+                        <th>History</th>
+                        <th>Report</th>
                       </tr>
-                    ) : (
-                      filteredEmployees.map((emp) => {
-                        const isSelected = reportSelectedEmpId === emp.id;
-                        const bgColors = [
-                          "#ff5722",
-                          "#4f46e5",
-                          "#0d9488",
-                          "#e11d48",
-                          "#7c3aed",
-                          "#2563eb",
-                        ];
-                        const charSum = emp.name
-                          .split("")
-                          .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        const initialsBg = bgColors[charSum % bgColors.length];
-                        const initials = emp.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("");
-                        const hasUnpaidLeave = leaveRequests.some(
-                          (r) =>
-                            r.id === emp.id &&
-                            (r.payment_type === "Partly Paid" ||
-                              r.payment_type === "Unpaid"),
-                        );
-
-                        // Calculate actual leave stats dynamically from real leaves database
-                        const empLeaves = leaveRequests.filter(
-                          (r) => r.id === emp.id && r.status === "Approved",
-                        );
-                        const totalPaid = empLeaves.reduce(
-                          (sum, r) => sum + (r.paid_days || 0),
-                          0,
-                        );
-                        const totalUnpaid = empLeaves.reduce(
-                          (sum, r) => sum + (r.unpaid_days || 0),
-                          0,
-                        );
-                        const actualUsed = totalPaid + totalUnpaid;
-                        const actualRemaining = Math.max(
-                          0,
-                          ANNUAL_PAID_ALLOCATION - totalPaid,
-                        );
-
-                        return (
-                          <tr
-                            key={emp.id}
-                            className={`report-row ${isSelected ? "selected-active-row" : ""}`}
-                            style={
-                              hasUnpaidLeave
-                                ? {
-                                    backgroundColor: "#fff1f2",
-                                    borderLeft: "3px solid #ef4444",
-                                  }
-                                : {}
-                            }
-                            onClick={() => setReportSelectedEmpId(emp.id)}
-                          >
-                            <td>{emp.name}</td>
-                            <td>{emp.id}</td>
-                            <td>{ANNUAL_PAID_ALLOCATION} days</td>
-                            <td>
-                              <div>{actualUsed} days</div>
-                              {totalUnpaid > 0 && (
-                                <div
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#dc2626",
-                                    fontWeight: "600",
+                    </thead>
+                    <tbody>
+                      {reportLoading ? (
+                        <tr className="manager-loading-row">
+                          <td colSpan="8">
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "32px 0", color: "#ea580c", fontWeight: "600" }}>
+                              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 6v6l4 2" />
+                              </svg>
+                              <span>Loading employee data...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : filteredEmployees.length === 0 ? (
+                        <tr className="manager-empty-row">
+                          <td colSpan="8">
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "48px 0", color: "#94a3b8" }}>
+                              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                              </svg>
+                              <div style={{ fontWeight: "700", fontSize: "15px", color: "#64748b" }}>No employee report data found</div>
+                              <div style={{ fontSize: "13px", color: "#94a3b8" }}>Search for an employee or check if data is available.</div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredEmployees.map((emp) => {
+                          const initials = (emp.name || "?").split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
+                          const bgColors = ["#ff5722", "#4f46e5", "#0d9488", "#e11d48", "#7c3aed", "#2563eb"];
+                          const charSum = (emp.name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                          const initialsBg = bgColors[charSum % bgColors.length];
+                          return (
+                            <tr key={emp.id} className="report-row">
+                              <td>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                  <div className="emp-initials-badge" style={{ backgroundColor: initialsBg }}>{initials}</div>
+                                  <div>
+                                    <div style={{ fontWeight: "600", color: "#1e293b" }}>{emp.name}</div>
+                                    <div style={{ fontSize: "11px", color: "#64748b" }}>{emp.department}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td><span className="emp-id-chip">{emp.employee_id}</span></td>
+                              <td><span className="entitlement-badge">{emp.totalEntitlement} Days</span></td>
+                              <td>
+                                <span style={{ fontWeight: "700", color: "#10b981" }}>{emp.paidLeavesTaken} Days</span>
+                              </td>
+                              <td>
+                                <span style={{ fontWeight: "700", color: emp.remainingBalance <= 5 ? "#ef4444" : "#f25c05" }}>
+                                  {emp.remainingBalance} Days
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontWeight: "700", color: emp.unpaidLeavesTaken > 0 ? "#ef4444" : "#64748b" }}>
+                                  {emp.unpaidLeavesTaken} Days
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="report-action-btn history-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setHistoryEmpData(emp);
+                                    setShowHistoryModal(true);
                                   }}
                                 >
-                                  ({totalPaid} Paid + {totalUnpaid} Unpaid)
-                                </div>
-                              )}
-                            </td>
-                            <td>{actualRemaining} days</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="report-action-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedEmpReport({
-                                    ...emp,
-                                    totalEntitlement: ANNUAL_PAID_ALLOCATION,
-                                    usedLeaves: actualUsed,
-                                    remainingBalance: actualRemaining,
-                                  });
-                                }}
-                              >
-                                <FaRegChartBar />
-                                Report
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                                  <FaHistory />
+                                  View History
+                                </button>
+                              </td>
+                              <td>
+                                <button
+                                  type="button"
+                                  className="report-action-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedEmpReport(emp);
+                                    handleViewReport(emp.id);
+                                  }}
+                                >
+                                  <FaRegChartBar />
+                                  View Report
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
-              {/* Unpaid Leave Alert Modal */}
-              {showLowBalanceAlert && (
-                <div
-                  className="popup-overlay"
-                  onClick={() => setShowLowBalanceAlert(false)}
-                >
-                  <div
-                    className="details-popup-card low-balance-modal"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+              {/* ── View History Modal ── */}
+              {showHistoryModal && historyEmpData && (
+                <div className="popup-overlay" onClick={() => setShowHistoryModal(false)}>
+                  <div className="details-popup-card report-detail-modal-card" onClick={(e) => e.stopPropagation()}>
                     <div className="popup-card-header">
-                      <h3
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          color: "#c0392b",
-                        }}
-                      >
-                        <FaExclamationTriangle /> Unpaid Leave Alerts
-                      </h3>
-                      <button
-                        className="close-popup-btn"
-                        type="button"
-                        onClick={() => setShowLowBalanceAlert(false)}
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <p className="low-balance-subtitle">
-                      Employees with unpaid leave requests
-                    </p>
-                    <div className="low-balance-list">
-                      {leaveRequests.filter((r) => r.unpaid_days > 0).length ===
-                      0 ? (
-                        <p className="low-balance-empty">
-                          No employees with unpaid leave requests.
-                        </p>
-                      ) : (
-                        leaveRequests
-                          .filter((r) => r.unpaid_days > 0)
-                          .map((req) => {
-                            const bgColors = [
-                              "#ff5722",
-                              "#4f46e5",
-                              "#0d9488",
-                              "#e11d48",
-                              "#7c3aed",
-                              "#2563eb",
-                            ];
-                            const charSum = req.name
-                              .split("")
-                              .reduce(
-                                (acc, char) => acc + char.charCodeAt(0),
-                                0,
-                              );
-                            const initialsBg =
-                              bgColors[charSum % bgColors.length];
-                            const initials = req.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("");
-                            return (
-                              <div
-                                key={req.dbId}
-                                className="low-balance-row low-balance-critical"
-                                style={{ borderLeft: "4px solid #ef4444" }}
-                              >
-                                <div className="employee-info-cell">
-                                  <div
-                                    className="employee-initials-circle"
-                                    style={{ backgroundColor: initialsBg }}
-                                  >
-                                    {initials}
-                                  </div>
-                                  <div className="employee-name-id">
-                                    <span className="employee-name-label">
-                                      {req.name}
-                                    </span>
-                                    <span className="employee-id-label">
-                                      {req.id} &bull; {req.type}
-                                    </span>
-                                    <span
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#e11d48",
-                                        fontWeight: "600",
-                                        display: "block",
-                                      }}
-                                    >
-                                      {req.alert_message ||
-                                        "Leave request for unpaid leave"}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="low-balance-badge">
-                                  <span
-                                    className="low-balance-days"
-                                    style={{ color: "#ef4444" }}
-                                  >
-                                    {req.unpaid_days}
-                                  </span>
-                                  <span className="low-balance-unit">
-                                    unpaid days
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          })
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Take Action Modal */}
-              {activeRequestModal && (
-                <div
-                  className="popup-overlay"
-                  onClick={() => setActiveRequestModal(null)}
-                >
-                  <div
-                    className="details-popup-card action-modal-card"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="popup-card-header">
-                      <h3>
-                        {activeRequestModal.status === "Pending"
-                          ? "Take Action"
-                          : "Leave Request Details"}
-                      </h3>
-                      <button
-                        className="close-popup-btn"
-                        type="button"
-                        onClick={() => setActiveRequestModal(null)}
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <div className="popup-card-body">
-                      <div className="popup-employee-header">
-                        {activeRequestModal.photo ? (
-                          <img
-                            src={activeRequestModal.photo}
-                            alt={activeRequestModal.name}
-                            className="popup-employee-avatar"
-                          />
-                        ) : (
-                          <div className="popup-employee-initials">
-                            {activeRequestModal.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </div>
-                        )}
-                        <div className="popup-employee-info">
-                          <h4>{activeRequestModal.name}</h4>
-                          <span className="popup-employee-id">
-                            {activeRequestModal.id ||
-                              activeRequestModal.employeeId}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="popup-fields-grid">
-                        <div className="popup-field-row">
-                          <span className="field-label">Leave Type</span>
-                          <span className="field-separator">:</span>
-                          <span className="field-value">
-                            {activeRequestModal.leaveType ||
-                              activeRequestModal.type}
-                          </span>
-                        </div>
-                        <div className="popup-field-row">
-                          <span className="field-label">Leave Dates</span>
-                          <span className="field-separator">:</span>
-                          <span className="field-value">
-                            {activeRequestModal.dates ||
-                              activeRequestModal.leaveDates}
-                          </span>
-                        </div>
-                        <div className="popup-field-row">
-                          <span className="field-label">Duration</span>
-                          <span className="field-separator">:</span>
-                          <span className="field-value">
-                            {activeRequestModal.duration ||
-                              `${activeRequestModal.days} days`}
-                          </span>
-                        </div>
-                        <div className="popup-field-row">
-                          <span className="field-label">Reason</span>
-                          <span className="field-separator">:</span>
-                          <span className="field-value">
-                            {activeRequestModal.reason}
-                          </span>
-                        </div>
-                        <div className="popup-field-row">
-                          <span className="field-label">Current Status</span>
-                          <span className="field-separator">:</span>
-                          <span
-                            className={`status-badge-pill ${activeRequestModal.status.toLowerCase()}`}
-                          >
-                            {activeRequestModal.status}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="popup-modal-actions">
-                        {activeRequestModal.status === "Pending" ? (
-                          <>
-                            <button
-                              type="button"
-                              className="modal-reject-action-btn"
-                              onClick={() => {
-                                handleRejectRequest(
-                                  activeRequestModal.id ||
-                                    activeRequestModal.employeeId,
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
-                              <FaTimes /> Reject
-                            </button>
-                            <button
-                              type="button"
-                              className="modal-approve-action-btn"
-                              onClick={() => {
-                                handleApproveRequest(
-                                  activeRequestModal.id ||
-                                    activeRequestModal.employeeId,
-                                );
-                                setActiveRequestModal(null);
-                              }}
-                            >
-                              <FaCheck /> Approve
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            type="button"
-                            className="modal-approve-action-btn"
-                            onClick={() => setActiveRequestModal(null)}
-                          >
-                            <FaCheck /> Close
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Detailed Employee Leave Report Modal */}
-              {selectedEmpReport && (
-                <div
-                  className="popup-overlay"
-                  onClick={() => setSelectedEmpReport(null)}
-                >
-                  <div
-                    className="details-popup-card report-detail-modal-card"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="popup-card-header">
-                      <h3>Employee Leave Report</h3>
-                      <button
-                        className="close-popup-btn"
-                        type="button"
-                        onClick={() => setSelectedEmpReport(null)}
-                      >
+                      <h3>Leave History — {historyEmpData.name}</h3>
+                      <button className="close-popup-btn" type="button" onClick={() => setShowHistoryModal(false)}>
                         <FaTimes />
                       </button>
                     </div>
                     <div className="popup-card-body scrollable-modal-body">
-                      {/* Section 1: Employee Header Profile */}
                       <div className="popup-employee-header">
-                        {selectedEmpReport.photo ? (
-                          <img
-                            src={selectedEmpReport.photo}
-                            alt={selectedEmpReport.name}
-                            className="popup-employee-avatar"
-                          />
-                        ) : (
-                          <div
-                            className="popup-employee-initials"
-                            style={{ backgroundColor: "#ff5722" }}
-                          >
-                            {selectedEmpReport.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </div>
-                        )}
+                        <div className="popup-employee-initials" style={{ backgroundColor: "#f25c05" }}>
+                          {(historyEmpData.name || "?").split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+                        </div>
                         <div className="popup-employee-info">
-                          <h4>{selectedEmpReport.name}</h4>
-                          <span className="popup-employee-id">
-                            {selectedEmpReport.id} —{" "}
-                            {selectedEmpReport.department}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Section 2: Summary Stats Row */}
-                      <div className="report-modal-stats-grid">
-                        <div className="modal-stat-card entitlement-card">
-                          <span className="modal-stat-label">
-                            Total Entitlement
-                          </span>
-                          <span className="modal-stat-value">
-                            {selectedEmpReport.totalEntitlement} days
-                          </span>
-                        </div>
-                        <div className="modal-stat-card used-card">
-                          <span className="modal-stat-label">Used Leaves</span>
-                          <span className="modal-stat-value">
-                            {selectedEmpReport.usedLeaves} days
-                          </span>
-                        </div>
-                        <div className="modal-stat-card remaining-card">
-                          <span className="modal-stat-label">
-                            Remaining Balance
-                          </span>
-                          <span className="modal-stat-value">
-                            {selectedEmpReport.remainingBalance} days
-                          </span>
-                        </div>
-                        <div className="modal-stat-card attendance-card">
-                          <span className="modal-stat-label">Attendance</span>
-                          <span className="modal-stat-value">
-                            {selectedEmpReport.attendance}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Section 3: Visual Leave Breakdown */}
-                      <div className="leave-breakdown-section">
-                        <h5>Leave Type Breakdown</h5>
-                        {selectedEmpReport.usedLeaves > 0 ? (
-                          <div className="breakdown-chart-flex">
-                            {/* Conic-gradient donut chart */}
-                            {(() => {
-                              const breakdown = {
-                                medical: Math.max(
-                                  1,
-                                  Math.round(
-                                    selectedEmpReport.usedLeaves * 0.25,
-                                  ),
-                                ),
-                                personal: Math.max(
-                                  1,
-                                  Math.round(
-                                    selectedEmpReport.usedLeaves * 0.35,
-                                  ),
-                                ),
-                              };
-                              breakdown.maternityPaternity = Math.max(
-                                0,
-                                selectedEmpReport.usedLeaves -
-                                  breakdown.medical -
-                                  breakdown.personal,
-                              );
-
-                              const total = selectedEmpReport.usedLeaves;
-                              const medicalPct = Math.round(
-                                (breakdown.medical / total) * 100,
-                              );
-                              const personalPct = Math.round(
-                                (breakdown.personal / total) * 100,
-                              );
-                              const matPatPct = 100 - medicalPct - personalPct;
-
-                              return (
-                                <>
-                                  <div className="donut-chart-container">
-                                    <div
-                                      className="donut-chart"
-                                      style={{
-                                        background: `conic-gradient(#ff5722 0% ${medicalPct}%, #4f46e5 ${medicalPct}% ${medicalPct + personalPct}%, #10b981 ${medicalPct + personalPct}% 100%)`,
-                                      }}
-                                    >
-                                      <div className="donut-center">
-                                        <span className="donut-number">
-                                          {selectedEmpReport.usedLeaves}
-                                        </span>
-                                        <span className="donut-label">
-                                          Used
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="donut-chart-legend">
-                                    <div className="legend-row">
-                                      <span className="legend-indicator sick" />
-                                      <span className="legend-label">
-                                        Medical Leave ({breakdown.medical} days —{" "}
-                                        {medicalPct}%)
-                                      </span>
-                                    </div>
-                                    <div className="legend-row">
-                                      <span className="legend-indicator casual" />
-                                      <span className="legend-label">
-                                        Personal Leave ({breakdown.personal} days —{" "}
-                                        {personalPct}%)
-                                      </span>
-                                    </div>
-                                    <div className="legend-row">
-                                      <span className="legend-indicator vacation" />
-                                      <span className="legend-label">
-                                        Maternity/Paternity Leave ({breakdown.maternityPaternity}{" "}
-                                        days — {matPatPct}%)
-                                      </span>
-                                    </div>
-                                  </div>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        ) : (
-                          <div className="empty-chart-message">
-                            No leaves taken by this employee yet.
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Section 4: Recent History List */}
-                      <div className="modal-history-section">
-                        <h5>Recent Leave History</h5>
-                        <div className="modal-history-list">
-                          {leaveHistoryData.filter(
-                            (hist) => hist.employeeId === selectedEmpReport.id,
-                          ).length === 0 ? (
-                            <p className="empty-history-text">
-                              No recent leave requests found.
-                            </p>
-                          ) : (
-                            leaveHistoryData
-                              .filter(
-                                (hist) =>
-                                  hist.employeeId === selectedEmpReport.id,
-                              )
-                              .map((hist) => (
-                                <div
-                                  key={hist.id}
-                                  className="history-list-item"
-                                >
-                                  <div className="item-meta">
-                                    <span className="history-item-dates">
-                                      {hist.dates}
-                                    </span>
-                                    <span className="history-item-type">
-                                      {hist.type}
-                                    </span>
-                                  </div>
-                                  <div className="item-status-reason">
-                                    <span
-                                      className={`status-badge-pill ${hist.status.toLowerCase()}`}
-                                    >
-                                      {hist.status}
-                                    </span>
-                                    <p className="history-item-reason">
-                                      {hist.reason}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))
+                          <h4>{historyEmpData.name}</h4>
+                          <span className="popup-employee-id">{historyEmpData.employee_id} — {historyEmpData.department}</span>
+                          {historyEmpData.designation && (
+                            <span style={{ fontSize: "12px", color: "#f25c05", fontWeight: "600", display: "block" }}>
+                              {historyEmpData.designation}
+                            </span>
                           )}
                         </div>
                       </div>
+                      <div className="modal-history-section">
+                        <HistoryLoader empId={historyEmpData.id} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── View Report Modal ── */}
+              {selectedEmpReport && (
+                <div className="popup-overlay" onClick={() => { setSelectedEmpReport(null); setReportEmpData(null); }}>
+                  <div className="details-popup-card report-detail-modal-card" onClick={(e) => e.stopPropagation()}>
+                    <div className="popup-card-header">
+                      <h3>Employee Leave Report</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <button
+                          type="button"
+                          className="report-download-btn"
+                          onClick={handleDownloadPDF}
+                          disabled={reportEmpDataLoading || !reportEmpData}
+                          title="Download as PDF"
+                        >
+                          <FaFilePdf style={{ marginRight: "6px" }} />
+                          {reportEmpDataLoading ? "Loading..." : "Download Report"}
+                        </button>
+                        <button className="close-popup-btn" type="button" onClick={() => { setSelectedEmpReport(null); setReportEmpData(null); }}>
+                          <FaTimes />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="popup-card-body scrollable-modal-body">
+                      <div className="popup-employee-header">
+                        <div className="popup-employee-initials" style={{ backgroundColor: "#f25c05" }}>
+                          {(selectedEmpReport.name || "?").split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="popup-employee-info">
+                          <h4>{selectedEmpReport.name}</h4>
+                          <span className="popup-employee-id">
+                            {selectedEmpReport.employee_id} — {selectedEmpReport.department}
+                          </span>
+                          {(reportEmpData?.employee?.designation || selectedEmpReport.designation) && (
+                            <span style={{ fontSize: "12px", color: "#f25c05", fontWeight: "600", display: "block", marginTop: "2px" }}>
+                              {reportEmpData?.employee?.designation || selectedEmpReport.designation}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 4 Summary Cards */}
+                      <div className="report-modal-stats-grid">
+                        <div className="modal-stat-card entitlement-card">
+                          <span className="modal-stat-label">Total Entitlement</span>
+                          <span className="modal-stat-value">
+                            {reportEmpData ? reportEmpData.employee.totalEntitlement : selectedEmpReport.totalEntitlement} Days
+                          </span>
+                        </div>
+                        <div className="modal-stat-card used-card">
+                          <span className="modal-stat-label">Paid Leave Used</span>
+                          <span className="modal-stat-value">
+                            {reportEmpData ? reportEmpData.employee.paidLeavesTaken : selectedEmpReport.paidLeavesTaken} Days
+                          </span>
+                        </div>
+                        <div className="modal-stat-card remaining-card">
+                          <span className="modal-stat-label">Remaining Balance</span>
+                          <span className="modal-stat-value">
+                            {reportEmpData ? reportEmpData.employee.remainingBalance : selectedEmpReport.remainingBalance} Days
+                          </span>
+                        </div>
+                        <div className="modal-stat-card attendance-card" style={{ borderLeft: "4px solid #ef4444" }}>
+                          <span className="modal-stat-label">Unpaid Leave Used</span>
+                          <span className="modal-stat-value" style={{ color: "#ef4444" }}>
+                            {reportEmpData ? reportEmpData.employee.unpaidLeavesTaken : selectedEmpReport.unpaidLeavesTaken} Days
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Leave type breakdown from real backend data */}
+                      {reportEmpData && (() => {
+                        const total = Object.values(reportEmpData.leaveTypeUsage || {}).reduce((a, b) => a + b, 0);
+                        if (total === 0) {
+                          return (
+                            <div className="leave-breakdown-section">
+                              <h5>Leave Type Breakdown</h5>
+                              <div className="empty-chart-message">No approved leaves recorded yet.</div>
+                            </div>
+                          );
+                        }
+                        const dist = {
+                          "Personal Leave": 0,
+                          "Medical Leave": 0,
+                          "Maternity Leave": 0,
+                          "Paternity Leave": 0,
+                          ...(reportEmpData.leaveTypeUsage || {})
+                        };
+                        const TYPE_COLORS = {
+                          "Personal Leave": "#f25c05",
+                          "Medical Leave": "#4f46e5",
+                          "Maternity Leave": "#10b981",
+                          "Paternity Leave": "#e11d48"
+                        };
+                        const entries = Object.entries(dist);
+                        const conicEntries = entries.filter(e => e[1] > 0);
+                        return (
+                          <div className="leave-breakdown-section">
+                            <h5>Leave Type Breakdown</h5>
+                            <div className="breakdown-chart-flex">
+                              <div className="donut-chart-container">
+                                <div className="donut-chart" style={{
+                                  background: conicEntries.length > 0 ? `conic-gradient(${conicEntries.map((e, i) => {
+                                    const color = TYPE_COLORS[e[0]] || "#64748b";
+                                    const startPct = conicEntries.slice(0, i).reduce((a, ee) => a + (total > 0 ? (ee[1] / total) * 100 : 0), 0);
+                                    const endPct = conicEntries.slice(0, i + 1).reduce((a, ee) => a + (total > 0 ? (ee[1] / total) * 100 : 0), 0);
+                                    return `${color} ${startPct}% ${endPct}%`;
+                                  }).join(", ")})` : "#cbd5e1"
+                                }}>
+                                  <div className="donut-center">
+                                    <span className="donut-number">{total}</span>
+                                    <span className="donut-label">Days</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="donut-chart-legend">
+                                {entries.map(([type, days]) => {
+                                  const pct = total > 0 ? Math.round((days / total) * 100) : 0;
+                                  const color = TYPE_COLORS[type] || "#64748b";
+                                  return (
+                                    <div key={type} className="legend-row">
+                                      <span className="legend-indicator" style={{ backgroundColor: color }} />
+                                      <span className="legend-label">{type} — {days} days — {pct}%</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Recent Leave History from real backend */}
+                      {reportEmpData && (
+                        <div className="modal-history-section">
+                          <h5>Recent Leave History</h5>
+                          <div className="modal-history-list">
+                            {(reportEmpData.history || []).length === 0 ? (
+                              <p className="empty-history-text">No leave history records found.</p>
+                            ) : (
+                              reportEmpData.history.map((hist, idx) => (
+                                <div key={hist.id || idx} className="history-list-item">
+                                  <div className="item-meta">
+                                    <span className="history-item-dates">{hist.start_date} — {hist.end_date}</span>
+                                    <span className="history-item-type">{hist.leave_type}</span>
+                                  </div>
+                                  <div className="item-status-reason">
+                                    <span className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}>{hist.status}</span>
+                                    <p className="history-item-reason">{hist.reason}</p>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -2876,6 +2903,24 @@ function ManagerDashboard({ onLogout }) {
                       />
                       <span style={{ color: "#475569" }}>Company Holiday</span>
                     </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-block",
+                          width: "10px",
+                          height: "10px",
+                          borderRadius: "50%",
+                          backgroundColor: "#ea580c",
+                        }}
+                      />
+                      <span style={{ color: "#475569" }}>Sunday / Weekly Off</span>
+                    </div>
                   </div>
 
                   <div
@@ -2941,7 +2986,6 @@ function ManagerDashboard({ onLogout }) {
                           dateObj: new Date(calYear, calMonth, i),
                         });
                       }
-                      // Next month leading days to complete grid rows
                       const remaining =
                         dayCells.length % 7 === 0
                           ? 0
@@ -2970,27 +3014,51 @@ function ManagerDashboard({ onLogout }) {
                         const isToday =
                           cell.dateObj.toDateString() ===
                           new Date().toDateString();
+                        const isSunday = cell.dateObj.getDay() === 0;
 
                         let cellBg = "#ffffff";
-                        let dotColor = null;
+                        let dotColors = [];
                         let textColor = "#1e293b";
+
+                        // Determine standard holiday style:
+                        let holidayBg = null;
+                        let holidayDotColor = null;
+                        let holidayTextColor = null;
 
                         if (dayHoliday) {
                           if (dayHoliday.holiday_type === "Public Holiday") {
-                            cellBg = "#eff6ff";
-                            dotColor = "#3b82f6";
-                            textColor = "#1d4ed8";
+                            holidayBg = "#eff6ff";
+                            holidayDotColor = "#3b82f6";
+                            holidayTextColor = "#1d4ed8";
                           } else if (dayHoliday.holiday_type === "Festival") {
-                            cellBg = "#fef9c3";
-                            dotColor = "#eab308";
-                            textColor = "#a16207";
+                            holidayBg = "#fef9c3";
+                            holidayDotColor = "#eab308";
+                            holidayTextColor = "#a16207";
                           } else if (
                             dayHoliday.holiday_type === "Company Holiday"
                           ) {
-                            cellBg = "#fdf2f8";
-                            dotColor = "#ec4899";
-                            textColor = "#be185d";
+                            holidayBg = "#fdf2f8";
+                            holidayDotColor = "#ec4899";
+                            holidayTextColor = "#be185d";
                           }
+                        }
+
+                        // Determine final cellBg, dotColors, textColor
+                        if (isSunday) {
+                          dotColors.push("#ea580c"); // Sunday / Weekly Off indicator (Orange)
+                          if (holidayBg) {
+                            // Show both by using linear gradient
+                            cellBg = `linear-gradient(135deg, #fff7ed 50%, ${holidayBg} 50%)`;
+                            textColor = holidayTextColor;
+                            dotColors.push(holidayDotColor);
+                          } else {
+                            cellBg = "#fff7ed"; // Highlight Sunday in orange
+                            textColor = "#c2410c";
+                          }
+                        } else if (dayHoliday) {
+                          cellBg = holidayBg;
+                          textColor = holidayTextColor;
+                          dotColors.push(holidayDotColor);
                         } else if (!cell.isCurr) {
                           cellBg = "#f8fafc";
                           textColor = "#94a3b8";
@@ -3000,7 +3068,22 @@ function ManagerDashboard({ onLogout }) {
                           <div
                             key={idx}
                             onClick={() => {
-                              if (dayHoliday) {
+                              if (isSunday) {
+                                if (dayHoliday) {
+                                  setSelectedHoliday({
+                                    ...dayHoliday,
+                                    isSunday: true,
+                                  });
+                                } else {
+                                  setSelectedHoliday({
+                                    holiday_name: "Weekly Off",
+                                    holiday_type: "Sunday Holiday",
+                                    holiday_date: cellDateStr,
+                                    description: "Sundays are company weekly holidays.",
+                                    isSunday: true,
+                                  });
+                                }
+                              } else if (dayHoliday) {
                                 setSelectedHoliday(dayHoliday);
                               } else {
                                 setSelectedHoliday({
@@ -3020,11 +3103,11 @@ function ManagerDashboard({ onLogout }) {
                                   ? "2px solid #3b82f6"
                                   : "1px solid #e2e8f0",
                               borderRadius: "12px",
-                              padding: "10px",
+                              padding: "8px 10px",
                               display: "flex",
+                              flexDirection: "column",
                               justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              backgroundColor: cellBg,
+                              background: cellBg,
                               opacity: cell.isCurr ? 1 : 0.5,
                               cursor: "pointer",
                               transition: "all 0.15s ease",
@@ -3034,26 +3117,45 @@ function ManagerDashboard({ onLogout }) {
                                 : "none",
                             }}
                           >
-                            <span
-                              style={{
-                                fontSize: "15px",
-                                fontWeight: "800",
-                                color: textColor,
-                              }}
-                            >
-                              {cell.dayNum}
-                            </span>
-                            {dotColor && (
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                               <span
                                 style={{
-                                  display: "inline-block",
-                                  width: "8px",
-                                  height: "8px",
-                                  borderRadius: "50%",
-                                  backgroundColor: dotColor,
-                                  alignSelf: "center",
+                                  fontSize: "15px",
+                                  fontWeight: "800",
+                                  color: textColor,
                                 }}
-                              />
+                              >
+                                {cell.dayNum}
+                              </span>
+                              {dotColors.length > 0 && (
+                                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                                  {dotColors.map((color, i) => (
+                                    <span
+                                      key={i}
+                                      style={{
+                                        display: "inline-block",
+                                        width: "7px",
+                                        height: "7px",
+                                        borderRadius: "50%",
+                                        backgroundColor: color,
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {isSunday && cell.isCurr && (
+                              <span
+                                style={{
+                                  fontSize: "9px",
+                                  fontWeight: "800",
+                                  color: dayHoliday ? "#ea580c" : "#c2410c",
+                                  marginTop: "auto",
+                                  alignSelf: "flex-start",
+                                }}
+                              >
+                                Weekly Off
+                              </span>
                             )}
                           </div>
                         );
@@ -3061,6 +3163,59 @@ function ManagerDashboard({ onLogout }) {
                     })()}
                   </div>
                 </div>
+
+                {/* Monthly Holiday List */}
+                {(() => {
+                  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                  const monthHolidays = holidaysList.filter((h) => {
+                    if (!h.holiday_date) return false;
+                    const parts = h.holiday_date.split("-");
+                    if (parts.length < 2) return false;
+                    const hYear = parseInt(parts[0], 10);
+                    const hMonth = parseInt(parts[1], 10) - 1;
+                    return hYear === calYear && hMonth === calMonth;
+                  });
+                  return (
+                    <div style={{ marginTop: "20px", padding: "20px 24px", background: "#fff", border: "1px solid #f1e4dc", borderRadius: "14px", boxShadow: "0 2px 12px rgba(242,92,5,0.04)" }}>
+                      <h4 style={{ margin: "0 0 14px", fontSize: "14px", fontWeight: "800", color: "#0f172a" }}>
+                        Holidays in {MONTH_NAMES[calMonth]} {calYear}
+                      </h4>
+                      {holidaysLoading ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "24px 0", color: "#ea580c", fontWeight: "600", fontSize: "13px" }}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                          </svg>
+                          Loading holidays...
+                        </div>
+                      ) : monthHolidays.length === 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "24px 0", color: "#94a3b8" }}>
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                            <line x1="9" y1="15" x2="15" y2="15" />
+                          </svg>
+                          <div style={{ fontWeight: "700", fontSize: "13px", color: "#64748b" }}>No holidays this month</div>
+                          <div style={{ fontSize: "12px", color: "#94a3b8" }}>Add holidays using the form below.</div>
+                        </div>
+                      ) : (
+                        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+                          {monthHolidays.map((h) => (
+                            <li key={h.id || h.holiday_date} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", borderRadius: "8px", background: "#fff7ed", border: "1px solid #fed7aa" }}>
+                              <span style={{ fontSize: "13px", fontWeight: "700", color: "#ea580c", minWidth: "72px" }}>
+                                {formatDateNicely(h.holiday_date)}
+                              </span>
+                              <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b" }}>{h.holiday_name}</span>
+                              <span style={{ marginLeft: "auto", fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "6px", background: "#ffedd5", color: "#c2410c" }}>{h.holiday_type}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Right side: Selected day/holiday details */}
                 <div
@@ -3097,47 +3252,81 @@ function ManagerDashboard({ onLogout }) {
                           alignItems: "center",
                           gap: "8px",
                           marginBottom: "14px",
+                          flexWrap: "wrap",
                         }}
                       >
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            padding: "4px 10px",
-                            borderRadius: "8px",
-                            fontSize: "11px",
-                            fontWeight: "700",
-                            backgroundColor:
-                              selectedHoliday.holiday_type === "Public Holiday"
-                                ? "#eff6ff"
-                                : selectedHoliday.holiday_type === "Festival"
-                                  ? "#fef9c3"
-                                  : selectedHoliday.holiday_type ===
-                                      "Company Holiday"
-                                    ? "#fdf2f8"
-                                    : "#f1f5f9",
-                            color:
-                              selectedHoliday.holiday_type === "Public Holiday"
-                                ? "#1d4ed8"
-                                : selectedHoliday.holiday_type === "Festival"
-                                  ? "#a16207"
-                                  : selectedHoliday.holiday_type ===
-                                      "Company Holiday"
-                                    ? "#be185d"
-                                    : "#475569",
-                            border: `1px solid ${
-                              selectedHoliday.holiday_type === "Public Holiday"
-                                ? "#bfdbfe"
-                                : selectedHoliday.holiday_type === "Festival"
-                                  ? "#fef08a"
-                                  : selectedHoliday.holiday_type ===
-                                      "Company Holiday"
-                                    ? "#fbcfe8"
-                                    : "#cbd5e1"
-                            }`,
-                          }}
-                        >
-                          {selectedHoliday.holiday_type || "Working Day"}
-                        </span>
+                        {selectedHoliday.holiday_type && selectedHoliday.holiday_type !== "Sunday Holiday" && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              backgroundColor:
+                                selectedHoliday.holiday_type === "Public Holiday"
+                                  ? "#eff6ff"
+                                  : selectedHoliday.holiday_type === "Festival"
+                                    ? "#fef9c3"
+                                    : selectedHoliday.holiday_type === "Company Holiday"
+                                      ? "#fdf2f8"
+                                      : "#f1f5f9",
+                              color:
+                                selectedHoliday.holiday_type === "Public Holiday"
+                                  ? "#1d4ed8"
+                                  : selectedHoliday.holiday_type === "Festival"
+                                    ? "#a16207"
+                                    : selectedHoliday.holiday_type === "Company Holiday"
+                                      ? "#be185d"
+                                      : "#475569",
+                              border: `1px solid ${
+                                selectedHoliday.holiday_type === "Public Holiday"
+                                  ? "#bfdbfe"
+                                  : selectedHoliday.holiday_type === "Festival"
+                                    ? "#fef08a"
+                                    : selectedHoliday.holiday_type === "Company Holiday"
+                                      ? "#fbcfe8"
+                                      : "#cbd5e1"
+                              }`,
+                            }}
+                          >
+                            {selectedHoliday.holiday_type}
+                          </span>
+                        )}
+
+                        {selectedHoliday.isSunday && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              backgroundColor: "#fff7ed",
+                              color: "#c2410c",
+                              border: "1px solid #fed7aa",
+                            }}
+                          >
+                            Sunday Holiday
+                          </span>
+                        )}
+
+                        {!selectedHoliday.holiday_type && !selectedHoliday.isSunday && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              padding: "4px 10px",
+                              borderRadius: "8px",
+                              fontSize: "11px",
+                              fontWeight: "700",
+                              backgroundColor: "#f1f5f9",
+                              color: "#475569",
+                              border: "1px solid #cbd5e1",
+                            }}
+                          >
+                            Working Day
+                          </span>
+                        )}
                       </div>
 
                       <h4
@@ -3149,6 +3338,19 @@ function ManagerDashboard({ onLogout }) {
                         }}
                       >
                         {selectedHoliday.holiday_name}
+                        {selectedHoliday.isSunday && selectedHoliday.holiday_type && selectedHoliday.holiday_type !== "Sunday Holiday" && (
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: "700",
+                              color: "#ea580c",
+                              marginLeft: "8px",
+                              display: "inline-block",
+                            }}
+                          >
+                            (Weekly Off)
+                          </span>
+                        )}
                       </h4>
 
                       <p
@@ -3190,8 +3392,12 @@ function ManagerDashboard({ onLogout }) {
                           border: "1px solid #f1f5f9",
                         }}
                       >
-                        {selectedHoliday.description ||
-                          "No description provided."}
+                        {selectedHoliday.description || "No description provided."}
+                        {selectedHoliday.isSunday && selectedHoliday.holiday_type && selectedHoliday.holiday_type !== "Sunday Holiday" && (
+                          <span style={{ display: "block", marginTop: "8px", paddingTop: "8px", borderTop: "1px dashed #cbd5e1", fontSize: "12px", color: "#ea580c", fontWeight: "600" }}>
+                            Note: Sundays are company weekly holidays.
+                          </span>
+                        )}
                       </p>
 
                       {/* Delete button only for manager-added holidays, i.e., ID > 20 */}
@@ -3555,6 +3761,7 @@ function ManagerDashboard({ onLogout }) {
               )}
             </div>
           )}
+          </div>
         </section>
       </div>
 
@@ -3593,6 +3800,203 @@ function ManagerDashboard({ onLogout }) {
               >
                 Logout
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Holiday Confirmation Modal */}
+      {deleteHolidayConfirmation.show && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.50)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#ffffff",
+            borderRadius: "16px",
+            maxWidth: "440px", width: "90%",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.20)",
+            fontFamily: "'Poppins', sans-serif",
+            overflow: "hidden",
+            borderLeft: "5px solid #ea580c",
+            padding: "24px 28px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
+              <div style={{
+                width: "42px", height: "42px", borderRadius: "10px",
+                background: "#fff7ed",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#ea580c",
+                fontSize: "18px", flexShrink: 0
+              }}>
+                <FaExclamationTriangle />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#1e293b" }}>
+                  Delete Holiday
+                </h3>
+              </div>
+            </div>
+            <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#475569", lineHeight: "1.6" }}>
+              Are you sure you want to delete this holiday?
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 18px", borderRadius: "8px", border: "1.5px solid #cbd5e1",
+                  background: "#ffffff", color: "#475569", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={() => setDeleteHolidayConfirmation({ show: false, holidayId: null })}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 18px", borderRadius: "8px", border: "none",
+                  background: "#ea580c", color: "#ffffff", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={async () => {
+                  const holidayId = deleteHolidayConfirmation.holidayId;
+                  setDeleteHolidayConfirmation({ show: false, holidayId: null });
+                  try {
+                    const response = await fetch(`http://localhost:5000/api/holidays/${holidayId}`, {
+                      method: "DELETE",
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      showToast("Holiday deleted successfully", "success");
+                      setSelectedHoliday(null);
+                      await fetchHolidays();
+                    } else {
+                      showToast(data.message || "Failed to delete holiday.", "error");
+                    }
+                  } catch (err) {
+                    console.error(err);
+                    showToast("Something went wrong. Backend connection failed.", "error");
+                  }
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div className={`manager-toast-container ${toast.type}`}>
+          <div className="toast-content">
+            <span className="toast-icon">
+              {toast.type === "success" ? "✓" : toast.type === "error" ? "✗" : "ℹ"}
+            </span>
+            <span className="toast-message">{toast.message}</span>
+          </div>
+        </div>
+      )}
+      {/* Approve Leave Confirmation Modal */}
+      {approveConfirmation.show && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.50)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "16px", maxWidth: "440px", width: "90%",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.20)", fontFamily: "'Poppins', sans-serif",
+            overflow: "hidden", borderLeft: "5px solid #16a34a", padding: "24px 28px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
+              <div style={{
+                width: "42px", height: "42px", borderRadius: "10px", background: "#f0fdf4",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#16a34a", fontSize: "20px", flexShrink: 0
+              }}>✓</div>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#1e293b" }}>
+                Approve Leave Request
+              </h3>
+            </div>
+            <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#475569", lineHeight: "1.6" }}>
+              Are you sure you want to <strong>approve</strong> the leave request for <strong>{approveConfirmation.requestName}</strong>?
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 18px", borderRadius: "8px", border: "1.5px solid #cbd5e1",
+                  background: "#ffffff", color: "#475569", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={() => setApproveConfirmation({ show: false, dbId: null, requestName: "" })}
+              >Cancel</button>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 22px", borderRadius: "8px", border: "none",
+                  background: "#16a34a", color: "#ffffff", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={() => {
+                  const dbId = approveConfirmation.dbId;
+                  setApproveConfirmation({ show: false, dbId: null, requestName: "" });
+                  handleApproveRequest(dbId);
+                }}
+              >Approve</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Leave Confirmation Modal */}
+      {rejectConfirmation.show && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.50)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: "#ffffff", borderRadius: "16px", maxWidth: "440px", width: "90%",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.20)", fontFamily: "'Poppins', sans-serif",
+            overflow: "hidden", borderLeft: "5px solid #dc2626", padding: "24px 28px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
+              <div style={{
+                width: "42px", height: "42px", borderRadius: "10px", background: "#fef2f2",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#dc2626", fontSize: "20px", flexShrink: 0
+              }}>✗</div>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "800", color: "#1e293b" }}>
+                Reject Leave Request
+              </h3>
+            </div>
+            <p style={{ margin: "0 0 20px", fontSize: "14px", color: "#475569", lineHeight: "1.6" }}>
+              Are you sure you want to <strong>reject</strong> the leave request for <strong>{rejectConfirmation.requestName}</strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 18px", borderRadius: "8px", border: "1.5px solid #cbd5e1",
+                  background: "#ffffff", color: "#475569", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={() => setRejectConfirmation({ show: false, dbId: null, requestName: "" })}
+              >Cancel</button>
+              <button
+                type="button"
+                style={{
+                  padding: "9px 22px", borderRadius: "8px", border: "none",
+                  background: "#dc2626", color: "#ffffff", fontWeight: "700", fontSize: "13px",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+                onClick={() => {
+                  const dbId = rejectConfirmation.dbId;
+                  setRejectConfirmation({ show: false, dbId: null, requestName: "" });
+                  handleRejectRequest(dbId);
+                }}
+              >Reject</button>
             </div>
           </div>
         </div>
