@@ -184,6 +184,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const [submitting, setSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ show: false, type: null, paid: 0, unpaid: 0 });
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Body scroll lock inside ApplyLeaveForm — prevents page scroll when child modals are open
   useEffect(() => {
@@ -292,10 +293,10 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     let total = 0;       // total calendar days
     let excluded = 0;   // Sundays + holidays
     let actual = 0;     // working leave days
-    let workingDayCount = 0; // used only for Maternity/Paternity counter
+    let benefitCounter = 0; // counts actual days against benefit quota
 
-    const isIndependentPaid = leaveType === "Maternity Leave" || leaveType === "Paternity Leave";
-    const maxPaidDays = leaveType === "Maternity Leave" ? 182 : (leaveType === "Paternity Leave" ? 15 : 0);
+    const maxBenefitDays = leaveType === "Maternity Leave" ? 182 : (leaveType === "Paternity Leave" ? 15 : 0);
+    const isBenefitType = maxBenefitDays > 0;
 
     let curr = parseLocal(from);
     const end = parseLocal(to);
@@ -310,18 +311,27 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         excluded++;
       } else {
         actual++;
-        if (isIndependentPaid) {
-          workingDayCount++;
-          if (workingDayCount <= maxPaidDays) {
+        const monthKey = toYYYYMM(curr);
+        if (!approvedOrPendingDaysByMonth[monthKey]) {
+          approvedOrPendingDaysByMonth[monthKey] = new Set();
+        }
+
+        if (isBenefitType) {
+          benefitCounter++;
+          if (benefitCounter <= maxBenefitDays) {
+            // Within benefit quota — fully paid, does NOT consume monthly balance
             paid++;
           } else {
-            unpaid++;
+            // Benefit exhausted — try monthly paid balance
+            const countInMonth = approvedOrPendingDaysByMonth[monthKey].size;
+            if (countInMonth < MONTHLY_PAID_LIMIT) {
+              paid++;
+              approvedOrPendingDaysByMonth[monthKey].add(dateStr);
+            } else {
+              unpaid++;
+            }
           }
         } else {
-          const monthKey = toYYYYMM(curr);
-          if (!approvedOrPendingDaysByMonth[monthKey]) {
-            approvedOrPendingDaysByMonth[monthKey] = new Set();
-          }
           const countInMonth = approvedOrPendingDaysByMonth[monthKey].size;
           if (countInMonth < MONTHLY_PAID_LIMIT) {
             paid++;
@@ -374,6 +384,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setToTime("05:00 PM");
     setReason("");
     setCharCount(0);
+    setSubmitError("");
   };
 
   // The actual API call — invoked either directly (Paid) or after modal confirmation
@@ -381,6 +392,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) { alert("User not found. Please login again."); return; }
     setConfirmModal({ show: false, type: null, paid: 0, unpaid: 0 });
+    setSubmitError("");
     setSubmitting(true);
     try {
       const response = await fetch("http://localhost:5000/api/leave/apply", {
@@ -399,11 +411,11 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         handleReset();
         if (onApplyLeave) onApplyLeave();
       } else {
-        alert(data.message || "Leave application failed. Please try again.");
+        setSubmitError(data.message || "Leave application failed. Please try again.");
       }
     } catch (err) {
       console.error("Apply leave error:", err);
-      alert("Backend connection failed. Please check your network.");
+      setSubmitError("Backend connection failed. Please check your network.");
     } finally {
       setSubmitting(false);
     }
@@ -487,6 +499,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 setLeaveType(e.target.value);
                 setFromDate(null);
                 setToDate(null);
+                setSubmitError("");
               }}
             >
               <option value="" disabled>Select Leave Type</option>
@@ -661,6 +674,13 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
           </div>
           <span className="reason-char-count">{charCount} / 300</span>
         </div>
+
+        {submitError && (
+          <div className="apply-leave-error-banner">
+            <span className="error-icon">⚠️</span>
+            <span className="error-text">{submitError}</span>
+          </div>
+        )}
 
         <div className="leave-form-actions">
           <button
@@ -1442,7 +1462,12 @@ function LeaveSummaryView() {
     const monthlyUsed = {}; // { 'YYYY-MM': number }
 
     approvedLeaves.forEach((leave) => {
-      const isIndependent = leave.leave_type === "Maternity Leave" || leave.leave_type === "Paternity Leave";
+      const isMaternity = leave.leave_type === "Maternity Leave";
+      const isPaternity = leave.leave_type === "Paternity Leave";
+      const isBenefitType = isMaternity || isPaternity;
+      const maxBenefit = isMaternity ? 182 : 15;
+      let benefitCounter = 0;
+
       let curr = parseLocal(leave.start_date);
       const end = parseLocal(leave.end_date);
       if (!curr || !end) return;
@@ -1459,8 +1484,18 @@ function LeaveSummaryView() {
 
         if (!isSunday && !isHoliday) {
           let status = "Unpaid";
-          if (isIndependent) {
-            status = "Paid";
+          if (isBenefitType) {
+            benefitCounter++;
+            if (benefitCounter <= maxBenefit) {
+              status = "Paid";
+            } else {
+              // Overflow: uses monthly paid leave balance
+              if (!monthlyUsed[monthKey]) monthlyUsed[monthKey] = 0;
+              if (monthlyUsed[monthKey] < MONTHLY_PAID_LIMIT) {
+                status = "Paid";
+                monthlyUsed[monthKey]++;
+              }
+            }
           } else {
             if (!monthlyUsed[monthKey]) monthlyUsed[monthKey] = 0;
             if (monthlyUsed[monthKey] < MONTHLY_PAID_LIMIT) {
@@ -1482,7 +1517,110 @@ function LeaveSummaryView() {
     return { detail, paidCount, unpaidCount, totalCount: paidCount + unpaidCount };
   };
 
+  const getYearlySummary = () => {
+    const parseLocal = (dVal) => {
+      if (!dVal) return null;
+      const d = new Date(dVal);
+      if (isNaN(d.getTime())) return null;
+      if (typeof dVal === 'string') {
+        const parts = dVal.split('T')[0].split('-');
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          } else if (parts[2].length === 4) {
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          }
+        }
+      }
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+
+    const currentYear = new Date().getFullYear();
+    const approvedLeaves = allLeaves.filter(leave => leave.status.toLowerCase() === "approved");
+    const holidayDates = new Set(holidays.map(h => h.holiday_date));
+    const monthlyUsed = {}; // { 'YYYY-MM': number }
+
+    let totalPaidTakenThisYear = 0;
+    let totalUnpaidTakenThisYear = 0;
+    let annualPaidTakenThisYear = 0;
+
+    // Process approved leaves chronologically to compute annual/monthly balance usage
+    const sortedApprovedLeaves = [...approvedLeaves].sort((a, b) => parseLocal(a.start_date) - parseLocal(b.start_date) || a.id - b.id);
+
+    sortedApprovedLeaves.forEach((leave) => {
+      const isMaternity = leave.leave_type === "Maternity Leave";
+      const isPaternity = leave.leave_type === "Paternity Leave";
+      const isBenefitType = isMaternity || isPaternity;
+      const maxBenefit = isMaternity ? 182 : 15;
+      let benefitCounter = 0;
+
+      let curr = parseLocal(leave.start_date);
+      const end = parseLocal(leave.end_date);
+      if (!curr || !end) return;
+
+      const leaveStartYear = curr.getFullYear();
+
+      while (curr <= end) {
+        const yyyy = curr.getFullYear();
+        const mm = String(curr.getMonth() + 1).padStart(2, '0');
+        const dd = String(curr.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const monthKey = `${yyyy}-${mm}`;
+
+        const isSunday = curr.getDay() === 0;
+        const isHoliday = holidayDates.has(dateStr);
+
+        if (!isSunday && !isHoliday) {
+          let isPaid = false;
+          if (isBenefitType) {
+            benefitCounter++;
+            if (benefitCounter <= maxBenefit) {
+              isPaid = true;
+            } else {
+              // Overflow: uses monthly paid leave balance
+              if (!monthlyUsed[monthKey]) monthlyUsed[monthKey] = 0;
+              if (monthlyUsed[monthKey] < MONTHLY_PAID_LIMIT) {
+                isPaid = true;
+                monthlyUsed[monthKey]++;
+                if (leaveStartYear === currentYear) {
+                  annualPaidTakenThisYear++;
+                }
+              }
+            }
+          } else {
+            if (!monthlyUsed[monthKey]) monthlyUsed[monthKey] = 0;
+            if (monthlyUsed[monthKey] < MONTHLY_PAID_LIMIT) {
+              isPaid = true;
+              monthlyUsed[monthKey]++;
+              if (leaveStartYear === currentYear) {
+                annualPaidTakenThisYear++;
+              }
+            }
+          }
+
+          if (leaveStartYear === currentYear) {
+            if (isPaid) {
+              totalPaidTakenThisYear++;
+            } else {
+              totalUnpaidTakenThisYear++;
+            }
+          }
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+    });
+
+    const remainingPaid = Math.max(0, ANNUAL_PAID_ALLOCATION - annualPaidTakenThisYear);
+
+    return {
+      totalPaidTakenThisYear,
+      totalUnpaidTakenThisYear,
+      remainingPaid
+    };
+  };
+
   const { detail: leaveDaysDetail, paidCount, unpaidCount, totalCount } = getMonthlyLeaveDaysDetail();
+  const yearlySummary = getYearlySummary();
 
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
   const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
@@ -1546,7 +1684,7 @@ function LeaveSummaryView() {
               <div className="card-icon" style={{ backgroundColor: "#fff7ed", padding: "6px", borderRadius: "8px" }}><FaCheck /></div>
               <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Paid Leave Taken (This Year)</strong>
             </div>
-            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.totalPaidTakenThisYear} Days</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{yearlySummary.totalPaidTakenThisYear} Days</div>
             <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Includes all approved paid leaves</div>
           </div>
 
@@ -1555,8 +1693,8 @@ function LeaveSummaryView() {
               <div className="card-icon" style={{ backgroundColor: "#f0fdfa", padding: "6px", borderRadius: "8px" }}><FaRegChartBar /></div>
               <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Balance Leave (Paid Yearly)</strong>
             </div>
-            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.remainingPaid} Days</div>
-            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>{ANNUAL_PAID_ALLOCATION} - {summary.totalPaidTakenThisYear} = {summary.remainingPaid} days remaining</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{yearlySummary.remainingPaid} Days</div>
+            <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>{ANNUAL_PAID_ALLOCATION} - {yearlySummary.totalPaidTakenThisYear} = {yearlySummary.remainingPaid} days remaining</div>
           </div>
 
           <div className="card" style={{ padding: "16px", borderRadius: "12px", backgroundColor: "#f8fafc", border: "1px solid #e2e8f0" }}>
@@ -1564,7 +1702,7 @@ function LeaveSummaryView() {
               <div className="card-icon" style={{ backgroundColor: "#f5f3ff", padding: "6px", borderRadius: "8px" }}><FaRegClock /></div>
               <strong style={{ fontSize: "12px", fontWeight: "600" }}>Total Unpaid Leave (This Year)</strong>
             </div>
-            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{summary.totalUnpaidTakenThisYear} Days</div>
+            <div className="value" style={{ fontSize: "20px", fontWeight: "800", color: "#1e293b", margin: "4px 0" }}>{yearlySummary.totalUnpaidTakenThisYear} Days</div>
             <div className="muted" style={{ fontSize: "11px", color: "#64748b" }}>Days taken beyond paid limit</div>
           </div>
         </div>
@@ -2182,6 +2320,10 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
     const paymentType = leave.payment_type || "Paid";
     const paid = leave.paid_days ?? leave.leave_days ?? 0;
     const unpaid = leave.unpaid_days ?? 0;
+    // alert_message for benefit types contains the breakdown string e.g. "15 Paternity + 1 Monthly"
+    const isBreakdownMsg = leave.alert_message &&
+      (leave.alert_message.includes("Paternity") || leave.alert_message.includes("Maternity") || leave.alert_message.includes("Monthly"));
+    const breakdownText = isBreakdownMsg ? leave.alert_message : null;
 
     let style = {
       backgroundColor: "#f0fdf4",
@@ -2196,24 +2338,27 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
       justifyContent: "center",
       width: "fit-content"
     };
-    let text = `${paid} Paid`;
+    let badgeLabel = "Paid";
+    let subText = breakdownText || `${paid} Paid`;
 
     if (paymentType === "Partly Paid") {
       style.backgroundColor = "#ffe4e6";
       style.color = "#be123c";
       style.border = "1px solid #fecaca";
-      text = `${paid} Paid + ${unpaid} Unpaid`;
+      badgeLabel = "Partly Paid";
+      subText = breakdownText || `${paid} Paid + ${unpaid} Unpaid`;
     } else if (paymentType === "Unpaid") {
       style.backgroundColor = "#fef2f2";
       style.color = "#dc2626";
       style.border = "1px solid #fecaca";
-      text = `${unpaid} Unpaid`;
+      badgeLabel = "Unpaid";
+      subText = `${unpaid} Unpaid`;
     }
 
     return (
       <div style={{ display: "inline-flex", flexDirection: "column", gap: "4px", alignItems: "flex-start" }}>
-        <span style={style}>{paymentType}</span>
-        <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "500" }}>{text}</span>
+        <span style={style}>{badgeLabel}</span>
+        <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "500" }}>{subText}</span>
       </div>
     );
   };
