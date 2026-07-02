@@ -4,10 +4,8 @@ const { recalculateForEmployee, MONTHLY_PAID_LIMIT, ANNUAL_PAID_ALLOCATION } = r
 
 const router = express.Router();
 
-// Leave types independent of the monthly paid leave limit (always fully paid)
-const INDEPENDENT_PAID_TYPES = ["Maternity Leave", "Paternity Leave"];
-// Max allowed days for each independent leave type
-const LEAVE_MAX_DAYS = { "Maternity Leave": 182, "Paternity Leave": 15 };
+// Benefit leave types: get a fixed quota of paid days, then fall back to monthly balance
+const BENEFIT_TYPES = { "Maternity Leave": 182, "Paternity Leave": 15 };
 
 // ─── Shared helpers (kept for computePaidUnpaid during insert preview) ─────────
 function toMonthKey(d) {
@@ -20,8 +18,10 @@ function buildMonthlyCounters(existingLeaves, holidayDates) {
     (a, b) => new Date(a.start_date) - new Date(b.start_date) || a.id - b.id
   );
   sorted.forEach((leave) => {
-    // Maternity/Paternity: fully paid, does NOT consume monthly quota
-    if (INDEPENDENT_PAID_TYPES.includes(leave.leave_type)) return;
+    const maxBenefitDays = BENEFIT_TYPES[leave.leave_type] || 0;
+    const isBenefitType = maxBenefitDays > 0;
+    let benefitCounter = 0;
+
     let curr = new Date(leave.start_date);
     const end = new Date(leave.end_date);
     while (curr <= end) {
@@ -36,7 +36,17 @@ function buildMonthlyCounters(existingLeaves, holidayDates) {
       if (!isSunday && !isHoliday) {
         const mk = toMonthKey(curr);
         if (!counters[mk]) counters[mk] = 0;
-        if (counters[mk] < MONTHLY_PAID_LIMIT) counters[mk]++;
+
+        if (isBenefitType) {
+          benefitCounter++;
+          if (benefitCounter > maxBenefitDays) {
+            // Overflow days from benefit type consume monthly balance
+            if (counters[mk] < MONTHLY_PAID_LIMIT) counters[mk]++;
+          }
+          // Days within benefit quota do NOT consume monthly balance
+        } else {
+          if (counters[mk] < MONTHLY_PAID_LIMIT) counters[mk]++;
+        }
       }
       curr.setDate(curr.getDate() + 1);
     }
@@ -50,10 +60,12 @@ function computePaidUnpaid(startDate, endDate, counters, leaveType, holidayDates
   let total_calendar = 0;
   let excluded = 0;
   let actual_leave = 0;
-  let workingDayCount = 0;
+  let benefitCounter = 0;
+  let benefitDaysUsed = 0;
+  let monthlyPaidDaysUsed = 0;
 
-  const isIndependentPaid = INDEPENDENT_PAID_TYPES.includes(leaveType);
-  const maxPaidDays = leaveType === "Maternity Leave" ? 182 : (leaveType === "Paternity Leave" ? 15 : 0);
+  const maxBenefitDays = BENEFIT_TYPES[leaveType] || 0;
+  const isBenefitType = maxBenefitDays > 0;
 
   let curr = new Date(startDate);
   const end = new Date(endDate);
@@ -75,12 +87,21 @@ function computePaidUnpaid(startDate, endDate, counters, leaveType, holidayDates
       const mk = toMonthKey(curr);
       if (!counters[mk]) counters[mk] = 0;
 
-      if (isIndependentPaid) {
-        workingDayCount++;
-        if (workingDayCount <= maxPaidDays) {
+      if (isBenefitType) {
+        benefitCounter++;
+        if (benefitCounter <= maxBenefitDays) {
+          // Within benefit quota — fully paid
           paid++;
+          benefitDaysUsed++;
         } else {
-          unpaid++;
+          // Benefit exhausted — try monthly paid balance
+          if (counters[mk] < MONTHLY_PAID_LIMIT) {
+            paid++;
+            monthlyPaidDaysUsed++;
+            counters[mk]++;
+          } else {
+            unpaid++;
+          }
         }
       } else {
         // Personal/Medical: counted against monthly paid leave limit
@@ -95,23 +116,21 @@ function computePaidUnpaid(startDate, endDate, counters, leaveType, holidayDates
     curr.setDate(curr.getDate() + 1);
   }
 
-  return { paid, unpaid, total: total_calendar, excluded, actual_leave };
+  return { paid, unpaid, total: total_calendar, excluded, actual_leave, benefitDaysUsed, monthlyPaidDaysUsed };
 }
 
-function resolvePaymentMeta(paid, unpaid, leaveType) {
-  if (leaveType === "Maternity Leave") {
-    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
-    return {
-      payment_type: "Partly Paid",
-      alert_message: `First 182 days are treated as Paid Maternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
-    };
-  }
-  if (leaveType === "Paternity Leave") {
-    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
-    return {
-      payment_type: "Partly Paid",
-      alert_message: `First 15 days are treated as Paid Paternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
-    };
+function resolvePaymentMeta(paid, unpaid, leaveType, benefitDaysUsed, monthlyPaidDaysUsed) {
+  if (leaveType === "Maternity Leave" || leaveType === "Paternity Leave") {
+    const typeName = leaveType === "Maternity Leave" ? "Maternity" : "Paternity";
+    const parts = [];
+    if (benefitDaysUsed > 0) parts.push(`${benefitDaysUsed} ${typeName}`);
+    if (monthlyPaidDaysUsed > 0) parts.push(`${monthlyPaidDaysUsed} Monthly`);
+    if (unpaid > 0) parts.push(`${unpaid} Unpaid`);
+    const breakdownStr = parts.join(" + ");
+    if (unpaid === 0) {
+      return { payment_type: "Paid", alert_message: breakdownStr || null };
+    }
+    return { payment_type: "Partly Paid", alert_message: breakdownStr };
   }
 
   if (paid === 0 && unpaid === 0) return { payment_type: "Paid", alert_message: null };
@@ -134,85 +153,129 @@ router.post("/apply", (req, res) => {
     return res.status(400).json({ success: false, message: "All fields are required." });
   }
 
-  // Step 1: overlap check
-  const overlapSql = `
-    SELECT id FROM leave_requests
-    WHERE employee_id = ?
-      AND status IN ('Pending', 'Approved')
-      AND ? <= end_date
-      AND ? >= start_date
-    LIMIT 1
-  `;
-  db.query(overlapSql, [employee_id, start_date, end_date], (overlapErr, overlapResult) => {
-    if (overlapErr) return res.status(500).json({ success: false, message: "Server error during overlap check." });
-    if (overlapResult.length > 0) {
-      return res.status(400).json({ success: false, message: "You already have a leave request for these dates." });
+  // Step 0: Eligibility check (gender + annual check)
+  const genderSql = "SELECT gender FROM users WHERE id = ?";
+  db.query(genderSql, [employee_id], (genderErr, genderResult) => {
+    if (genderErr) return res.status(500).json({ success: false, message: "Server error checking eligibility." });
+    if (genderResult.length === 0) return res.status(404).json({ success: false, message: "Employee not found." });
+
+    const gender = genderResult[0].gender;
+
+    if (leave_type === "Maternity Leave" && gender === "Male") {
+      return res.status(400).json({ success: false, message: "Maternity Leave is only eligible for Female employees." });
+    }
+    if (leave_type === "Paternity Leave" && gender === "Female") {
+      return res.status(400).json({ success: false, message: "Paternity Leave is only eligible for Male employees." });
     }
 
-    // Step 2: fetch existing Approved/Pending leaves for this employee
-    const existingSql = `
-      SELECT id, start_date, end_date, leave_type FROM leave_requests
-      WHERE employee_id = ? AND status IN ('Approved', 'Pending')
-      ORDER BY start_date ASC, id ASC
-    `;
-    db.query(existingSql, [employee_id], (balErr, existingLeaves) => {
-      if (balErr) return res.status(500).json({ success: false, message: "Server error fetching existing leaves." });
-
-      // Fetch holidays from database
-      const holidaysSql = "SELECT DATE_FORMAT(holiday_date, '%Y-%m-%d') AS holiday_date FROM company_holidays";
-      db.query(holidaysSql, (holidaysErr, holidayRows) => {
-        if (holidaysErr) return res.status(500).json({ success: false, message: "Server error fetching holidays." });
-
-        const holidayDates = new Set();
-        if (holidayRows) {
-          holidayRows.forEach(row => {
-            holidayDates.add(row.holiday_date);
+    if (leave_type === "Maternity Leave" || leave_type === "Paternity Leave") {
+      const year = new Date(start_date).getFullYear();
+      const annualCheckSql = `
+        SELECT id FROM leave_requests
+        WHERE employee_id = ?
+          AND leave_type = ?
+          AND status IN ('Pending', 'Approved')
+          AND (YEAR(start_date) = ? OR YEAR(end_date) = ?)
+        LIMIT 1
+      `;
+      db.query(annualCheckSql, [employee_id, leave_type, year, year], (annualCheckErr, annualCheckResult) => {
+        if (annualCheckErr) return res.status(500).json({ success: false, message: "Server error during annual validation." });
+        if (annualCheckResult.length > 0) {
+          const benefitName = leave_type === "Maternity Leave" ? "Maternity" : "Paternity";
+          return res.status(400).json({
+            success: false,
+            message: `You have already applied for ${benefitName} Leave in this calendar year. This benefit can only be availed once per year.`
           });
         }
+        proceedWithOverlapCheck();
+      });
+    } else {
+      proceedWithOverlapCheck();
+    }
+  });
 
-        // Step 3: compute preview paid/unpaid for the new request
-        const counters = buildMonthlyCounters(existingLeaves, holidayDates);
-        const { paid, unpaid, total, excluded, actual_leave } = computePaidUnpaid(start_date, end_date, counters, leave_type, holidayDates);
+  function proceedWithOverlapCheck() {
+    // Step 1: overlap check
+    const overlapSql = `
+      SELECT id FROM leave_requests
+      WHERE employee_id = ?
+        AND status IN ('Pending', 'Approved')
+        AND ? <= end_date
+        AND ? >= start_date
+      LIMIT 1
+    `;
+    db.query(overlapSql, [employee_id, start_date, end_date], (overlapErr, overlapResult) => {
+      if (overlapErr) return res.status(500).json({ success: false, message: "Server error during overlap check." });
+      if (overlapResult.length > 0) {
+        return res.status(400).json({ success: false, message: "You already have a leave request for these dates." });
+      }
 
-        const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave_type);
+      // Step 2: fetch existing Approved/Pending leaves for this employee
+      const existingSql = `
+        SELECT id, start_date, end_date, leave_type FROM leave_requests
+        WHERE employee_id = ? AND status IN ('Approved', 'Pending')
+        ORDER BY start_date ASC, id ASC
+      `;
+      db.query(existingSql, [employee_id], (balErr, existingLeaves) => {
+        if (balErr) return res.status(500).json({ success: false, message: "Server error fetching existing leaves." });
 
-        // Step 4: insert
-        const insertSql = `
-          INSERT INTO leave_requests
-          (employee_id, leave_type, start_date, end_date, reason, status,
-           total_days, excluded_days, actual_leave_days, paid_days, unpaid_days, payment_type, alert_message)
-          VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
-        `;
-        db.query(
-          insertSql,
-          [employee_id, leave_type, start_date, end_date, reason, total, excluded, actual_leave, paid, unpaid, payment_type, alert_message],
-          (insertErr, result) => {
-            if (insertErr) {
-              console.error("Apply leave error:", insertErr);
-              return res.status(500).json({ success: false, message: insertErr.message });
-            }
+        // Fetch holidays from database
+        const holidaysSql = "SELECT DATE_FORMAT(holiday_date, '%Y-%m-%d') AS holiday_date FROM company_holidays";
+        db.query(holidaysSql, (holidaysErr, holidayRows) => {
+          if (holidaysErr) return res.status(500).json({ success: false, message: "Server error fetching holidays." });
 
-            recalculateForEmployee(employee_id, db, (recalcErr) => {
-              if (recalcErr) console.error("Recalculate after apply error:", recalcErr);
-
-              res.json({
-                success: true,
-                message: "Leave applied successfully",
-                leaveId: result.insertId,
-                total_days: total,
-                excluded_days: excluded,
-                actual_leave_days: actual_leave,
-                paid_days: paid,
-                unpaid_days: unpaid,
-                payment_type,
-                alert_message,
-              });
+          const holidayDates = new Set();
+          if (holidayRows) {
+            holidayRows.forEach(row => {
+              holidayDates.add(row.holiday_date);
             });
           }
-        );
-      });   // close holidaysSql db.query
-    });     // close existingSql db.query
-  });       // close overlapSql db.query
+
+          // Step 3: compute preview paid/unpaid for the new request
+          const counters = buildMonthlyCounters(existingLeaves, holidayDates);
+          const { paid, unpaid, total, excluded, actual_leave, benefitDaysUsed, monthlyPaidDaysUsed } = computePaidUnpaid(start_date, end_date, counters, leave_type, holidayDates);
+
+          const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave_type, benefitDaysUsed, monthlyPaidDaysUsed);
+
+          // Step 4: insert
+          const insertSql = `
+            INSERT INTO leave_requests
+            (employee_id, leave_type, start_date, end_date, reason, status,
+             total_days, excluded_days, actual_leave_days, paid_days, unpaid_days, payment_type, alert_message)
+            VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
+          `;
+          db.query(
+            insertSql,
+            [employee_id, leave_type, start_date, end_date, reason, total, excluded, actual_leave, paid, unpaid, payment_type, alert_message],
+            (insertErr, result) => {
+              if (insertErr) {
+                console.error("Apply leave error:", insertErr);
+                return res.status(500).json({ success: false, message: insertErr.message });
+              }
+
+              recalculateForEmployee(employee_id, db, (recalcErr) => {
+                if (recalcErr) console.error("Recalculate after apply error:", recalcErr);
+
+                res.json({
+                  success: true,
+                  message: "Leave applied successfully",
+                  leaveId: result.insertId,
+                  total_days: total,
+                  excluded_days: excluded,
+                  actual_leave_days: actual_leave,
+                  paid_days: paid,
+                  unpaid_days: unpaid,
+                  payment_type,
+                  alert_message,
+                });
+              });
+            }
+          );
+        });   // close holidaysSql db.query
+      });     // close existingSql db.query
+    });       // close overlapSql db.query
+  }
+
 });         // close router.post("/apply")
 
 // ─── GET /history/:employeeId ──────────────────────────────────────────────────
@@ -288,7 +351,7 @@ router.get("/summary/:employeeId", (req, res) => {
   const { employeeId } = req.params;
 
   const sql = `
-    SELECT id, status, start_date, end_date,
+    SELECT id, status, start_date, end_date, leave_type,
            total_days, paid_days, unpaid_days, payment_type
     FROM leave_requests
     WHERE employee_id = ?
@@ -299,6 +362,7 @@ router.get("/summary/:employeeId", (req, res) => {
     const currentYear = new Date().getFullYear();
     let totalPaidTakenThisYear = 0;
     let totalUnpaidTakenThisYear = 0;
+    let annualPaidTakenThisYear = 0;
     let pending = 0, approved = 0, rejected = 0, cancelled = 0;
 
     results.forEach((leave) => {
@@ -311,6 +375,14 @@ router.get("/summary/:employeeId", (req, res) => {
         if (startYear === currentYear) {
           totalPaidTakenThisYear   += leave.paid_days   || 0;
           totalUnpaidTakenThisYear += leave.unpaid_days || 0;
+
+          let annualContributed = leave.paid_days || 0;
+          if (leave.leave_type === "Paternity Leave") {
+            annualContributed = Math.max(0, annualContributed - 15);
+          } else if (leave.leave_type === "Maternity Leave") {
+            annualContributed = Math.max(0, annualContributed - 182);
+          }
+          annualPaidTakenThisYear += annualContributed;
         }
       }
       else if (status === "rejected")  rejected++;
@@ -318,7 +390,7 @@ router.get("/summary/:employeeId", (req, res) => {
     });
 
     const totalAllowed = ANNUAL_PAID_ALLOCATION;
-    const remaining   = Math.max(0, totalAllowed - totalPaidTakenThisYear);
+    const remaining   = Math.max(0, totalAllowed - annualPaidTakenThisYear);
 
     res.json({
       success: true,

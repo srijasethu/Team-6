@@ -284,12 +284,18 @@ router.get("/reports/employees", (req, res) => {
         const unpaidLeavesTaken = filteredLeaves.reduce((sum, l) => sum + (l.unpaid_days || 0), 0);
         const leaveTypesTaken = Array.from(new Set(filteredLeaves.map(l => l.leave_type)));
         
-        // Remaining Balance: 36 - SUM(approved paid_days for non-Maternity/Paternity leaves, overall/all-time)
-        const overallPaidNonMatPat = empLeaves
-          .filter(l => l.leave_type !== "Maternity Leave" && l.leave_type !== "Paternity Leave")
-          .reduce((sum, l) => sum + (l.paid_days || 0), 0);
+        // Remaining Balance: 36 - SUM(overall annual paid days consumed)
+        const overallAnnualPaidUsed = empLeaves.reduce((sum, l) => {
+          let annualContributed = l.paid_days || 0;
+          if (l.leave_type === "Paternity Leave") {
+            annualContributed = Math.max(0, annualContributed - 15);
+          } else if (l.leave_type === "Maternity Leave") {
+            annualContributed = Math.max(0, annualContributed - 182);
+          }
+          return sum + annualContributed;
+        }, 0);
         
-        const remainingBalance = Math.max(0, totalEntitlement - overallPaidNonMatPat);
+        const remainingBalance = Math.max(0, totalEntitlement - overallAnnualPaidUsed);
 
         return {
           id: emp.id,
@@ -354,11 +360,17 @@ router.get("/reports/employee/:id", (req, res) => {
       const paidLeavesTaken = approvedLeaves.reduce((sum, l) => sum + (l.paid_days || 0), 0);
       const unpaidLeavesTaken = approvedLeaves.reduce((sum, l) => sum + (l.unpaid_days || 0), 0);
 
-      // Remaining balance = 36 - paid leaves taken (excluding Maternity/Paternity)
-      const paidNonMatPat = approvedLeaves
-        .filter(l => l.leave_type !== "Maternity Leave" && l.leave_type !== "Paternity Leave")
-        .reduce((sum, l) => sum + (l.paid_days || 0), 0);
-      const remainingBalance = Math.max(0, 36 - paidNonMatPat);
+      // Remaining balance = 36 - overall annual paid days consumed
+      const annualPaidUsed = approvedLeaves.reduce((sum, l) => {
+        let annualContributed = l.paid_days || 0;
+        if (l.leave_type === "Paternity Leave") {
+          annualContributed = Math.max(0, annualContributed - 15);
+        } else if (l.leave_type === "Maternity Leave") {
+          annualContributed = Math.max(0, annualContributed - 182);
+        }
+        return sum + annualContributed;
+      }, 0);
+      const remainingBalance = Math.max(0, 36 - annualPaidUsed);
 
       // Leave type usage breakdown for approved leaves
       const leaveTypeUsage = {};

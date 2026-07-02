@@ -2146,33 +2146,47 @@ function ManagerDashboard({ onLogout }) {
                                     {request.payment_type || "Paid"}
                                   </span>
 
-                                  {(request.payment_type === "Partly Paid" ||
-                                    request.payment_type === "Unpaid") && (
-                                    <span
-                                      style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: "4px",
-                                        backgroundColor: "#fff1f2",
-                                        color: "#be123c",
-                                        border: "1px solid #fda4af",
-                                        padding: "3px 8px",
-                                        borderRadius: "6px",
-                                        fontSize: "11px",
-                                        fontWeight: "600",
-                                      }}
-                                    >
-                                      <FaExclamationTriangle
-                                        style={{
-                                          fontSize: "10px",
-                                          flexShrink: 0,
-                                        }}
-                                      />
-                                      {request.payment_type === "Unpaid"
-                                        ? "Fully Unpaid"
-                                        : `${request.paid_days}P + ${request.unpaid_days}U`}
-                                    </span>
-                                  )}
+                                  {/* Breakdown sub-label */}
+                                  {(() => {
+                                    const msg = request.alert_message || "";
+                                    const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
+                                    if (isBreakdown) {
+                                      return (
+                                        <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
+                                          {msg}
+                                        </span>
+                                      );
+                                    }
+                                    if (request.payment_type === "Partly Paid" || request.payment_type === "Unpaid") {
+                                      return (
+                                        <span
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "4px",
+                                            backgroundColor: "#fff1f2",
+                                            color: "#be123c",
+                                            border: "1px solid #fda4af",
+                                            padding: "3px 8px",
+                                            borderRadius: "6px",
+                                            fontSize: "11px",
+                                            fontWeight: "600",
+                                          }}
+                                        >
+                                          <FaExclamationTriangle
+                                            style={{
+                                              fontSize: "10px",
+                                              flexShrink: 0,
+                                            }}
+                                          />
+                                          {request.payment_type === "Unpaid"
+                                            ? "Fully Unpaid"
+                                            : `${request.paid_days}P + ${request.unpaid_days}U`}
+                                        </span>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                 </div>
                               </div>
                             </td>
@@ -2244,6 +2258,15 @@ function ManagerDashboard({ onLogout }) {
                                     {request.unpaid_days} Unpaid)
                                   </span>
                                 )}
+                                {request.unpaid_days === 0 && request.alert_message && (() => {
+                                  const msg = request.alert_message;
+                                  const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
+                                  return isBreakdown ? (
+                                    <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
+                                      ({msg})
+                                    </span>
+                                  ) : null;
+                                })()}
                               </div>
                             </td>
                             {/* Status column */}
@@ -2379,8 +2402,13 @@ function ManagerDashboard({ onLogout }) {
                         </button>
                       </div>
                       <div className="popup-card-body">
-                        {(selectedRequest.payment_type === "Partly Paid" ||
-                          selectedRequest.payment_type === "Unpaid") && (
+                        {((selectedRequest.payment_type === "Partly Paid" ||
+                          selectedRequest.payment_type === "Unpaid") ||
+                          (selectedRequest.alert_message && (
+                            selectedRequest.alert_message.includes("Paternity") ||
+                            selectedRequest.alert_message.includes("Maternity") ||
+                            selectedRequest.alert_message.includes("Monthly")
+                          ))) && (
                           <div
                             style={{
                               padding: "14px 16px",
@@ -2414,62 +2442,118 @@ function ManagerDashboard({ onLogout }) {
                                 style={{
                                   fontWeight: "700",
                                   fontSize: "13px",
-                                  color: "#be123c",
+                                  color: selectedRequest.payment_type === "Paid" ? "#15803d" : "#be123c",
                                   marginBottom: "3px",
                                 }}
                               >
                                 {selectedRequest.payment_type === "Unpaid"
                                   ? "Unpaid Leave"
-                                  : "Partly Paid Leave"}
+                                  : selectedRequest.payment_type === "Paid"
+                                    ? "Payment Breakdown"
+                                    : "Partly Paid Leave"}
                               </div>
-                              <div
-                                style={{
-                                  fontSize: "12.5px",
-                                  color: "#64748b",
-                                  lineHeight: "1.5",
-                                }}
-                              >
-                                {selectedRequest.alert_message ||
-                                  (selectedRequest.payment_type === "Unpaid"
-                                    ? "This leave is unpaid because the monthly paid leave limit has already been used."
-                                    : "This leave is partly unpaid because the monthly paid leave limit is exceeded.")}
-                              </div>
-                              {selectedRequest.unpaid_days > 0 && (
+                              {selectedRequest.payment_type !== "Paid" && (
                                 <div
                                   style={{
-                                    marginTop: "8px",
-                                    display: "flex",
-                                    gap: "10px",
+                                    fontSize: "12.5px",
+                                    color: "#64748b",
+                                    lineHeight: "1.5",
                                   }}
                                 >
-                                  <span
-                                    style={{
-                                      fontSize: "12px",
-                                      fontWeight: "700",
-                                      color: "#15803d",
-                                      background: "#f0fdf4",
-                                      border: "1px solid #86efac",
-                                      borderRadius: "999px",
-                                      padding: "2px 10px",
-                                    }}
-                                  >
-                                    ✓ {selectedRequest.paid_days ?? 0} Paid
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: "12px",
-                                      fontWeight: "700",
-                                      color: "#b91c1c",
-                                      background: "#fef2f2",
-                                      border: "1px solid #fca5a5",
-                                      borderRadius: "999px",
-                                      padding: "2px 10px",
-                                    }}
-                                  >
-                                    ✕ {selectedRequest.unpaid_days} Unpaid
-                                  </span>
+                                  {selectedRequest.alert_message ||
+                                    (selectedRequest.payment_type === "Unpaid"
+                                      ? "This leave is unpaid because the monthly paid leave limit has already been used."
+                                      : "This leave is partly unpaid because the monthly paid leave limit is exceeded.")}
                                 </div>
                               )}
+                              {selectedRequest.unpaid_days > 0 && (() => {
+                                const msg = selectedRequest.alert_message || "";
+                                const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
+                                if (isBreakdown) {
+                                  return (
+                                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                      {msg.split(" + ").map((part, i) => {
+                                        const isUnpaid = part.includes("Unpaid");
+                                        const isMonthly = part.includes("Monthly");
+                                        return (
+                                          <span key={i} style={{
+                                            fontSize: "12px", fontWeight: "700",
+                                            color: isUnpaid ? "#b91c1c" : isMonthly ? "#2563eb" : "#15803d",
+                                            background: isUnpaid ? "#fef2f2" : isMonthly ? "#eff6ff" : "#f0fdf4",
+                                            border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
+                                            borderRadius: "999px",
+                                            padding: "2px 10px",
+                                          }}>
+                                            {isUnpaid ? "✕" : "✓"} {part.trim()}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div
+                                    style={{
+                                      marginTop: "8px",
+                                      display: "flex",
+                                      gap: "10px",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        fontWeight: "700",
+                                        color: "#15803d",
+                                        background: "#f0fdf4",
+                                        border: "1px solid #86efac",
+                                        borderRadius: "999px",
+                                        padding: "2px 10px",
+                                      }}
+                                    >
+                                      ✓ {selectedRequest.paid_days ?? 0} Paid
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: "12px",
+                                        fontWeight: "700",
+                                        color: "#b91c1c",
+                                        background: "#fef2f2",
+                                        border: "1px solid #fca5a5",
+                                        borderRadius: "999px",
+                                        padding: "2px 10px",
+                                      }}
+                                    >
+                                      ✕ {selectedRequest.unpaid_days} Unpaid
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+
+                              {/* Show breakdown for fully-paid Maternity/Paternity */}
+                              {selectedRequest.unpaid_days === 0 && selectedRequest.alert_message && (() => {
+                                const msg = selectedRequest.alert_message;
+                                const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
+                                return isBreakdown ? (
+                                  <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                    {msg.split(" + ").map((part, i) => {
+                                      const isUnpaid = part.includes("Unpaid");
+                                      const isMonthly = part.includes("Monthly");
+                                      return (
+                                        <span key={i} style={{
+                                          fontSize: "12px", fontWeight: "700",
+                                          color: isUnpaid ? "#b91c1c" : isMonthly ? "#2563eb" : "#15803d",
+                                          background: isUnpaid ? "#fef2f2" : isMonthly ? "#eff6ff" : "#f0fdf4",
+                                          border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
+                                          borderRadius: "999px",
+                                          padding: "2px 10px",
+                                        }}>
+                                          {isUnpaid ? "✕" : "✓"} {part.trim()}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null;
+                              })()}
                             </div>
                           </div>
                         )}

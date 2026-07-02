@@ -3216,3 +3216,14 @@ body.modal-open .profile-panel {
   }
 }
 
+/* ── Dark Mode Apply Leave Form Error Banner ── */
+[data-theme="dark"] .apply-leave-error-banner {
+  background-color: var(--danger-bg) !important;
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+[data-theme="dark"] .apply-leave-error-banner .error-text {
+  color: var(--danger) !important;
+}
+

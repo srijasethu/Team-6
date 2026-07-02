@@ -8,31 +8,55 @@
  *   - cancel (employee cancels)
  *   - approve (manager approves)
  *   - reject  (manager rejects)
+ *
+ * Business Rules:
+ *   Personal / Medical Leave:
+ *     - Up to MONTHLY_PAID_LIMIT actual leave days per calendar month are Paid.
+ *     - Beyond that → Unpaid.
+ *
+ *   Paternity Leave:
+ *     - First 15 actual leave days are paid under Paternity Benefit.
+ *     - Any days beyond 15 draw from the monthly paid leave balance.
+ *     - Only after monthly balance is exhausted do days become Unpaid.
+ *
+ *   Maternity Leave:
+ *     - First 182 actual leave days are paid under Maternity Benefit.
+ *     - Any days beyond 182 draw from the monthly paid leave balance.
+ *     - Only after monthly balance is exhausted do days become Unpaid.
  */
 
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
 
-// Leave types that are fully paid and independent of the monthly paid leave limit
-const INDEPENDENT_PAID_TYPES = ["Maternity Leave", "Paternity Leave"];
+// Leave types that receive a fixed benefit quota before monthly balance is used
+const BENEFIT_TYPES = {
+  "Maternity Leave": 182,
+  "Paternity Leave": 15,
+};
 
 function toMonthKey(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 }
 
-function resolvePaymentMeta(paid, unpaid, leaveType) {
-  if (leaveType === "Maternity Leave") {
-    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
+function resolvePaymentMeta(paid, unpaid, leaveType, benefitDays, monthlyPaidDays) {
+  // Build breakdown string for benefit leave types
+  if (leaveType === "Maternity Leave" || leaveType === "Paternity Leave") {
+    const typeName = leaveType === "Maternity Leave" ? "Maternity" : "Paternity";
+    const parts = [];
+    if (benefitDays > 0) parts.push(`${benefitDays} ${typeName}`);
+    if (monthlyPaidDays > 0) parts.push(`${monthlyPaidDays} Monthly`);
+    if (unpaid > 0) parts.push(`${unpaid} Unpaid`);
+    const breakdownStr = parts.join(" + ");
+
+    if (unpaid === 0) {
+      return {
+        payment_type: "Paid",
+        alert_message: breakdownStr || null,
+      };
+    }
     return {
       payment_type: "Partly Paid",
-      alert_message: `First 182 days are treated as Paid Maternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
-    };
-  }
-  if (leaveType === "Paternity Leave") {
-    if (unpaid === 0) return { payment_type: "Paid", alert_message: null };
-    return {
-      payment_type: "Partly Paid",
-      alert_message: `First 15 days are treated as Paid Paternity Leave. Remaining ${unpaid} days are treated as Unpaid Leave.`,
+      alert_message: breakdownStr,
     };
   }
 
@@ -40,10 +64,7 @@ function resolvePaymentMeta(paid, unpaid, leaveType) {
     return { payment_type: "Paid", alert_message: null };
   }
   if (paid > 0 && unpaid === 0) {
-    return {
-      payment_type: "Paid",
-      alert_message: null,
-    };
+    return { payment_type: "Paid", alert_message: null };
   }
   if (paid > 0 && unpaid > 0) {
     return {
@@ -90,7 +111,10 @@ function recalculateForEmployee(employeeId, db, callback) {
         });
       }
 
-      const monthlyUsed = {}; // { 'YYYY-MM': numberOfPaidDaysAllocatedSoFar }
+      // monthlyUsed tracks how many paid days have been assigned from the monthly
+      // quota for each calendar month (across ALL leave types including overflow
+      // from Maternity/Paternity benefit).
+      const monthlyUsed = {}; // { 'YYYY-MM': numberOfMonthlyPaidDaysUsedSoFar }
 
       const updates = leaves.map((leave) => {
         let paid = 0;
@@ -98,10 +122,12 @@ function recalculateForEmployee(employeeId, db, callback) {
         let total_calendar = 0;
         let excluded = 0;
         let actual_leave = 0;
-        let workingDayCount = 0;
+        let benefitDaysUsed = 0;    // days covered by Maternity/Paternity benefit
+        let monthlyPaidDaysUsed = 0; // days covered by monthly balance for this leave
+        let benefitCounter = 0;      // working-day counter against the benefit quota
 
-        const isIndependentPaid = INDEPENDENT_PAID_TYPES.includes(leave.leave_type);
-        const maxPaidDays = leave.leave_type === "Maternity Leave" ? 182 : (leave.leave_type === "Paternity Leave" ? 15 : 0);
+        const maxBenefitDays = BENEFIT_TYPES[leave.leave_type] || 0;
+        const isBenefitType = maxBenefitDays > 0;
 
         let curr = new Date(leave.start_date);
         const end = new Date(leave.end_date);
@@ -123,12 +149,21 @@ function recalculateForEmployee(employeeId, db, callback) {
             const mk = toMonthKey(curr);
             if (!monthlyUsed[mk]) monthlyUsed[mk] = 0;
 
-            if (isIndependentPaid) {
-              workingDayCount++;
-              if (workingDayCount <= maxPaidDays) {
+            if (isBenefitType) {
+              benefitCounter++;
+              if (benefitCounter <= maxBenefitDays) {
+                // Still within benefit quota — fully paid by benefit
                 paid++;
+                benefitDaysUsed++;
               } else {
-                unpaid++;
+                // Benefit exhausted — try monthly paid balance
+                if (monthlyUsed[mk] < MONTHLY_PAID_LIMIT) {
+                  paid++;
+                  monthlyPaidDaysUsed++;
+                  monthlyUsed[mk]++;
+                } else {
+                  unpaid++;
+                }
               }
             } else {
               // Personal/Medical: counted against monthly paid leave limit
@@ -143,17 +178,19 @@ function recalculateForEmployee(employeeId, db, callback) {
           curr.setDate(curr.getDate() + 1);
         }
 
-        const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave.leave_type);
+        const { payment_type, alert_message } = resolvePaymentMeta(
+          paid, unpaid, leave.leave_type, benefitDaysUsed, monthlyPaidDaysUsed
+        );
 
-        return { 
-          id: leave.id, 
-          paid, 
-          unpaid, 
-          total: total_calendar, 
-          excluded, 
-          actual_leave, 
-          payment_type, 
-          alert_message 
+        return {
+          id: leave.id,
+          paid,
+          unpaid,
+          total: total_calendar,
+          excluded,
+          actual_leave,
+          payment_type,
+          alert_message,
         };
       });
 
