@@ -822,8 +822,8 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       {/* ── Leave Policy Modal ──────────────────────────────────── */}
       {showPolicyModal && (
         <div className="modal-overlay" onClick={() => setShowPolicyModal(false)}>
-          <div style={{
-            background: "#ffffff", borderRadius: "20px",
+          <div className="policy-modal-card" style={{
+            borderRadius: "20px",
             boxShadow: "0 30px 80px rgba(0,0,0,0.18)",
             width: "100%", maxWidth: "680px", maxHeight: "88vh",
             overflowY: "auto", fontFamily: "'Poppins', sans-serif"
@@ -858,14 +858,14 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
             <div style={{ padding: "28px 32px" }}>
 
               {/* Monthly Paid Leave */}
-              <PolicySection title="🗓 Monthly Paid Leave Limit" color="#2563eb" bg="#eff6ff" border="#bfdbfe">
+              <PolicySection type="monthly-paid" title="🗓 Monthly Paid Leave Limit" color="#2563eb" bg="#eff6ff" border="#bfdbfe">
                 <PolicyRow label="Paid leave days per month" value="3 days" />
                 <PolicyRow label="Leave beyond 3 days in a month" value="Becomes Unpaid Leave" highlight="red" />
                 <PolicyRow label="Maximum paid leave per year" value="36 days (3 × 12 months)" />
               </PolicySection>
 
               {/* Use It or Lose It */}
-              <PolicySection title="⚠️ Use It or Lose It Policy" color="#b45309" bg="#fffbeb" border="#fde68a">
+              <PolicySection type="use-or-lose" title="⚠️ Use It or Lose It Policy" color="#b45309" bg="#fffbeb" border="#fde68a">
                 <PolicyRow label="Monthly leave expiry" value="End of each calendar month" highlight="red" />
                 <PolicyRow label="Carry forward" value="Not allowed" highlight="red" />
                 <PolicyRow label="Accumulation" value="Not allowed" highlight="red" />
@@ -877,7 +877,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Personal Leave */}
-              <PolicySection title="👤 Personal Leave" color="#0891b2" bg="#ecfeff" border="#a5f3fc">
+              <PolicySection type="personal" title="👤 Personal Leave" color="#0891b2" bg="#ecfeff" border="#a5f3fc">
                 <PolicyRow label="Paid days per month" value="3 days (shared monthly pool)" />
                 <PolicyRow label="Beyond monthly limit" value="Becomes Unpaid Leave" highlight="red" />
                 <PolicyRow label="Past dates" value="Not allowed" highlight="red" />
@@ -886,7 +886,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Medical Leave */}
-              <PolicySection title="🏥 Medical Leave" color="#16a34a" bg="#f0fdf4" border="#bbf7d0">
+              <PolicySection type="medical" title="🏥 Medical Leave" color="#16a34a" bg="#f0fdf4" border="#bbf7d0">
                 <PolicyRow label="Paid days per month" value="3 days (shared with Personal Leave pool)" />
                 <PolicyRow label="Beyond monthly limit" value="Becomes Unpaid Leave" highlight="red" />
                 <PolicyRow label="Medical certificate" value="Not required" highlight="green" />
@@ -895,38 +895,40 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Maternity Leave */}
-              <PolicySection title="🤱 Maternity Leave" color="#db2777" bg="#fdf2f8" border="#f9a8d4">
+              <PolicySection type="maternity" title="🤱 Maternity Leave" color="#db2777" bg="#fdf2f8" border="#f9a8d4">
                 <PolicyRow label="Eligible employees" value="Female employees" />
                 <PolicyRow label="Duration" value="+182 paid days" highlight="green" />
                 <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
                 <PolicyRow label="Date restrictions" value="Future dates only (up to 12 months in advance)" />
+                <PolicyRow label="Frequency limit" value="Can be applied only once in a year" highlight="red" />
               </PolicySection>
 
               {/* Paternity Leave */}
-              <PolicySection title="👨‍👧 Paternity Leave" color="#7c3aed" bg="#f5f3ff" border="#ddd6fe">
+              <PolicySection type="paternity" title="👨‍👧 Paternity Leave" color="#7c3aed" bg="#f5f3ff" border="#ddd6fe">
                 <PolicyRow label="Eligible employees" value="Male employees" />
                 <PolicyRow label="Duration" value="+15 paid days" highlight="green" />
                 <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
                 <PolicyRow label="Date restrictions" value="Future dates only (up to 12 months in advance)" />
+                <PolicyRow label="Frequency limit" value="Can be applied only once in a year" highlight="red" />
               </PolicySection>
 
               {/* Weekly Holidays */}
-              <PolicySection title="🟠 Weekly Holidays" color="#ea580c" bg="#fff7ed" border="#fed7aa">
+              <PolicySection type="weekly-off" title="🟠 Weekly Holidays" color="#ea580c" bg="#fff7ed" border="#fed7aa">
                 <PolicyRow label="Weekly off day" value="Every Sunday" />
                 <PolicyRow label="Counted as leave" value="No — Sundays are not counted as leave days" highlight="green" />
               </PolicySection>
 
               {/* Public & Company Holidays */}
-              <PolicySection title="🔵 Public Holidays &amp; Company Holidays" color="#1e40af" bg="#eff6ff" border="#bfdbfe">
+              <PolicySection type="public-holidays" title="🔵 Public Holidays &amp; Company Holidays" color="#1e40af" bg="#eff6ff" border="#bfdbfe">
                 <PolicyRow label="Public / Festival holidays" value="Not counted as leave days" highlight="green" />
                 <PolicyRow label="Company holidays" value="Added by manager — not counted as leave days" highlight="green" />
                 <PolicyNote>Public, festival, and company holidays do not reduce your paid leave balance.</PolicyNote>
               </PolicySection>
 
               {/* Leave Approval Process */}
-              <PolicySection title="✅ Leave Approval Process" color="#475569" bg="#f8fafc" border="#e2e8f0">
+              <PolicySection type="approval-process" title="✅ Leave Approval Process" color="#475569" bg="#f8fafc" border="#e2e8f0">
                 <PolicyRow label="Step 1" value="Employee submits leave application" />
                 <PolicyRow label="Step 2" value="Manager reviews and approves or rejects" />
                 <PolicyRow label="Step 3" value="Employee is notified via Leave Summary" />
@@ -934,7 +936,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Calculation Rules */}
-              <PolicySection title="📊 Leave Calculation Rules" color="#475569" bg="#f8fafc" border="#e2e8f0">
+              <PolicySection type="calculation" title="📊 Leave Calculation Rules" color="#475569" bg="#f8fafc" border="#e2e8f0">
                 <PolicyRow label="Leave days counted" value="Calendar days (weekends included)" />
                 <PolicyRow label="Paid limit calculation" value="Per calendar month independently" />
                 <PolicyRow label="Personal + Medical share" value="Same 3-day monthly paid pool" />
@@ -950,9 +952,10 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               justifyContent: "flex-end", borderTop: "1px solid #e2e8f0"
             }}>
               <button type="button" onClick={() => setShowPolicyModal(false)}
+                className="policy-modal-close-btn"
                 style={{
                   padding: "10px 22px", borderRadius: "8px",
-                  border: "1.5px solid #cbd5e1", background: "#fff",
+                  border: "1.5px solid #cbd5e1",
                   color: "#475569", fontWeight: "600", fontSize: "14px", cursor: "pointer"
                 }}>
                 Close
@@ -1054,6 +1057,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     ["Date restrictions", "Future dates only (up to 12 months in advance)"],
+                    ["Frequency limit", "Can be applied only once in a year"],
                   ]);
 
                   addSection("Paternity Leave", [
@@ -1062,6 +1066,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     ["Date restrictions", "Future dates only (up to 12 months in advance)"],
+                    ["Frequency limit", "Can be applied only once in a year"],
                   ]);
 
                   addSection("Weekly Holidays", [
@@ -1100,6 +1105,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
                   doc.save("Touchmark_Leave_Policy_2026.pdf");
                 }}
+                className="policy-modal-download-btn"
                 style={{
                   padding: "10px 22px", borderRadius: "8px", border: "none",
                   background: "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)",
@@ -1117,13 +1123,13 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 }
 
 // ── Helper sub-components for the Leave Policy Modal ──────────
-function PolicySection({ title, color, bg, border, children }) {
+function PolicySection({ title, color, bg, border, children, type }) {
   return (
-    <div style={{
+    <div className={`policy-section policy-section-${type}`} style={{
       marginBottom: "20px", borderRadius: "12px",
       background: bg, border: `1.5px solid ${border}`, overflow: "hidden"
     }}>
-      <div style={{
+      <div className="policy-section-title" style={{
         padding: "12px 20px", fontWeight: "800", fontSize: "14px",
         color, borderBottom: `1px solid ${border}`
       }}>{title}</div>
@@ -1132,18 +1138,17 @@ function PolicySection({ title, color, bg, border, children }) {
   );
 }
 function PolicyRow({ label, value, highlight }) {
-  const valueColor = highlight === "green" ? "#16a34a" : highlight === "red" ? "#dc2626" : "#1e293b";
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+    <div className="policy-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start",
       padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,0.04)", gap: "12px" }}>
-      <span style={{ fontSize: "13px", color: "#64748b", fontWeight: "600", flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: "13px", color: valueColor, fontWeight: "700", textAlign: "right" }}>{value}</span>
+      <span className="policy-row-label" style={{ fontSize: "13px", fontWeight: "600", flexShrink: 0 }}>{label}</span>
+      <span className={`policy-row-value ${highlight ? `highlight-${highlight}` : ''}`}>{value}</span>
     </div>
   );
 }
 function PolicyNote({ children }) {
   return (
-    <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#64748b",
+    <p className="policy-note" style={{ margin: "8px 0 0", fontSize: "12px",
       fontStyle: "italic", lineHeight: 1.5 }}>💡 {children}</p>
   );
 }
