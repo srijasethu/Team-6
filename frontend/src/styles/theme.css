@@ -1,0 +1,3218 @@
+/* ============================================================
+   THEME.CSS  —  Professional Dark / Light Mode
+   Strategy : [data-theme="dark"] additive overrides only.
+   Light-mode CSS is NEVER touched.
+
+   Dark Palette
+   ─────────────────────────────────────────────
+   Background  : #0F172A   (Slate 900)
+   Sidebar     : #111827   (Gray 900)
+   Card        : #1E293B   (Slate 800)
+   Card Hover  : #334155   (Slate 700)
+   Border      : #334155   (Slate 700)
+   Input BG    : #273449
+   Text High   : #F8FAFC   (Slate 50)
+   Text Mid    : #CBD5E1   (Slate 300)
+   Text Low    : #64748B   (Slate 500)
+   Blue Accent : #3B82F6 / #60A5FA
+   Orange Acc  : #F97316 / #FB923C
+   Success     : #22C55E
+   Warning     : #F59E0B
+   Danger      : #EF4444
+   ============================================================ */
+
+/* ── CSS Custom Properties (dark palette) ─────────────────── */
+[data-theme="dark"] {
+  --bg-base:        #0F172A;
+  --bg-sidebar:     #111827;
+  --bg-card:        #1E293B;
+  --bg-card-hover:  #334155;
+  --bg-input:       #273449;
+  --bg-table-head:  #1a2744;
+  --bg-table-row:   #1E293B;
+  --bg-table-alt:   #172032;
+  --border:         #334155;
+  --border-subtle:  rgba(51, 65, 85, 0.6);
+  --text-high:      #F8FAFC;
+  --text-mid:       #E2E8F0;   /* Slate-200  — brighter than before */
+  --text-low:       #94A3B8;   /* Slate-400  — brighter ash, not white */
+  --accent-blue:    #3B82F6;
+  --accent-blue-lt: #60A5FA;
+  --accent-orange:  #F97316;
+  --accent-orange-lt: #FB923C;
+  --success:        #22C55E;
+  --success-bg:     rgba(34, 197, 94, 0.12);
+  --warning:        #F59E0B;
+  --warning-bg:     rgba(245, 158, 11, 0.12);
+  --danger:         #EF4444;
+  --danger-bg:      rgba(239, 68, 68, 0.12);
+  --shadow-card:    0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-modal:   0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* ── Smooth transition scoped to dashboards only ──────────── */
+.employee-dashboard,
+.employee-dashboard *,
+.manager-dashboard,
+.manager-dashboard *,
+.sidebar,
+.sidebar *,
+.profile-panel,
+.profile-panel *,
+.toast-container,
+.logout-modal-card,
+.confirm-modal-card,
+.modal-card {
+  transition:
+    background-color 0.22s ease,
+    color           0.22s ease,
+    border-color    0.22s ease,
+    box-shadow      0.22s ease;
+}
+
+/* Exclude animated elements from the transition override */
+[data-theme="dark"] .manager-dashboard .theme-toggle-btn,
+[data-theme="dark"] .theme-toggle-btn.manager-toggle {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.35);
+  color: #FB923C;
+}
+.page-transition-wrapper,
+.page-transition-wrapper * {
+  transition: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THEME TOGGLE BUTTON  (light + dark state)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Base */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  height: 42px;
+  margin: 20px auto 12px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+/* Light – Employee */
+.employee-dashboard .theme-toggle-btn {
+  background: rgba(8, 104, 239, 0.07);
+  border-color: rgba(8, 104, 239, 0.18);
+  color: #0868ef;
+}
+.employee-dashboard .theme-toggle-btn:hover {
+  background: rgba(8, 104, 239, 0.13);
+  transform: translateY(-1px);
+}
+
+/* Light – Manager */
+.manager-dashboard .theme-toggle-btn,
+.theme-toggle-btn.manager-toggle {
+  background: rgba(242, 92, 5, 0.07);
+  border-color: rgba(242, 92, 5, 0.18);
+  color: #f25c05;
+}
+.manager-dashboard .theme-toggle-btn:hover,
+.theme-toggle-btn.manager-toggle:hover {
+  background: rgba(242, 92, 5, 0.13);
+  transform: translateY(-1px);
+}
+
+/* Dark – Employee */
+[data-theme="dark"] .employee-dashboard .theme-toggle-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #60A5FA;
+}
+[data-theme="dark"] .employee-dashboard .theme-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+/* Dark – Manager */
+[data-theme="dark"] .manager-dashboard .theme-toggle-btn,
+[data-theme="dark"] .theme-toggle-btn.manager-toggle {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.35);
+  color: #FB923C;
+}
+[data-theme="dark"] .manager-dashboard .theme-toggle-btn:hover,
+[data-theme="dark"] .theme-toggle-btn.manager-toggle:hover {
+  background: rgba(249, 115, 22, 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — ROOT / BODY
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] body {
+  background: var(--bg-base);
+}
+
+[data-theme="dark"] .employee-dashboard {
+  background: var(--bg-base);
+  color: var(--text-mid);
+}
+
+[data-theme="dark"] .manager-dashboard {
+  background: var(--bg-base);
+  color: var(--text-mid);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIDEBAR
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .sidebar,
+[data-theme="dark"] .sidebar {
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .employee-dashboard .sidebar::before,
+[data-theme="dark"] .sidebar::before {
+  background: rgba(59, 130, 246, 0.05);
+}
+[data-theme="dark"] .employee-dashboard .sidebar::after,
+[data-theme="dark"] .sidebar::after {
+  border-color: rgba(59, 130, 246, 0.04);
+}
+
+[data-theme="dark"] .sidebar::before {
+  background: rgba(249, 115, 22, 0.05);
+}
+[data-theme="dark"] .sidebar::after {
+  border-color: rgba(249, 115, 22, 0.04);
+}
+
+[data-theme="dark"] .employee-dashboard .sidebar-dot-grid {
+  background-image: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0 3px, transparent 4px);
+}
+[data-theme="dark"] .sidebar-dot-grid {
+  background-image: radial-gradient(circle, rgba(249, 115, 22, 0.3) 0 3px, transparent 4px);
+}
+
+/* Brand */
+[data-theme="dark"] .employee-dashboard .brand-title-main,
+[data-theme="dark"] .employee-dashboard .brand-title-sub,
+[data-theme="dark"] .brand-title-manager,
+[data-theme="dark"] .brand-title-dashboard {
+  color: var(--text-high);
+}
+
+/* Nav items — Employee */
+[data-theme="dark"] .employee-dashboard .nav-item {
+  color: var(--text-low);
+  background: transparent;
+}
+[data-theme="dark"] .employee-dashboard .nav-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue-lt);
+}
+[data-theme="dark"] .employee-dashboard .nav-item.active {
+  background: var(--accent-blue);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+/* Nav items — Manager */
+[data-theme="dark"] .nav-item {
+  color: var(--text-low);
+  background: transparent;
+}
+[data-theme="dark"] .nav-item:hover {
+  background: rgba(249, 115, 22, 0.1);
+  color: var(--accent-orange-lt);
+}
+[data-theme="dark"] .nav-item.active {
+  background: var(--accent-orange);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35);
+}
+
+/* Logout */
+[data-theme="dark"] .employee-dashboard .logout,
+[data-theme="dark"] .logout {
+  color: var(--text-low);
+  background: transparent;
+}
+[data-theme="dark"] .employee-dashboard .logout:hover,
+[data-theme="dark"] .logout:hover {
+  background: var(--danger-bg);
+  color: #FCA5A5;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE PANEL (main content area)
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .profile-panel,
+[data-theme="dark"] .profile-panel {
+  background: var(--bg-base);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GREETING CARD
+   ═══════════════════════════════════════════════════════════ */
+/* Employee greeting */
+[data-theme="dark"] .employee-dashboard .dashboard-greeting-card {
+  background: linear-gradient(135deg, #162032 0%, #1a2845 100%);
+  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .employee-dashboard .greeting-title,
+[data-theme="dark"] .employee-dashboard .greeting-title span {
+  color: var(--text-high);
+}
+[data-theme="dark"] .employee-dashboard .greeting-subtext {
+  color: var(--accent-blue-lt);
+}
+[data-theme="dark"] .employee-dashboard .greeting-motivation {
+  color: #93C5FD;
+  opacity: 1;
+}
+[data-theme="dark"] .employee-dashboard .greeting-date-section {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.25);
+  color: var(--accent-blue-lt);
+}
+
+/* Manager greeting */
+[data-theme="dark"] .dashboard-greeting-card {
+  background: linear-gradient(135deg, #1c1208 0%, #241605 100%);
+  border-color: rgba(249, 115, 22, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .greeting-title,
+[data-theme="dark"] .greeting-title span {
+  color: var(--text-high);
+}
+[data-theme="dark"] .greeting-subtext {
+  color: var(--accent-orange-lt);
+}
+[data-theme="dark"] .greeting-motivation {
+  color: #FED7AA;
+  opacity: 1;
+}
+[data-theme="dark"] .greeting-date-section {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.25);
+  color: var(--accent-orange-lt);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION HEADINGS
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .section-title h1,
+[data-theme="dark"] .section-title h1,
+[data-theme="dark"] h1, [data-theme="dark"] h2,
+[data-theme="dark"] h3, [data-theme="dark"] h4,
+[data-theme="dark"] h5, [data-theme="dark"] h6 {
+  color: var(--text-high);
+}
+[data-theme="dark"] .employee-dashboard .section-title svg {
+  color: var(--accent-blue-lt);
+}
+[data-theme="dark"] p,
+[data-theme="dark"] span:not([class*="badge"]):not([class*="status"]):not([class*="icon"]):not([class*="btn"]) {
+  color: var(--text-mid);
+}
+[data-theme="dark"] label {
+  color: var(--text-low);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE HERO CARD  (Employee)
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .profile-hero-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .employee-dashboard .profile-hero-left {
+  border-color: var(--border);
+}
+[data-theme="dark"] .employee-dashboard .profile-hero-right {
+  background: linear-gradient(135deg, #182038 0%, #1d2a45 100%);
+}
+[data-theme="dark"] .employee-dashboard .pq-icon {
+  color: var(--text-low);
+}
+[data-theme="dark"] .employee-dashboard .pq-text {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .employee-dashboard .pq-author {
+  color: var(--text-low);
+}
+
+/* Employee name/role */
+[data-theme="dark"] .employee-dashboard .emp-name {
+  color: var(--text-high);
+}
+[data-theme="dark"] .employee-dashboard .emp-role {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue-lt);
+}
+[data-theme="dark"] .employee-dashboard .emp-meta,
+[data-theme="dark"] .employee-dashboard .emp-meta span,
+[data-theme="dark"] .employee-dashboard .emp-meta svg {
+  color: var(--text-low);
+}
+
+/* ─── Profile Hero Card (Manager) ─── */
+[data-theme="dark"] .profile-hero-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .profile-hero-left {
+  border-color: var(--border);
+}
+[data-theme="dark"] .profile-hero-right {
+  background: linear-gradient(135deg, #1c1208 0%, #241605 100%);
+}
+[data-theme="dark"] .manager-name-row h2 {
+  color: var(--text-high);
+}
+[data-theme="dark"] .role-badge {
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--accent-orange-lt);
+}
+[data-theme="dark"] .manager-meta,
+[data-theme="dark"] .manager-meta span {
+  color: var(--text-low);
+}
+[data-theme="dark"] .manager-meta svg {
+  color: var(--accent-orange);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INFO CARDS (profile details grid)
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .info-card-ro {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .employee-dashboard .info-card-ro:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-blue);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+}
+[data-theme="dark"] .employee-dashboard .card-body strong {
+  color: var(--text-high);
+}
+[data-theme="dark"] .employee-dashboard .card-body span {
+  color: var(--text-mid);
+}
+
+[data-theme="dark"] .info-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .info-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-orange);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.15);
+}
+[data-theme="dark"] .card-body strong {
+  color: var(--text-high);
+}
+[data-theme="dark"] .card-body span {
+  color: var(--text-mid);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAVE SUMMARY STAT CARDS
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .leave-summary .card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card .value {
+  color: var(--text-high) !important;
+}
+
+/* Coloured stat card variants */
+[data-theme="dark"] .employee-dashboard .ps-blue  { background: #0F1F3D !important; border-color: rgba(59,130,246,0.25) !important; }
+[data-theme="dark"] .employee-dashboard .ps-green { background: #0A1F14 !important; border-color: rgba(34,197,94,0.25) !important; }
+[data-theme="dark"] .employee-dashboard .ps-orange{ background: #1C0F04 !important; border-color: rgba(249,115,22,0.25) !important; }
+[data-theme="dark"] .employee-dashboard .ps-purple{ background: #140D2A !important; border-color: rgba(168,85,247,0.25) !important; }
+
+[data-theme="dark"] .employee-dashboard .stat-card,
+[data-theme="dark"] .employee-dashboard .leave-stat-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .stat-number,
+[data-theme="dark"] .employee-dashboard .stat-label,
+[data-theme="dark"] .employee-dashboard .stat-count {
+  color: var(--text-high) !important;
+}
+
+/* Leave summary card icons */
+[data-theme="dark"] .employee-dashboard .leave-summary .card-icon.orange {
+  background: rgba(249,115,22,0.12) !important;
+  color: var(--accent-orange-lt) !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card-icon.green {
+  background: rgba(34,197,94,0.12) !important;
+  color: #4ADE80 !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card-icon.purple {
+  background: rgba(168,85,247,0.12) !important;
+  color: #C084FC !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAVE HISTORY TABLE WRAPPER
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .leave-table-wrap,
+[data-theme="dark"] .employee-dashboard .leave-table-wrapper {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table {
+  background: transparent;
+}
+[data-theme="dark"] .employee-dashboard .leave-table thead tr {
+  background: var(--bg-table-head);
+}
+[data-theme="dark"] .employee-dashboard .leave-table th {
+  background: var(--bg-table-head);
+  color: var(--text-low);
+  border-color: var(--border-subtle);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+[data-theme="dark"] .employee-dashboard .leave-table td {
+  color: var(--text-mid);
+  border-color: var(--border-subtle);
+}
+[data-theme="dark"] .employee-dashboard .leave-table tbody tr {
+  background: var(--bg-table-row);
+}
+[data-theme="dark"] .employee-dashboard .leave-table tbody tr:nth-child(even) {
+  background: var(--bg-table-alt);
+}
+[data-theme="dark"] .employee-dashboard .leave-table tbody tr:hover {
+  background: var(--bg-card-hover) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Leave summary list rows */
+[data-theme="dark"] .employee-dashboard .leave-summary .summary-item {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .summary-item:hover {
+  background: var(--bg-card-hover);
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .summary-item span {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .count {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .muted {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .icon-wrap.approved {
+  background: rgba(34,197,94,0.12) !important;
+  color: #4ADE80 !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .icon-wrap.rejected {
+  background: rgba(239,68,68,0.12) !important;
+  color: #FCA5A5 !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .icon-wrap.pending {
+  background: rgba(245,158,11,0.12) !important;
+  color: #FCD34D !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .icon-wrap.cancelled {
+  background: rgba(100,116,139,0.15) !important;
+  color: #94A3B8 !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   STATUS BADGES  (leave status pills)
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .status-badge,
+[data-theme="dark"] .employee-dashboard .leave-summary .badge,
+[data-theme="dark"] .employee-dashboard .leave-table td span[class*="badge"] {
+  font-weight: 700;
+}
+
+[data-theme="dark"] .status-badge.pending,
+[data-theme="dark"] .badge.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #FCD34D;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+[data-theme="dark"] .status-badge.approved,
+[data-theme="dark"] .badge.approved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86EFAC;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+[data-theme="dark"] .status-badge.rejected,
+[data-theme="dark"] .badge.rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+[data-theme="dark"] .status-badge.cancelled,
+[data-theme="dark"] .badge.cancelled {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94A3B8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILTERS / SEARCH / SELECTS / INPUTS
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard select,
+[data-theme="dark"] .employee-dashboard input[type="text"],
+[data-theme="dark"] .employee-dashboard input[type="date"],
+[data-theme="dark"] .employee-dashboard input[type="email"],
+[data-theme="dark"] .employee-dashboard input[type="tel"],
+[data-theme="dark"] .employee-dashboard input[type="number"],
+[data-theme="dark"] .employee-dashboard textarea {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: var(--border);
+}
+[data-theme="dark"] .employee-dashboard select:focus,
+[data-theme="dark"] .employee-dashboard input:focus,
+[data-theme="dark"] .employee-dashboard textarea:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+[data-theme="dark"] .employee-dashboard input::placeholder,
+[data-theme="dark"] .employee-dashboard textarea::placeholder {
+  color: var(--text-low);
+}
+
+/* Manager & global inputs */
+[data-theme="dark"] select,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] textarea {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: var(--border);
+}
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+  outline: none;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-low);
+}
+
+/* Manager inline edit inputs */
+[data-theme="dark"] .edit-card-input,
+[data-theme="dark"] .edit-name-input,
+[data-theme="dark"] .edit-meta-input {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: rgba(249, 115, 22, 0.35);
+}
+[data-theme="dark"] .edit-card-input:focus,
+[data-theme="dark"] .edit-name-input:focus,
+[data-theme="dark"] .edit-meta-input:focus {
+  border-color: var(--accent-orange);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+/* Search bars */
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .search-bar-wrapper input {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: var(--border);
+}
+[data-theme="dark"] .search-input::placeholder,
+[data-theme="dark"] .search-bar-wrapper input::placeholder {
+  color: var(--text-low);
+}
+
+/* Filter selects */
+[data-theme="dark"] .filter-select,
+[data-theme="dark"] .report-filter-select {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APPLY LEAVE FORM
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .apply-form-card,
+[data-theme="dark"] .employee-dashboard .leave-form-card,
+[data-theme="dark"] .employee-dashboard .form-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .employee-dashboard .form-label,
+[data-theme="dark"] .employee-dashboard .form-group label,
+[data-theme="dark"] .employee-dashboard label {
+  color: var(--text-low);
+}
+
+/* Date picker */
+[data-theme="dark"] .react-datepicker {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-mid);
+  box-shadow: var(--shadow-modal);
+}
+[data-theme="dark"] .react-datepicker__header {
+  background: var(--bg-table-head);
+  border-color: var(--border);
+}
+[data-theme="dark"] .react-datepicker__current-month,
+[data-theme="dark"] .react-datepicker__day-name,
+[data-theme="dark"] .react-datepicker__navigation-icon::before {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .react-datepicker__day {
+  color: var(--text-mid);
+  border-radius: 6px;
+}
+[data-theme="dark"] .react-datepicker__day:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-high);
+}
+[data-theme="dark"] .react-datepicker__day--selected,
+[data-theme="dark"] .react-datepicker__day--keyboard-selected {
+  background: var(--accent-blue);
+  color: #fff;
+}
+[data-theme="dark"] .react-datepicker__day--disabled {
+  color: var(--text-low);
+  opacity: 0.4;
+}
+[data-theme="dark"] .react-datepicker__input-container input,
+[data-theme="dark"] .react-datepicker-wrapper input {
+  background: var(--bg-input);
+  color: var(--text-high);
+  border-color: var(--border);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGINATION  &  PAGE-SIZE
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .pagination button,
+[data-theme="dark"] .employee-dashboard .page-size button,
+[data-theme="dark"] .pagination button,
+[data-theme="dark"] .page-size button {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-low);
+}
+[data-theme="dark"] .employee-dashboard .pagination button:hover,
+[data-theme="dark"] .pagination button:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-high);
+}
+[data-theme="dark"] .employee-dashboard .pagination button.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(59,130,246,0.35);
+}
+[data-theme="dark"] .pagination button.active {
+  background: var(--accent-orange);
+  border-color: var(--accent-orange);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(249,115,22,0.35);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODALS & OVERLAYS — Universal Full-Viewport Fix
+   ═══════════════════════════════════════════════════════════ */
+
+/* Body scroll lock when any modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Universal Modal Overlay / Backdrop styling (Light mode by default) */
+.logout-modal-overlay,
+.confirm-modal-overlay,
+.popup-overlay,
+.profile-preview-modal-overlay,
+.employee-dashboard .logout-page,
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999999 !important; /* Extremely high z-index to stack above sidebar, content, and header */
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Elevate the container of nested modals to stack above sidebar when active */
+body.modal-open .profile-panel {
+  z-index: 9999999 !important;
+}
+
+/* Dark mode: deeper dimming for all overlay types */
+[data-theme="dark"] .logout-modal-overlay,
+[data-theme="dark"] .confirm-modal-overlay,
+[data-theme="dark"] .popup-overlay,
+[data-theme="dark"] .profile-preview-modal-overlay,
+[data-theme="dark"] .employee-dashboard .logout-page,
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+[data-theme="dark"] .logout-modal-card,
+[data-theme="dark"] .confirm-modal-card,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .details-modal,
+[data-theme="dark"] .employee-dashboard .logout-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal);
+  color: var(--text-mid);
+}
+
+[data-theme="dark"] .logout-modal-title,
+[data-theme="dark"] .confirm-modal-title,
+[data-theme="dark"] .modal-title {
+  color: var(--text-high);
+}
+[data-theme="dark"] .logout-modal-desc,
+[data-theme="dark"] .confirm-modal-desc,
+[data-theme="dark"] .modal-desc {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .logout-modal-icon-wrap {
+  background: var(--danger-bg);
+}
+
+/* Modal cancel buttons */
+[data-theme="dark"] .logout-cancel-btn,
+[data-theme="dark"] .modal-cancel-btn,
+[data-theme="dark"] .confirm-cancel-btn {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+[data-theme="dark"] .logout-cancel-btn:hover,
+[data-theme="dark"] .modal-cancel-btn:hover,
+[data-theme="dark"] .confirm-cancel-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-blue);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .toast-container {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-modal);
+}
+[data-theme="dark"] .toast-container.success {
+  background: #0B1F13;
+  border-left-color: var(--success);
+}
+[data-theme="dark"] .toast-container.error {
+  background: #1F0B0B;
+  border-left-color: var(--danger);
+}
+[data-theme="dark"] .toast-container.info {
+  background: #0B1322;
+  border-left-color: var(--accent-blue);
+}
+[data-theme="dark"] .toast-message {
+  color: var(--text-high);
+  font-weight: 500;
+}
+[data-theme="dark"] .toast-icon {
+  color: var(--text-high);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MANAGER — LEAVE APPROVAL TABLES
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .requests-table-wrapper,
+[data-theme="dark"] .report-table-wrapper {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+[data-theme="dark"] .requests-table th,
+[data-theme="dark"] .report-table th {
+  background: var(--bg-table-head);
+  color: var(--text-low);
+  border-color: var(--border-subtle);
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+[data-theme="dark"] .requests-table td,
+[data-theme="dark"] .report-table td {
+  color: var(--text-mid);
+  border-color: var(--border-subtle);
+}
+[data-theme="dark"] .requests-table tbody tr {
+  background: var(--bg-table-row);
+}
+[data-theme="dark"] .requests-table tbody tr:hover {
+  background: var(--bg-card-hover) !important;
+  box-shadow: none;
+}
+[data-theme="dark"] .report-table tbody tr {
+  background: var(--bg-table-row);
+}
+[data-theme="dark"] .report-table tbody tr:nth-child(even) {
+  background: var(--bg-table-alt);
+}
+[data-theme="dark"] .report-table tbody tr:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MANAGER — EMPLOYEE REPORT SECTION
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .report-panel,
+[data-theme="dark"] .employee-report-section {
+  background: transparent;
+}
+[data-theme="dark"] .report-filter-bar {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 12px;
+}
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .report-summary-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+  color: var(--text-mid);
+}
+[data-theme="dark"] .report-card strong,
+[data-theme="dark"] .report-card h4,
+[data-theme="dark"] .report-summary-card h4 {
+  color: var(--text-high);
+}
+[data-theme="dark"] .report-card span,
+[data-theme="dark"] .report-card p,
+[data-theme="dark"] .report-summary-card p {
+  color: var(--text-mid);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MANAGER — HOLIDAY CALENDAR
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .calendar-wrapper,
+[data-theme="dark"] .calendar-container {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+[data-theme="dark"] .calendar-header {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+[data-theme="dark"] .calendar-header h2,
+[data-theme="dark"] .calendar-header h3 {
+  color: var(--text-high);
+}
+[data-theme="dark"] .calendar-nav-btn,
+[data-theme="dark"] .cal-nav-btn {
+  background: var(--bg-input);
+  color: var(--accent-orange-lt);
+  border-color: var(--border);
+}
+[data-theme="dark"] .calendar-nav-btn:hover,
+[data-theme="dark"] .cal-nav-btn:hover {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: var(--accent-orange);
+}
+
+/* Calendar grid cells */
+[data-theme="dark"] .calendar-grid {
+  background: var(--bg-base);
+}
+[data-theme="dark"] .day-name {
+  background: var(--bg-table-head);
+  color: var(--text-low);
+  border-color: var(--border-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+[data-theme="dark"] .day-cell {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  color: var(--text-mid);
+}
+[data-theme="dark"] .day-cell:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-orange);
+}
+[data-theme="dark"] .day-cell.other-month {
+  background: var(--bg-base);
+  color: var(--text-low);
+  opacity: 0.5;
+}
+[data-theme="dark"] .day-cell.today {
+  background: rgba(249, 115, 22, 0.1);
+  border-color: var(--accent-orange);
+  color: var(--accent-orange-lt);
+}
+
+/* Holiday indicators — keep vibrant colours, darken backgrounds */
+[data-theme="dark"] .day-cell.public-holiday {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+[data-theme="dark"] .day-cell.company-holiday {
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+[data-theme="dark"] .day-cell.festival-holiday {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+[data-theme="dark"] .day-cell.sunday {
+  background: rgba(234, 88, 12, 0.12);
+  border-color: rgba(234, 88, 12, 0.3);
+  color: #FB923C;
+}
+[data-theme="dark"] .day-cell.sunday .day-number {
+  color: #FB923C;
+}
+
+/* Calendar legend */
+[data-theme="dark"] .calendar-legend,
+[data-theme="dark"] .legend-panel {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-mid);
+  border-radius: 12px;
+}
+[data-theme="dark"] .legend-label {
+  color: var(--text-mid);
+}
+
+/* Selected date details panel */
+[data-theme="dark"] .holiday-detail-panel,
+[data-theme="dark"] .selected-date-details {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-card);
+  border-radius: 12px;
+}
+[data-theme="dark"] .holiday-detail-panel h3,
+[data-theme="dark"] .selected-date-details h3 {
+  color: var(--text-high);
+}
+[data-theme="dark"] .holiday-detail-panel p,
+[data-theme="dark"] .selected-date-details p {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .holiday-detail-panel strong {
+  color: var(--text-high);
+}
+
+/* Add holiday form */
+[data-theme="dark"] .add-holiday-form,
+[data-theme="dark"] .holiday-form {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 12px;
+}
+[data-theme="dark"] .add-holiday-form label,
+[data-theme="dark"] .holiday-form label {
+  color: var(--text-low);
+}
+
+/* Holiday list */
+[data-theme="dark"] .holidays-list-panel {
+  background: var(--bg-card);
+  border-color: var(--border);
+  border-radius: 12px;
+}
+[data-theme="dark"] .holiday-list-item {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-mid);
+  border-radius: 8px;
+}
+[data-theme="dark"] .holiday-list-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-orange);
+}
+[data-theme="dark"] .holiday-name {
+  color: var(--text-high);
+  font-weight: 600;
+}
+[data-theme="dark"] .holiday-date-text,
+[data-theme="dark"] .holiday-meta {
+  color: var(--text-low);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MANAGER — AVATAR DROPDOWN MENUS
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .avatar-menu {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-modal);
+}
+[data-theme="dark"] .employee-dashboard .avatar-menu-item {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .employee-dashboard .avatar-menu-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--accent-blue-lt);
+}
+[data-theme="dark"] .employee-dashboard .avatar-menu-item.remove {
+  color: #FCA5A5;
+}
+[data-theme="dark"] .employee-dashboard .avatar-menu-item.remove:hover {
+  background: var(--danger-bg);
+}
+
+[data-theme="dark"] .manager-avatar-menu {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow-modal);
+}
+[data-theme="dark"] .manager-avatar-menu-item {
+  color: var(--text-mid);
+}
+[data-theme="dark"] .manager-avatar-menu-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--accent-orange-lt);
+}
+[data-theme="dark"] .manager-avatar-menu-item.remove {
+  color: #FCA5A5;
+  border-top-color: var(--border);
+}
+[data-theme="dark"] .manager-avatar-menu-item.remove:hover {
+  background: var(--danger-bg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EMPTY STATES
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .no-data-message,
+[data-theme="dark"] .empty-state-text {
+  color: var(--text-low);
+}
+[data-theme="dark"] .empty-state-icon {
+  opacity: 0.25;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DIVIDERS / HR
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] hr,
+[data-theme="dark"] .divider {
+  border-color: var(--border-subtle);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-sidebar);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-low);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CASCADE AND SPECIFICITY OVERRIDES (fixes white cards/tables)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Leave History Header Card and Main Table Container */
+[data-theme="dark"] .employee-dashboard .leave-history-header-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-container {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-modern th {
+  background: var(--bg-table-head) !important;
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-modern td {
+  background: transparent !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-modern tbody tr {
+  background: var(--bg-table-row) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-modern tbody tr:nth-child(even) {
+  background: var(--bg-table-alt) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .leave-table-modern tbody tr:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .no-data-td {
+  background: var(--bg-card) !important;
+  color: var(--text-low) !important;
+}
+
+/* Form cards (Apply Leave) */
+[data-theme="dark"] .employee-dashboard .new-leave-form {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Select inputs and wrap elements */
+[data-theme="dark"] .employee-dashboard .filter-select-wrap select,
+[data-theme="dark"] .employee-dashboard .rows-select-wrap select {
+  background: var(--bg-input) !important;
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .filter-select-wrap select option,
+[data-theme="dark"] .employee-dashboard .rows-select-wrap select option {
+  background: var(--bg-card) !important;
+  color: var(--text-high) !important;
+}
+
+/* Note/Info Alert Banner */
+[data-theme="dark"] .employee-dashboard .leave-info-alert-banner {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .info-alert-icon-box {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: var(--accent-blue-lt) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .info-alert-message {
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .info-alert-message strong {
+  color: var(--text-high) !important;
+}
+
+/* Sno Circle badge in table */
+[data-theme="dark"] .employee-dashboard .sno-circle-badge {
+  background: var(--bg-input) !important;
+  color: var(--text-high) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Pagination buttons in leave history */
+[data-theme="dark"] .employee-dashboard .pag-btn {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-low) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .pag-btn:hover:not(:disabled) {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .pag-btn.active {
+  background: var(--accent-blue) !important;
+  border-color: var(--accent-blue) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .employee-dashboard .pag-btn:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+}
+
+/* ── Overrides for inline styles ── */
+
+/* Overlay wrapper for fixed modals (inline styles) */
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0, 0, 0, 0.5)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0,0,0,0.5)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0, 0, 0, 0.45)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0,0,0,0.45)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(15, 23, 42"] {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Modals / card elements with inline background #ffffff or #fff */
+[data-theme="dark"] div[style*="background: #ffffff"],
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] div[style*="background-color: #ffffff"],
+[data-theme="dark"] div[style*="background-color: #fff"],
+[data-theme="dark"] div[style*="background-color: rgb(255, 255, 255)"],
+[data-theme="dark"] div[style*="background-color: #f8fafc"],
+[data-theme="dark"] div[style*="background-color: rgb(248, 250, 252)"] {
+  background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-modal) !important;
+}
+
+/* Modal wrapper with borderLeft styling */
+[data-theme="dark"] div[style*="borderLeft"] {
+  border-left-color: var(--accent-blue) !important;
+}
+
+/* Inline text overrides */
+[data-theme="dark"] h3[style*="color: #1e293b"],
+[data-theme="dark"] h3[style*="color: rgb(30, 41, 59)"],
+[data-theme="dark"] h3[style*="color: #b91c1c"] {
+  color: var(--text-high) !important;
+}
+
+[data-theme="dark"] p[style*="color: #475569"],
+[data-theme="dark"] p[style*="color: rgb(71, 85, 105)"],
+[data-theme="dark"] p[style*="color: #334155"],
+[data-theme="dark"] div[style*="color: #475569"] {
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] div[style*="color: #64748b"],
+[data-theme="dark"] p[style*="color: #64748b"] {
+  color: var(--text-low) !important;
+}
+
+[data-theme="dark"] div[style*="background: #eff6ff"],
+[data-theme="dark"] div[style*="background-color: #eff6ff"] {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: var(--accent-blue-lt) !important;
+}
+
+/* Calendar Card and Controls for Manager Calendar (inline styled) */
+[data-theme="dark"] .calendar-card,
+[data-theme="dark"] div[style*="background: #ffffff"][style*="border: 1px solid #f1e4dc"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] div[style*="background: #fff"][style*="border: 1px solid #f1e4dc"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] li[style*="background: #fff7ed"][style*="border: 1px solid #fed7aa"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] span[style*="background: #ffedd5"][style*="color: #c2410c"] {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--accent-orange-lt) !important;
+}
+/* ═══════════════════════════════════════════════════════════
+   EMPLOYEE PROFILE — WHITE CARDS FIX
+   ═══════════════════════════════════════════════════════════ */
+
+/* Account Details info cards */
+[data-theme="dark"] .employee-dashboard .info-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .info-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-blue) !important;
+}
+[data-theme="dark"] .employee-dashboard .info-card strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .info-card span {
+  color: var(--text-mid) !important;
+}
+
+/* Profile Stats Bar (36 Days / 3 Days / 33 Days / 2 bar) */
+[data-theme="dark"] .employee-dashboard .profile-stats-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .ps-num {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .ps-label {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .ps-divider {
+  background: var(--border) !important;
+}
+
+/* Account Details heading */
+[data-theme="dark"] .employee-dashboard .account-details-heading {
+  color: var(--text-mid) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAVE SUMMARY — WHITE CARDS & READABILITY
+   ═══════════════════════════════════════════════════════════ */
+
+/* Summary stat cards (Approved, Rejected, Pending, Cancelled, Total) */
+[data-theme="dark"] .employee-dashboard .leave-summary .card,
+[data-theme="dark"] .employee-dashboard .summary-cards .card,
+[data-theme="dark"] .employee-dashboard .request-summary-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Card text inside leave summary */
+[data-theme="dark"] .employee-dashboard .leave-summary .card h3,
+[data-theme="dark"] .employee-dashboard .leave-summary .card .value,
+[data-theme="dark"] .employee-dashboard .request-summary-card h3 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card p,
+[data-theme="dark"] .employee-dashboard .leave-summary .card .muted,
+[data-theme="dark"] .employee-dashboard .request-summary-card p {
+  color: var(--text-low) !important;
+}
+
+/* Summary card inline white backgrounds */
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #f8fafc"],
+[data-theme="dark"] .employee-dashboard div[style*="background-color: #f8fafc"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Maternity benefit card (pink/rose) */
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #fdf2f8"],
+[data-theme="dark"] .employee-dashboard div[style*="background-color: #fdf2f8"],
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: \"#fdf2f8\""] {
+  background: rgba(219, 39, 119, 0.08) !important;
+  border-color: rgba(219, 39, 119, 0.25) !important;
+}
+[data-theme="dark"] .employee-dashboard div[style*="background: #fce7f3"] {
+  background: rgba(219, 39, 119, 0.15) !important;
+  border-color: rgba(219, 39, 119, 0.3) !important;
+}
+/* Text inside maternity card */
+[data-theme="dark"] .employee-dashboard div[style*="color: #be185d"],
+[data-theme="dark"] .employee-dashboard div[style*="color: #db2777"] {
+  color: #f472b6 !important;
+}
+[data-theme="dark"] .employee-dashboard p[style*="color: #831843"] {
+  color: #fbb6ce !important;
+}
+
+/* Paternity benefit card (blue) */
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #eff6ff"],
+[data-theme="dark"] .employee-dashboard div[style*="background-color: #eff6ff"] {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+[data-theme="dark"] .employee-dashboard div[style*="background: #dbeafe"] {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+/* Text inside paternity card */
+[data-theme="dark"] .employee-dashboard p[style*="color: #1e3a8a"] {
+  color: #93c5fd !important;
+}
+
+/* Calendar section wrapper */
+[data-theme="dark"] .employee-dashboard .calendar-section {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #ffffff"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Calendar side summary panel */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary,
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #f8fafc"][style*="border: 1px solid #e2e8f0"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Monthly summary rows inside side panel */
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #ffffff"][style*="border: 1px solid #f1f5f9"],
+[data-theme="dark"] .employee-dashboard div[style*="background: #ffffff"][style*="border: 1px solid #f1f5f9"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Side summary text */
+[data-theme="dark"] .employee-dashboard h4[style*="color: #1e293b"],
+[data-theme="dark"] .employee-dashboard span[style*="fontWeight: \"700\""][style*="color: \"#1e293b\""] {
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard div[style*="color: #64748b"][style*="fontSize: \"13px\""] {
+  color: var(--text-low) !important;
+}
+
+/* Monthly limit info box at bottom of summary */
+[data-theme="dark"] .employee-dashboard div[style*="background: rgba(59, 130, 246"] {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: #93c5fd !important;
+}
+
+/* Calendar grid cell defaults (white cells) */
+[data-theme="dark"] .employee-dashboard .calendar-grid > div[style*="backgroundColor: #ffffff"] {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+[data-theme="dark"] .employee-dashboard .calendar-grid > div[style*="backgroundColor: #f8fafc"] {
+  background-color: var(--bg-base) !important;
+  opacity: 0.5;
+}
+/* Calendar day number text */
+[data-theme="dark"] .employee-dashboard .calendar-grid span[style*="color: #1e293b"] {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .calendar-grid span[style*="color: #94a3b8"] {
+  color: var(--text-low) !important;
+}
+
+/* Calendar legend text */
+[data-theme="dark"] .employee-dashboard .calendar-legend span:not([style*="backgroundColor"]) {
+  color: var(--text-low) !important;
+}
+
+/* Calendar header — month title */
+[data-theme="dark"] .employee-dashboard .calendar-header span[style*="color: #1e293b"] {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .calendar-header span[style*="color: #64748b"] {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .calendar-nav-controls {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+
+/* Leave summary — policy card info boxes */
+[data-theme="dark"] .employee-dashboard div[style*="background: #f0fdf4"],
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #f0fdf4"] {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.25) !important;
+}
+
+/* Warning note banner (yellow) at bottom of Leave History */
+[data-theme="dark"] .employee-dashboard div[style*="background: #fffbeb"],
+[data-theme="dark"] .employee-dashboard div[style*="backgroundColor: #fffbeb"],
+[data-theme="dark"] .employee-dashboard div[style*="background: #fef9c3"],
+[data-theme="dark"] .employee-dashboard div[style*="background-color: #fefce8"] {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fcd34d !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAVE HISTORY — REQUEST SUMMARY CARDS (bottom row)
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .req-sum-card,
+[data-theme="dark"] .employee-dashboard div[class*="request-sum"],
+[data-theme="dark"] .employee-dashboard div[class*="req-summary"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE HERO CARD READABILITY
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .employee-id-text,
+[data-theme="dark"] .employee-dashboard .profile-hero-left span,
+[data-theme="dark"] .employee-dashboard .profile-hero-card span {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .profile-hero-card strong,
+[data-theme="dark"] .employee-dashboard .profile-hero-card h2,
+[data-theme="dark"] .employee-dashboard .profile-hero-card h3 {
+  color: var(--text-high) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — GLOBAL TEXT COLOR OVERRIDES
+   Turn every black/dark text readable in dark mode.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Black / near-black inline text */
+[data-theme="dark"] [style*="color: #000"],
+[data-theme="dark"] [style*="color: black"],
+[data-theme="dark"] [style*="color: rgb(0, 0, 0)"],
+[data-theme="dark"] [style*="color: #0b1024"],
+[data-theme="dark"] [style*="color: rgb(11, 16, 36)"],
+[data-theme="dark"] [style*="color: #111827"],
+[data-theme="dark"] [style*="color: rgb(17, 24, 39)"] {
+  color: var(--text-high) !important;
+}
+
+/* Dark slate / near-dark inline text */
+[data-theme="dark"] [style*="color: #1e293b"],
+[data-theme="dark"] [style*="color: rgb(30, 41, 59)"],
+[data-theme="dark"] [style*="color: #0f172a"],
+[data-theme="dark"] [style*="color: rgb(15, 23, 42)"],
+[data-theme="dark"] [style*="color: #1a202c"],
+[data-theme="dark"] [style*="color: rgb(26, 32, 44)"],
+[data-theme="dark"] [style*="color: #243146"],
+[data-theme="dark"] [style*="color: #2d3748"] {
+  color: var(--text-high) !important;
+}
+
+/* Mid-dark gray inline text */
+[data-theme="dark"] [style*="color: #374151"],
+[data-theme="dark"] [style*="color: rgb(55, 65, 81)"],
+[data-theme="dark"] [style*="color: #4b5563"],
+[data-theme="dark"] [style*="color: rgb(75, 85, 99)"],
+[data-theme="dark"] [style*="color: #334155"],
+[data-theme="dark"] [style*="color: rgb(51, 65, 85)"],
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color: rgb(71, 85, 105)"],
+[data-theme="dark"] [style*="color: #59627a"],
+[data-theme="dark"] [style*="color: rgb(89, 98, 122)"] {
+  color: var(--text-mid) !important;
+}
+
+/* Heading tags with dark colors */
+[data-theme="dark"] .employee-dashboard h1:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard h2:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard h3:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard h4:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard h5:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard h6:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h1:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h2:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h3:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h4:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h5:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard h6:not([style*="color"]) {
+  color: var(--text-high) !important;
+}
+
+/* Paragraph and span tags without explicit color */
+[data-theme="dark"] .employee-dashboard p:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard label:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard p:not([style*="color"]),
+[data-theme="dark"] .manager-dashboard label:not([style*="color"]) {
+  color: var(--text-mid) !important;
+}
+
+/* All divs, spans, li, td, th that explicitly use dark colors */
+[data-theme="dark"] div[style*="color: #1e293b"],
+[data-theme="dark"] span[style*="color: #1e293b"],
+[data-theme="dark"] li[style*="color: #1e293b"],
+[data-theme="dark"] td[style*="color: #1e293b"],
+[data-theme="dark"] th[style*="color: #1e293b"] {
+  color: var(--text-high) !important;
+}
+
+[data-theme="dark"] div[style*="color: #374151"],
+[data-theme="dark"] span[style*="color: #374151"],
+[data-theme="dark"] p[style*="color: #374151"],
+[data-theme="dark"] li[style*="color: #374151"] {
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] div[style*="color: #475569"],
+[data-theme="dark"] span[style*="color: #475569"],
+[data-theme="dark"] p[style*="color: #475569"] {
+  color: var(--text-mid) !important;
+}
+
+[data-theme="dark"] div[style*="color: #64748b"],
+[data-theme="dark"] span[style*="color: #64748b"],
+[data-theme="dark"] p[style*="color: #64748b"] {
+  color: var(--text-low) !important;
+}
+
+/* Dark background divs with white text that become unreadable */
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background-color: #ffffff"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="backgroundColor: white"] {
+  background: var(--bg-card) !important;
+  color: var(--text-high) !important;
+}
+
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background-color: #f8fafc"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] [style*="background: #f1f5f9"],
+[data-theme="dark"] [style*="background-color: #f1f5f9"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] [style*="background: #e2e8f0"],
+[data-theme="dark"] [style*="background-color: #e2e8f0"] {
+  background: var(--border) !important;
+}
+
+/* Table-level catch-all */
+[data-theme="dark"] .employee-dashboard table,
+[data-theme="dark"] .manager-dashboard table {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard td,
+[data-theme="dark"] .employee-dashboard th,
+[data-theme="dark"] .manager-dashboard td,
+[data-theme="dark"] .manager-dashboard th {
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+
+/* Input / select / textarea text */
+[data-theme="dark"] .employee-dashboard input,
+[data-theme="dark"] .employee-dashboard select,
+[data-theme="dark"] .employee-dashboard textarea,
+[data-theme="dark"] .manager-dashboard input,
+[data-theme="dark"] .manager-dashboard select,
+[data-theme="dark"] .manager-dashboard textarea {
+  color: var(--text-high) !important;
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard input::placeholder,
+[data-theme="dark"] .manager-dashboard input::placeholder {
+  color: var(--text-low) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE — ROLE BADGE (Software Developer chip) dark mode
+   ═══════════════════════════════════════════════════════════ */
+
+/* The badge normally is #1a6ef5 text on #e6f0ff bg — invisible in dark */
+[data-theme="dark"] .employee-dashboard .role-badge {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+  border: 1px solid rgba(59, 130, 246, 0.35) !important;
+}
+
+/* employee-meta spans (Employee ID, Dept, Gender) */
+[data-theme="dark"] .employee-dashboard .employee-meta span {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .employee-name h2 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .emp-id-val {
+  color: var(--accent-blue-lt) !important;
+}
+
+/* Profile hero card quote text */
+[data-theme="dark"] .employee-dashboard .profile-quote p,
+[data-theme="dark"] .employee-dashboard .hero-quote p,
+[data-theme="dark"] .employee-dashboard blockquote {
+  color: var(--text-mid) !important;
+}
+
+/* Summary card sub-labels (ash colored descriptions) */
+[data-theme="dark"] .employee-dashboard .card-label,
+[data-theme="dark"] .employee-dashboard .stat-label,
+[data-theme="dark"] .employee-dashboard .card-desc,
+[data-theme="dark"] .employee-dashboard .muted {
+  color: var(--text-low) !important;
+}
+
+/* Maternity/Paternity policy description text */
+[data-theme="dark"] .employee-dashboard p[style*="color: #6b7280"],
+[data-theme="dark"] .employee-dashboard span[style*="color: #6b7280"],
+[data-theme="dark"] .employee-dashboard div[style*="color: #6b7280"] {
+  color: var(--text-low) !important;
+}
+
+/* Any remaining dark colored text in Leave Summary cards */
+[data-theme="dark"] .employee-dashboard .leave-summary span:not([style*="color"]),
+[data-theme="dark"] .employee-dashboard .leave-summary p:not([style*="color"]) {
+  color: var(--text-mid) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — COMPREHENSIVE WHITE CARD ELIMINATION
+   All #ffffff, #f8fafc, #f0f7ff, #eff6ff surfaces → dark
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── PROFILE PAGE ─────────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .profile-hero-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .info-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .info-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-blue) !important;
+}
+[data-theme="dark"] .employee-dashboard .profile-stats-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .avatar-menu {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-modal) !important;
+}
+
+/* ── APPLY LEAVE ──────────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .new-leave-form {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard .available-balance-card {
+  background: var(--bg-input) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+[data-theme="dark"] .employee-dashboard .balance-card-icon {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .balance-card-label {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .balance-card-days {
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .balance-card-total {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .apply-leave-back-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .apply-leave-back-btn:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+  border-color: var(--accent-blue) !important;
+}
+/* View Leave Policy button (inline styled) */
+[data-theme="dark"] .employee-dashboard button[style*="background: #eff6ff"],
+[data-theme="dark"] .employee-dashboard button[style*="background-color: #eff6ff"] {
+  background: rgba(37, 99, 235, 0.15) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-filters select {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-days-summary {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-days-summary.exceeds {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .employee-dashboard .apply-leave-notice {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-color: rgba(34, 197, 94, 0.25) !important;
+  color: #86efac !important;
+}
+
+/* ── LEAVE SUMMARY ────────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .leave-summary .card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .card:hover {
+  background: var(--bg-card-hover) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .summary-item {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-summary .icon-wrap {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+/* ── LEAVE HISTORY ────────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .leave-history-header-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .header-icon-box {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .filter-select-wrap select {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-table-container {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-table-modern th {
+  background: var(--bg-table-head) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-table-modern tbody tr:hover {
+  background: var(--bg-card-hover) !important;
+}
+[data-theme="dark"] .employee-dashboard .no-data-td {
+  background: var(--bg-card) !important;
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .sno-circle-badge {
+  background: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+/* Leave type icon boxes */
+[data-theme="dark"] .employee-dashboard .leave-type-icon-box.personal {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-type-icon-box.medical {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-type-icon-box.other {
+  background: rgba(249, 115, 22, 0.12) !important;
+  color: var(--accent-orange-lt) !important;
+}
+[data-theme="dark"] .employee-dashboard .leave-info-alert-banner {
+  background: rgba(59, 130, 246, 0.10) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+  color: #93c5fd !important;
+}
+
+/* ── PAGINATION ───────────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .pagination-controls-modern {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard .pag-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .pag-btn:hover:not(:disabled) {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+  border-color: var(--accent-blue) !important;
+}
+[data-theme="dark"] .employee-dashboard .page-size {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .page-size button {
+  background: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .rows-select-wrap select {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ── CANCEL BUTTONS ───────────────────────────────────────── */
+[data-theme="dark"] .employee-dashboard .cancel-leave-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .cancel-leave-btn:hover {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .employee-dashboard .cancel-leave-btn-red {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .employee-dashboard .cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ── DATE PICKER (react-datepicker) ──────────────────────── */
+[data-theme="dark"] .react-datepicker {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .react-datepicker__header {
+  background: var(--bg-table-head) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .react-datepicker__day-names,
+[data-theme="dark"] .react-datepicker__day-name {
+  background: var(--bg-table-head) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .react-datepicker__day {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .react-datepicker__day:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .react-datepicker__day--selected,
+[data-theme="dark"] .react-datepicker__day--keyboard-selected {
+  background: var(--accent-blue) !important;
+  color: #fff !important;
+}
+[data-theme="dark"] .react-datepicker__day--disabled {
+  color: var(--text-low) !important;
+  opacity: 0.4;
+}
+[data-theme="dark"] .react-datepicker__year-select,
+[data-theme="dark"] .react-datepicker__month-select {
+  background: var(--bg-input) !important;
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .react-datepicker__year-select option,
+[data-theme="dark"] .react-datepicker__month-select option {
+  background: var(--bg-card) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .react-datepicker__current-month,
+[data-theme="dark"] .react-datepicker-time__header {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .react-datepicker__navigation-icon::before {
+  border-color: var(--text-mid) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   BRAND AREA — THEME EMOJI TOGGLE BUTTON
+   ═══════════════════════════════════════════════════════════ */
+.employee-dashboard .brand,
+.manager-dashboard .brand {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+}
+.theme-toggle-emoji-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.theme-toggle-emoji-btn:hover {
+  transform: scale(1.2) rotate(10deg);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APPLY LEAVE — REASON BOX + RESET + SUMMARY ROWS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Reason for Leave wrapper */
+[data-theme="dark"] .employee-dashboard .reason-wrap {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .employee-dashboard .reason-wrap:focus-within {
+  border-color: var(--accent-blue) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+[data-theme="dark"] .employee-dashboard .reason-wrap textarea {
+  color: var(--text-high) !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .employee-dashboard .reason-wrap textarea::placeholder {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .employee-dashboard .reason-icon-box {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: var(--accent-blue-lt) !important;
+}
+
+/* Reset button */
+[data-theme="dark"] .employee-dashboard .apply-leave-reset {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .employee-dashboard .apply-leave-reset:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEAVE SUMMARY — THIS MONTH SUMMARY PANEL (inline styled)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Outer panel */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+/* Panel heading */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary h4 {
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+
+/* Inner summary rows (Paid/Unpaid/Total) — inline styled white bg */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary div[style*="backgroundColor: #ffffff"],
+[data-theme="dark"] .employee-dashboard .calendar-side-summary div[style*="background-color: #ffffff"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+}
+/* Row label text */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary div[style*="color: #64748b"] {
+  color: var(--text-low) !important;
+}
+/* Row value text */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary strong[style*="color: #1e293b"] {
+  color: var(--text-high) !important;
+}
+
+/* Monthly limit info box at bottom */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary div[style*="backgroundColor: #eff6ff"],
+[data-theme="dark"] .employee-dashboard .calendar-side-summary div[style*="background-color: #eff6ff"] {
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #93c5fd !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REQUEST SUMMARY CARDS (All Time) inline styled
+   ═══════════════════════════════════════════════════════════ */
+
+/* Approved (green) */
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="backgroundColor: #f0fdf4"],
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="background-color: #f0fdf4"] {
+  background: rgba(22, 163, 74, 0.1) !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
+}
+/* Rejected (red) */
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="backgroundColor: #fef2f2"],
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="background-color: #fef2f2"] {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+/* Pending (orange) */
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="backgroundColor: #fff7ed"],
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="background-color: #fff7ed"] {
+  background: rgba(234, 88, 12, 0.1) !important;
+  border-color: rgba(234, 88, 12, 0.3) !important;
+}
+/* Cancelled (purple) */
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="backgroundColor: #faf5ff"],
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="background-color: #faf5ff"] {
+  background: rgba(124, 58, 237, 0.1) !important;
+  border-color: rgba(124, 58, 237, 0.3) !important;
+}
+/* Total (blue) */
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="backgroundColor: #eff6ff"],
+[data-theme="dark"] .employee-dashboard .summary-cards .card[style*="background-color: #eff6ff"] {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — CALENDAR SIDE PANEL & MONTHLY LIMIT ALERT
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] .employee-dashboard .calendar-side-summary {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .calendar-side-summary h4 {
+  color: var(--text-high) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .summary-row {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .summary-row-label {
+  color: var(--text-low) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .summary-row-value {
+  color: var(--text-high) !important;
+}
+
+[data-theme="dark"] .employee-dashboard .monthly-limit-alert {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  color: #93c5fd !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — MANAGER DASHBOARD OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Main layout background override */
+[data-theme="dark"] .manager-dashboard {
+  background: var(--bg-base) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Sidebar background override */
+[data-theme="dark"] .manager-dashboard .sidebar {
+  background: var(--bg-sidebar) !important;
+  border-color: var(--border) !important;
+}
+
+/* Stats cards (Leave Approval) */
+[data-theme="dark"] .manager-dashboard .stats-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .stats-card-body {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .stats-number {
+  color: var(--text-high) !important;
+}
+
+/* Approval & Report Filter Bars */
+[data-theme="dark"] .manager-dashboard .approval-filters-bar,
+[data-theme="dark"] .manager-dashboard .report-filters-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper,
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper input,
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper select {
+  color: var(--text-high) !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button {
+  background: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button.active {
+  background: var(--accent-orange) !important;
+  color: #fff !important;
+  border-color: var(--accent-orange) !important;
+}
+
+/* Report stats cards (Total Employees, Total Leaves Taken...) */
+[data-theme="dark"] .manager-dashboard .report-stats-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card .card-value {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card .card-label {
+  color: var(--text-low) !important;
+}
+
+/* Report Charts (Leave Type Distribution, Paid vs Unpaid) */
+[data-theme="dark"] .manager-dashboard .report-chart-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-chart-title {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-center {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-num {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-lbl {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-legend-label {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-label {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-days {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-pct {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-total-row {
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-total-row strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-track {
+  background: var(--bg-input) !important;
+}
+
+/* Profiles on manager dashboard */
+[data-theme="dark"] .manager-dashboard .profile-hero-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .info-card,
+[data-theme="dark"] .manager-dashboard .info-card-ro {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .info-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .profile-role-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Holiday Calendar section wrapper and controls */
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper button {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper span {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-legend-bar span {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid > div[style*="borderBottom"] {
+  border-bottom-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Weekly Off indicator styling */
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid span[style*="color: #ea580c"],
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid span[style*="color: #c2410c"] {
+  color: var(--accent-orange-lt) !important;
+}
+
+/* Calendar day number cells */
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid > div[style*="background"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Monthly Holiday List Card */
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] span[style*="color"] {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] li {
+  border-color: var(--border) !important;
+}
+
+/* Action dropdowns, buttons and details in Leave Approval table */
+[data-theme="dark"] .manager-dashboard .action-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .action-btn:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+
+/* Action / Details button in reports */
+[data-theme="dark"] .manager-dashboard .report-action-btn,
+[data-theme="dark"] .manager-dashboard button[class*="action"],
+[data-theme="dark"] .manager-dashboard button[class*="btn"] {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-mid);
+}
+[data-theme="dark"] .manager-dashboard button[class*="action"]:hover,
+[data-theme="dark"] .manager-dashboard button[class*="btn"]:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-high);
+}
+
+/* Preserve active primary buttons like "Apply Leave", "Take Action", "Download Report" etc. */
+[data-theme="dark"] .manager-dashboard .btn-primary,
+[data-theme="dark"] .manager-dashboard button[style*="background: linear-gradient"],
+[data-theme="dark"] .manager-dashboard button[style*="background: #f25c05"],
+[data-theme="dark"] .manager-dashboard .add-holiday-btn,
+[data-theme="dark"] .manager-dashboard .report-download-btn {
+  background: linear-gradient(135deg, #f25c05, #ff7e33) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — MANAGER REPORT & CALENDAR EXTRA OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Top 4 report sum cards */
+[data-theme="dark"] .manager-dashboard .report-sum-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card .report-sum-value {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card .report-sum-label {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.orange .report-sum-icon {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--accent-orange-lt) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.blue .report-sum-icon {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.green .report-sum-icon {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.red .report-sum-icon {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fca5a5 !important;
+}
+
+/* Monthly holiday card in calendar tab */
+[data-theme="dark"] .manager-dashboard .monthly-holidays-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .monthly-holidays-card h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-list-item {
+  background: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-name-text {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-type-badge {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--accent-orange-lt) !important;
+}
+
+/* Details card & Description panel */
+[data-theme="dark"] .manager-dashboard .details-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .selected-holiday-desc {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Delete holiday button */
+[data-theme="dark"] .manager-dashboard .delete-holiday-btn {
+  background: var(--danger-bg) !important;
+  color: #fca5a5 !important;
+  border-color: var(--danger) !important;
+}
+[data-theme="dark"] .manager-dashboard .delete-holiday-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — CALENDAR & MODAL OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Calendar nav pill */
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Calendar main card */
+[data-theme="dark"] .manager-dashboard .calendar-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Add Holiday modal body */
+[data-theme="dark"] .add-holiday-modal-body {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Form select inside modal */
+[data-theme="dark"] .manager-dashboard .modal-form-select {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .modal-form-select option {
+  background-color: var(--bg-card);
+  color: var(--text-high);
+}
+
+/* Generic modal cancel btn */
+[data-theme="dark"] .manager-dashboard .modal-cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Confirmation modal overlay card */
+[data-theme="dark"] .confirm-modal-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .confirm-modal-title {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .confirm-modal-body {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--orange {
+  background: rgba(249, 115, 22, 0.15) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--green {
+  background: rgba(34, 197, 94, 0.12) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--red {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+[data-theme="dark"] .confirm-modal-card .modal-cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — VIEW HISTORY / VIEW REPORT MODALS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Main popup card shell */
+[data-theme="dark"] .details-popup-card,
+[data-theme="dark"] .report-detail-modal-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Popup header */
+[data-theme="dark"] .popup-card-header {
+  border-bottom-color: var(--border) !important;
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .popup-card-header h3 {
+  color: var(--text-high) !important;
+}
+
+/* Close button */
+[data-theme="dark"] .close-popup-btn {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .close-popup-btn:hover {
+  color: var(--text-high) !important;
+}
+
+/* Popup card body */
+[data-theme="dark"] .popup-card-body {
+  background: var(--bg-card) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Scrollbar in modal body */
+[data-theme="dark"] .scrollable-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-input) !important;
+}
+[data-theme="dark"] .scrollable-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+}
+
+/* Employee header section inside modal */
+[data-theme="dark"] .popup-employee-header {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .popup-employee-info h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .popup-employee-id {
+  color: var(--text-low) !important;
+}
+
+/* ── Employee ID chip in the table ── */
+[data-theme="dark"] .manager-dashboard .emp-id-chip {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ── Report Modal — 4 stats cards ── */
+[data-theme="dark"] .modal-stat-card.entitlement-card {
+  background: rgba(242, 92, 5, 0.1) !important;
+  border-color: rgba(242, 92, 5, 0.2) !important;
+  color: #fdba74 !important;
+}
+[data-theme="dark"] .modal-stat-card.entitlement-card .modal-stat-label {
+  color: #fb923c !important;
+}
+[data-theme="dark"] .modal-stat-card.entitlement-card .modal-stat-value {
+  color: #fb923c !important;
+}
+
+[data-theme="dark"] .modal-stat-card.used-card {
+  background: rgba(79, 70, 229, 0.1) !important;
+  border-color: rgba(79, 70, 229, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.used-card .modal-stat-label {
+  color: #a5b4fc !important;
+}
+[data-theme="dark"] .modal-stat-card.used-card .modal-stat-value {
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .modal-stat-card.remaining-card {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.remaining-card .modal-stat-label {
+  color: #6ee7b7 !important;
+}
+[data-theme="dark"] .modal-stat-card.remaining-card .modal-stat-value {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .modal-stat-card.attendance-card {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.attendance-card .modal-stat-label {
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .modal-stat-card.attendance-card .modal-stat-value {
+  color: #f87171 !important;
+}
+
+/* ── Leave Breakdown Section ── */
+[data-theme="dark"] .leave-breakdown-section {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .leave-breakdown-section h5 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .legend-label {
+  color: var(--text-mid) !important;
+}
+
+/* Donut chart center circle */
+[data-theme="dark"] .donut-center {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .donut-number {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .donut-label {
+  color: var(--text-low) !important;
+}
+
+/* ── History list items ── */
+[data-theme="dark"] .modal-history-section h5 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .history-list-item {
+  border-color: var(--border) !important;
+  background: var(--bg-input) !important;
+}
+[data-theme="dark"] .history-item-dates {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .history-item-type {
+  color: var(--text-low) !important;
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .history-item-reason {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .empty-history-text {
+  color: var(--text-low) !important;
+}
+
+/* ── Extra: popup employee header section ── */
+[data-theme="dark"] .popup-employee-header {
+  border-bottom-color: var(--border) !important;
+}
+[data-theme="dark"] .popup-employee-info h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .popup-employee-id {
+  color: var(--text-low) !important;
+}
+
+/* ── Report table name & department text ── */
+[data-theme="dark"] .manager-dashboard .report-row td div[style] {
+  color: var(--text-mid) !important;
+}
+
+/* Catch-all: any remaining #f1f5f9 badge backgrounds inside dark modal */
+[data-theme="dark"] .details-popup-card .history-item-type,
+[data-theme="dark"] .report-detail-modal-card .history-item-type {
+  background-color: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — SELECTED DATE DETAILS BADGE & TITLE
+   ═══════════════════════════════════════════════════════════ */
+
+/* Working Day badge (the main white offender) */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--working,
+[data-theme="dark"] .manager-dashboard .detail-type-badge--default {
+  background-color: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+
+/* Public Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--public {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Festival badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--festival {
+  background-color: rgba(234, 179, 8, 0.12) !important;
+  color: #fde047 !important;
+  border-color: rgba(234, 179, 8, 0.25) !important;
+}
+
+/* Company Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--company {
+  background-color: rgba(190, 24, 93, 0.12) !important;
+  color: #f9a8d4 !important;
+  border-color: rgba(190, 24, 93, 0.25) !important;
+}
+
+/* Sunday Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--sunday {
+  background-color: rgba(234, 88, 12, 0.12) !important;
+  color: #fdba74 !important;
+  border-color: rgba(234, 88, 12, 0.25) !important;
+}
+
+/* Holiday name h4 */
+[data-theme="dark"] .manager-dashboard .detail-holiday-title {
+  color: var(--text-high) !important;
+}
+
+/* Date paragraph */
+[data-theme="dark"] .manager-dashboard .detail-holiday-date {
+  color: var(--text-low) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — FILTER BARS (Leave Approval + Employee Report)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Filter bar containers */
+[data-theme="dark"] .manager-dashboard .approval-filters-bar,
+[data-theme="dark"] .manager-dashboard .report-filters-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Search input wrapper icon */
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper .search-icon {
+  color: var(--text-low) !important;
+}
+
+/* Search text input */
+[data-theme="dark"] .manager-dashboard .report-search-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-search-input::placeholder {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-search-input:focus {
+  border-color: var(--accent-orange) !important;
+  box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.15) !important;
+}
+
+/* Dropdown select inputs */
+[data-theme="dark"] .manager-dashboard .report-text-input,
+[data-theme="dark"] .manager-dashboard .report-select-input,
+[data-theme="dark"] .manager-dashboard .modal-form-select {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-text-input:focus,
+[data-theme="dark"] .manager-dashboard .report-select-input:focus {
+  border-color: var(--accent-orange) !important;
+  box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.15) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-select-input option,
+[data-theme="dark"] .manager-dashboard .report-text-input option {
+  background: var(--bg-card) !important;
+  color: var(--text-high) !important;
+}
+
+/* Field icons inside filter wrappers */
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper .field-icon,
+[data-theme="dark"] .manager-dashboard .filter-input-field-wrapper .field-icon {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .select-chevron {
+  color: var(--text-low) !important;
+}
+
+/* ── Approval status pills ── */
+[data-theme="dark"] .manager-dashboard .approval-pill.all {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all .pill-count {
+  background: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.all.active {
+  background: var(--accent-orange) !important;
+  border-color: var(--accent-orange) !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all.active .pill-count {
+  background: rgba(255,255,255,0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.pending {
+  background: rgba(234, 179, 8, 0.1) !important;
+  border-color: rgba(234, 179, 8, 0.25) !important;
+  color: #fde047 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.pending .pill-count {
+  background: rgba(234, 179, 8, 0.2) !important;
+  color: #fde047 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.pending:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.pending.active {
+  background: rgba(234, 179, 8, 0.2) !important;
+  border-color: #fde047 !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.approved {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.25) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.approved .pill-count {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.approved:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.approved.active {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #86efac !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected .pill-count {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected.active {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled {
+  background: rgba(148, 163, 184, 0.1) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled .pill-count {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled.active {
+  background: rgba(148, 163, 184, 0.2) !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE PHOTO PREVIEW MODAL
+   ═══════════════════════════════════════════════════════════ */
+.profile-preview-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: profilePreviewFadeOverlay 0.2s ease;
+}
+
+@keyframes profilePreviewFadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.profile-preview-modal-card {
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: profilePreviewPopupFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .profile-preview-modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal);
+}
+
+@keyframes profilePreviewPopupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.profile-preview-modal-header {
+  width: 100%;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.profile-preview-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .profile-preview-modal-header h3 {
+  color: var(--text-high);
+}
+
+.profile-preview-modal-body {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.profile-preview-avatar-container {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .profile-preview-avatar-container {
+  border-color: var(--border);
+}
+
+.profile-preview-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-preview-modal-actions {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+}
+
+.profile-preview-modal-actions button {
+  flex: 1;
+  height: 48px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-preview-modal-actions .preview-cancel-btn {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #0F172A;
+}
+
+[data-theme="dark"] .profile-preview-modal-actions .preview-cancel-btn {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+
+.profile-preview-modal-actions .preview-cancel-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+[data-theme="dark"] .profile-preview-modal-actions .preview-cancel-btn:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Upload buttons overrides for specific dashboards */
+.employee-dashboard .profile-preview-modal-actions .preview-upload-btn {
+  border: none;
+  background: #0868ef;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(8, 104, 239, 0.3);
+}
+
+.employee-dashboard .profile-preview-modal-actions .preview-upload-btn:hover {
+  background: #0656c9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(6, 86, 201, 0.4);
+}
+
+.manager-dashboard .profile-preview-modal-actions .preview-upload-btn {
+  border: none;
+  background: #f25c05;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(242, 92, 5, 0.3);
+}
+
+.manager-dashboard .profile-preview-modal-actions .preview-upload-btn:hover {
+  background: #d84b00;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(216, 75, 0, 0.4);
+}
+
+.profile-preview-modal-actions .preview-upload-btn:active {
+  transform: translateY(0);
+}
+
+/* Dark theme avatar border colors */
+[data-theme="dark"] .employee-avatar-img {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .manager-dashboard .avatar-wrapper .manager-avatar {
+  border-color: var(--border) !important;
+}
+
+/* Toast Notifications for Employee Dashboard */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 999999;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: toastNotificationFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .toast-notification {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+
+.toast-notification.success {
+  border-left: 4px solid #22c55e;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast-notification.info {
+  border-left: 4px solid #3b82f6;
+}
+
+@keyframes toastNotificationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

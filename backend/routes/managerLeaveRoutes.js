@@ -129,4 +129,270 @@ router.put("/reject/:id", (req, res) => {
   });
 });
 
+// ─── Reporting Summary Endpoint ───────────────────────────────────────────────
+router.get("/reports/summary", (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  // 1. Get total active employees
+  const empSql = "SELECT COUNT(*) AS totalEmployees FROM users WHERE role = 'employee'";
+  db.query(empSql, (err, empRes) => {
+    if (err) {
+      console.error("Error fetching total employees:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    const totalEmployees = empRes[0].totalEmployees;
+
+    // 2. Fetch all approved leaves to compute stats
+    const leavesSql = `
+      SELECT id, employee_id, leave_type, start_date, end_date, total_days, paid_days, unpaid_days, actual_leave_days
+      FROM leave_requests
+      WHERE status = 'Approved'
+    `;
+    db.query(leavesSql, (err2, leaves) => {
+      if (err2) {
+        console.error("Error fetching approved leaves:", err2);
+        return res.status(500).json({ success: false, error: err2.message });
+      }
+
+      // We determine the year to show in the Trend chart.
+      // Default to the year from the filter (startDate or endDate) if present, otherwise current year
+      let trendYear = new Date().getFullYear();
+      if (startDate) {
+        trendYear = new Date(startDate).getFullYear();
+      } else if (endDate) {
+        trendYear = new Date(endDate).getFullYear();
+      }
+
+      // Filter leaves within the date range for cards and donuts
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      let totalLeavesTaken = 0;
+      let paidLeaveTaken = 0;
+      let unpaidLeaveTaken = 0;
+
+      const typeDistribution = {};
+      const monthlyTrend = {};
+
+      // Initialize monthly trend
+      for (let i = 0; i < 12; i++) {
+        monthlyTrend[i] = { Medical: 0, Casual: 0, Earned: 0, Others: 0 };
+      }
+
+      leaves.forEach((l) => {
+        const leaveStart = new Date(l.start_date);
+        const leaveEnd = new Date(l.end_date);
+        const days = l.actual_leave_days || l.total_days || 0;
+
+        // If it matches the date filter, count it for the summary cards and donuts
+        let matchesFilter = true;
+        if (start && leaveEnd < start) matchesFilter = false;
+        if (end && leaveStart > end) matchesFilter = false;
+
+        if (matchesFilter) {
+          totalLeavesTaken += days;
+          paidLeaveTaken += l.paid_days || 0;
+          unpaidLeaveTaken += l.unpaid_days || 0;
+
+          const type = l.leave_type || "Other";
+          typeDistribution[type] = (typeDistribution[type] || 0) + days;
+        }
+
+        // Trend chart: must be in the trendYear
+        if (leaveStart.getFullYear() === trendYear) {
+          const month = leaveStart.getMonth(); // 0-11
+          let category = "Others";
+          const lt = l.leave_type || "";
+          if (lt.includes("Medical") || lt.includes("Sick")) {
+            category = "Medical";
+          } else if (lt.includes("Casual") || lt.includes("Personal")) {
+            category = "Casual";
+          } else if (lt.includes("Earned")) {
+            category = "Earned";
+          }
+          monthlyTrend[month][category] += days;
+        }
+      });
+
+      res.json({
+        success: true,
+        summary: {
+          totalEmployees,
+          totalLeavesTaken,
+          paidLeaveTaken,
+          unpaidLeaveTaken
+        },
+        typeDistribution,
+        monthlyTrend,
+        trendYear
+      });
+    });
+  });
+});
+
+// ─── Reporting Employees Table Endpoint ──────────────────────────────────────────
+router.get("/reports/employees", (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  // Fetch all employees
+  const empSql = "SELECT id, employee_id, name, department, joining_date, designation, profile_photo FROM users WHERE role = 'employee'";
+  db.query(empSql, (err, employees) => {
+    if (err) {
+      console.error("Error fetching employees for report:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+
+    // Fetch all approved leaves for balance calculations
+    const leavesSql = `
+      SELECT employee_id, leave_type, start_date, end_date, total_days, paid_days, unpaid_days, actual_leave_days
+      FROM leave_requests
+      WHERE status = 'Approved'
+    `;
+    db.query(leavesSql, (err2, leaves) => {
+      if (err2) {
+        console.error("Error fetching approved leaves for report:", err2);
+        return res.status(500).json({ success: false, error: err2.message });
+      }
+
+      // Group leaves by employee_id
+      const empLeavesMap = {};
+      leaves.forEach((l) => {
+        if (!empLeavesMap[l.employee_id]) {
+          empLeavesMap[l.employee_id] = [];
+        }
+        empLeavesMap[l.employee_id].push(l);
+      });
+
+      const reportData = employees.map((emp) => {
+        const empLeaves = empLeavesMap[emp.id] || [];
+
+        // Filter the leaves within active date range to show range-specific usage in table columns
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        const filteredLeaves = empLeaves.filter((l) => {
+          let matches = true;
+          if (start && new Date(l.end_date) < start) matches = false;
+          if (end && new Date(l.start_date) > end) matches = false;
+          return matches;
+        });
+
+        const totalEntitlement = 36;
+        
+        // Count paid and unpaid days taken within the filtered range
+        const paidLeavesTaken = filteredLeaves.reduce((sum, l) => sum + (l.paid_days || 0), 0);
+        const unpaidLeavesTaken = filteredLeaves.reduce((sum, l) => sum + (l.unpaid_days || 0), 0);
+        const leaveTypesTaken = Array.from(new Set(filteredLeaves.map(l => l.leave_type)));
+        
+        // Remaining Balance: 36 - SUM(approved paid_days for non-Maternity/Paternity leaves, overall/all-time)
+        const overallPaidNonMatPat = empLeaves
+          .filter(l => l.leave_type !== "Maternity Leave" && l.leave_type !== "Paternity Leave")
+          .reduce((sum, l) => sum + (l.paid_days || 0), 0);
+        
+        const remainingBalance = Math.max(0, totalEntitlement - overallPaidNonMatPat);
+
+        return {
+          id: emp.id,
+          employee_id: emp.employee_id,
+          name: emp.name,
+          department: emp.department,
+          joining_date: emp.joining_date,
+          designation: emp.designation,
+          profile_photo: emp.profile_photo,
+          gender: emp.gender,
+          totalEntitlement,
+          paidLeavesTaken,
+          unpaidLeavesTaken,
+          remainingBalance,
+          leaveTypesTaken
+        };
+      });
+
+      res.json({
+        success: true,
+        employees: reportData
+      });
+    });
+  });
+});
+
+// ─── Reporting Single Employee Detail Endpoint ──────────────────────────────────────
+router.get("/reports/employee/:id", (req, res) => {
+  const param = req.params.id;
+
+  // Support both numeric DB id and string employee_id code (e.g. "EMP001")
+  const isNumeric = /^\d+$/.test(param);
+  const empSql = isNumeric
+    ? "SELECT id, employee_id, name, department, joining_date, designation, profile_photo, gender FROM users WHERE id = ? AND role = 'employee'"
+    : "SELECT id, employee_id, name, department, joining_date, designation, profile_photo, gender FROM users WHERE employee_id = ? AND role = 'employee'";
+
+  db.query(empSql, [param], (err, empRes) => {
+    if (err) {
+      console.error("Error fetching employee details:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    if (empRes.length === 0) {
+      return res.status(404).json({ success: false, message: "Employee not found." });
+    }
+    const emp = empRes[0];
+
+    // Fetch all leave requests (including non-approved for history log)
+    const leavesSql = `
+      SELECT id, leave_type, start_date, end_date, total_days, paid_days, unpaid_days, status, reason, actual_leave_days, applied_at, payment_type
+      FROM leave_requests
+      WHERE employee_id = ?
+      ORDER BY start_date DESC, id DESC
+    `;
+    db.query(leavesSql, [emp.id], (err2, leaves) => {
+      if (err2) {
+        console.error("Error fetching leaves for employee:", err2);
+        return res.status(500).json({ success: false, error: err2.message });
+      }
+
+      const approvedLeaves = leaves.filter((l) => l.status === "Approved");
+
+      const paidLeavesTaken = approvedLeaves.reduce((sum, l) => sum + (l.paid_days || 0), 0);
+      const unpaidLeavesTaken = approvedLeaves.reduce((sum, l) => sum + (l.unpaid_days || 0), 0);
+
+      // Remaining balance = 36 - paid leaves taken (excluding Maternity/Paternity)
+      const paidNonMatPat = approvedLeaves
+        .filter(l => l.leave_type !== "Maternity Leave" && l.leave_type !== "Paternity Leave")
+        .reduce((sum, l) => sum + (l.paid_days || 0), 0);
+      const remainingBalance = Math.max(0, 36 - paidNonMatPat);
+
+      // Leave type usage breakdown for approved leaves
+      const leaveTypeUsage = {};
+      approvedLeaves.forEach((l) => {
+        const type = l.leave_type || "Other";
+        const days = l.actual_leave_days || l.total_days || 0;
+        leaveTypeUsage[type] = (leaveTypeUsage[type] || 0) + days;
+      });
+
+      res.json({
+        success: true,
+        employee: {
+          id: emp.id,
+          employee_id: emp.employee_id,
+          name: emp.name,
+          department: emp.department,
+          joining_date: emp.joining_date,
+          designation: emp.designation,
+          profile_photo: emp.profile_photo,
+          gender: emp.gender,
+          totalEntitlement: 36,
+          paidLeavesTaken,
+          unpaidLeavesTaken,
+          remainingBalance
+        },
+        leaveTypeUsage,
+        history: leaves.map(l => ({
+          ...l,
+          start_date: new Date(l.start_date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }),
+          end_date: new Date(l.end_date).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })
+        }))
+      });
+    });
+  });
+});
+
 module.exports = router;

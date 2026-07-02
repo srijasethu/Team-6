@@ -537,3 +537,117 @@ body {
     gap: 12px;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   DARK MODE SHIELD — Login page is always light-themed.
+   These rules explicitly reset every element back to its
+   light-mode values, overriding any [data-theme="dark"]
+   globals that leak in from the html/body element.
+   ════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .login-container {
+  background-color: #0d1f4c !important;
+}
+
+/* Right panel — always white */
+[data-theme="dark"] .login-right-panel {
+  background: #ffffff !important;
+  color: #1e293b !important;
+}
+
+/* Form title */
+[data-theme="dark"] .login-main-title {
+  color: #0f172a !important;
+}
+
+/* Sub-heading helper text */
+[data-theme="dark"] .login-helper-text {
+  color: #64748b !important;
+}
+
+/* Role label */
+[data-theme="dark"] .select-role-label {
+  color: #1e293b !important;
+}
+
+/* Role cards */
+[data-theme="dark"] .role-card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+[data-theme="dark"] .role-card:hover {
+  background: #f8fafc !important;
+  border-color: #93c5fd !important;
+}
+[data-theme="dark"] .role-card.active {
+  background: rgba(8, 104, 239, 0.03) !important;
+  border-color: #0868ef !important;
+}
+[data-theme="dark"] .role-card-text {
+  color: #1e293b !important;
+}
+[data-theme="dark"] .role-card-icon {
+  color: #0868ef !important;
+}
+[data-theme="dark"] .role-radio-indicator {
+  border-color: #94a3b8 !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .role-card.active .role-radio-indicator {
+  border-color: #0868ef !important;
+}
+[data-theme="dark"] .role-card.active .role-radio-indicator::after {
+  background: #0868ef !important;
+}
+
+/* Field labels */
+[data-theme="dark"] .input-field-label {
+  color: #1e293b !important;
+}
+
+/* Input fields */
+[data-theme="dark"] .login-field-input {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+[data-theme="dark"] .login-field-input::placeholder {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .login-field-input:focus {
+  border-color: #0868ef !important;
+  box-shadow: 0 0 0 3px rgba(8, 104, 239, 0.1) !important;
+}
+
+/* Input icons */
+[data-theme="dark"] .login-input-prefix-icon {
+  color: #94a3b8 !important;
+}
+
+/* Password toggle */
+[data-theme="dark"] .login-password-toggle-btn {
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .login-password-toggle-btn:hover {
+  color: #64748b !important;
+}
+
+/* Error message */
+[data-theme="dark"] .login-error-message {
+  color: #ef4444 !important;
+}
+
+/* Links */
+[data-theme="dark"] .admin-link {
+  color: #0868ef !important;
+}
+[data-theme="dark"] .admin-link:hover {
+  color: #0550c5 !important;
+}
+
+/* Forgot password text */
+[data-theme="dark"] .forgot-text {
+  color: #64748b !important;
+}
