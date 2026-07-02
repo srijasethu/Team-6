@@ -85,7 +85,7 @@ function HistoryLoader({ empId }) {
     const fetchHistory = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/manager/reports/employee/${empId}`,
+          `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empId}`,
         );
         const data = await res.json();
         if (data.success) {
@@ -345,7 +345,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/holidays");
+      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays");
       const data = await response.json();
       if (data.success) {
         setHolidaysList(data.holidays || []);
@@ -424,8 +424,8 @@ function ManagerDashboard({ onLogout }) {
       if (endDate) params.append("endDate", endDate);
       const qs = params.toString() ? `?${params.toString()}` : "";
       const [summaryRes, empRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/manager/reports/summary${qs}`),
-        fetch(`http://localhost:5000/api/manager/reports/employees${qs}`),
+        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/summary${qs}`),
+        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/employees${qs}`),
       ]);
       const summaryData = await summaryRes.json();
       const empData = await empRes.json();
@@ -443,7 +443,7 @@ function ManagerDashboard({ onLogout }) {
     setReportEmpDataLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:5000/api/manager/reports/employee/${empDbId}`,
+        `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empDbId}`,
       );
       const data = await response.json();
       if (data.success) {
@@ -863,7 +863,7 @@ function ManagerDashboard({ onLogout }) {
     try {
       showToast("Uploading profile photo...", "info");
       const response = await fetch(
-        `http://localhost:5000/api/profile/upload-photo/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/upload-photo/${user.id}`,
         {
           method: "PUT",
           body: formData,
@@ -892,7 +892,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/profile/remove-photo/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/remove-photo/${user.id}`,
         {
           method: "DELETE",
         },
@@ -1034,7 +1034,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchManagerLeaves = async () => {
     setLeavesLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/manager/leaves");
+      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/manager/leaves");
       const data = await response.json();
       console.log("Manager leaves:", data.leaves);
       if (data.success) {
@@ -1084,7 +1084,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/profile/update/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/update/${user.id}`,
         {
           method: "PUT",
           headers: {
@@ -1149,7 +1149,7 @@ function ManagerDashboard({ onLogout }) {
   const handleApproveRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/manager/approve/${dbId}`,
+        `https://team-6-production-a95e.up.railway.app/api/manager/approve/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1177,7 +1177,7 @@ function ManagerDashboard({ onLogout }) {
   const handleRejectRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/manager/reject/${dbId}`,
+        `https://team-6-production-a95e.up.railway.app/api/manager/reject/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1206,7 +1206,7 @@ function ManagerDashboard({ onLogout }) {
     e.preventDefault();
     setAddError("");
     try {
-      const response = await fetch("http://localhost:5000/api/holidays", {
+      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -4676,7 +4676,7 @@ function ManagerDashboard({ onLogout }) {
                   });
                   try {
                     const response = await fetch(
-                      `http://localhost:5000/api/holidays/${holidayId}`,
+                      `https://team-6-production-a95e.up.railway.app/api/holidays/${holidayId}`,
                       {
                         method: "DELETE",
                       },

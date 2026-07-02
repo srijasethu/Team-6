@@ -353,7 +353,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`http://localhost:5000/api/leave/summary/${user.id}`)
+    fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -366,7 +366,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       })
       .catch(() => {});
 
-    fetch("http://localhost:5000/api/holidays")
+    fetch("https://team-6-production-a95e.up.railway.app/api/holidays")
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -395,7 +395,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setSubmitError("");
     setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/leave/apply", {
+      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/leave/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1172,7 +1172,7 @@ function ProfileView({
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`http://localhost:5000/api/leave/summary/${user.id}`)
+    fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (!data.success) return;
@@ -1369,7 +1369,7 @@ function LeaveSummaryView() {
     if (user.gender) setEmployeeGender(user.gender);
 
     try {
-      const profileRes = await fetch(`http://localhost:5000/api/profile/get/${user.id}`);
+      const profileRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/profile/get/${user.id}`);
       const profileData = await profileRes.json();
       if (profileData.success && profileData.user) {
         const freshGender = profileData.user.gender || "Male";
@@ -1383,7 +1383,7 @@ function LeaveSummaryView() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/leave/summary/${user.id}`);
+      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`);
       const data = await response.json();
       if (data.success) {
         setSummary({
@@ -1403,7 +1403,7 @@ function LeaveSummaryView() {
     }
 
     try {
-      const hResponse = await fetch("http://localhost:5000/api/holidays");
+      const hResponse = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays");
       const hData = await hResponse.json();
       if (hData.success) {
         setHolidays(hData.holidays || []);
@@ -2177,7 +2177,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/leave/history/${user.id}`);
+      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leave/history/${user.id}`);
       const data = await response.json();
       if (data.success) setLeaveHistory(data.leaves);
     } catch (error) {
@@ -2189,7 +2189,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
     const confirmCancel = window.confirm("Are you sure you want to cancel this leave request?");
     if (!confirmCancel) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/leaves/cancel/${leaveId}`, {
+      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leaves/cancel/${leaveId}`, {
         method: "PUT",
       });
       const data = await response.json();
@@ -2690,7 +2690,7 @@ function EmployeeDashboard({ onLogout }) {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`http://localhost:5000/api/profile/get/${user.id}`)
+    fetch(`https://team-6-production-a95e.up.railway.app/api/profile/get/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.user) {
@@ -2753,7 +2753,7 @@ function EmployeeDashboard({ onLogout }) {
     try {
       showToast("Uploading profile photo...", "info");
       const response = await fetch(
-        `http://localhost:5000/api/profile/upload-photo/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/upload-photo/${user.id}`,
         {
           method: "PUT",
           body: formData,
@@ -2788,7 +2788,7 @@ function EmployeeDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/profile/remove-photo/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/remove-photo/${user.id}`,
         {
           method: "DELETE",
         },
@@ -2826,7 +2826,7 @@ function EmployeeDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `http://localhost:5000/api/profile/update/${user.id}`,
+        `https://team-6-production-a95e.up.railway.app/api/profile/update/${user.id}`,
         {
           method: "PUT",
           headers: {

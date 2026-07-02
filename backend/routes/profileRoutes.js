@@ -45,7 +45,7 @@ const deleteFileFromUrl = (photoUrl) => {
   if (!photoUrl) return;
 
   try {
-    const prefix = "http://localhost:5000/uploads/";
+    const prefix = "https://team-6-production-a95e.up.railway.app/uploads/";
 
     if (photoUrl.startsWith(prefix)) {
       const filename = photoUrl.replace(prefix, "");
@@ -67,7 +67,7 @@ router.put("/upload-photo/:id", upload.single("profile_photo"), (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const imagePath = `http://localhost:5000/uploads/${req.file.filename}`;
+  const imagePath = `https://team-6-production-a95e.up.railway.app/uploads/${req.file.filename}`;
 
   const selectSql = "SELECT profile_photo FROM users WHERE id = ?";
 
