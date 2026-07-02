@@ -90,27 +90,9 @@ function EmployeeAvatar({
   photoUrl = null,
   fileInputRef = null,
   onPhotoChange = null,
-  onRemovePhoto = null,
 }) {
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    }
-    if (showMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showMenu]);
-
   return (
-    <div className={`avatar-wrapper${large ? " large" : ""}`} ref={menuRef}>
+    <div className={`avatar-wrapper${large ? " large" : ""}`}>
       <img
         src={photoUrl || "/default-profile.png"}
         alt="Employee Avatar"
@@ -124,51 +106,23 @@ function EmployeeAvatar({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png, image/jpeg, image/jpg"
           style={{ display: "none" }}
-          onChange={(e) => {
-            onPhotoChange(e);
-            setShowMenu(false);
-          }}
+          onChange={onPhotoChange}
         />
       )}
       <button
         type="button"
         className="avatar-edit-btn"
         title="Edit profile photo"
-        onClick={() => setShowMenu((prev) => !prev)}
+        onClick={() => {
+          if (fileInputRef && fileInputRef.current) {
+            fileInputRef.current.click();
+          }
+        }}
       >
         <FaPencilAlt />
       </button>
-
-      {showMenu && (
-        <div className="avatar-menu">
-          <button
-            type="button"
-            className="avatar-menu-item"
-            onClick={() => {
-              if (fileInputRef && fileInputRef.current) {
-                fileInputRef.current.click();
-              }
-              setShowMenu(false);
-            }}
-          >
-            Change profile photo
-          </button>
-          <button
-            type="button"
-            className="avatar-menu-item remove"
-            onClick={() => {
-              if (onRemovePhoto) {
-                onRemovePhoto();
-              }
-              setShowMenu(false);
-            }}
-          >
-            Remove photo
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -230,6 +184,17 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const [submitting, setSubmitting] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ show: false, type: null, paid: 0, unpaid: 0 });
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+
+  // Body scroll lock inside ApplyLeaveForm — prevents page scroll when child modals are open
+  useEffect(() => {
+    const anyModalOpen = confirmModal.show || showPolicyModal;
+    if (anyModalOpen) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+    return () => document.body.classList.remove("modal-open");
+  }, [confirmModal.show, showPolicyModal]);
 
   // Read gender from localStorage to restrict leave type options
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -722,11 +687,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
       {/* ── Confirmation Modal ──────────────────────────────────── */}
       {confirmModal.show && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.50)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 9999
-        }}>
+        <div className="confirm-modal-overlay">
           <div style={{
             background: "#ffffff",
             borderRadius: "16px",
@@ -840,12 +801,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
       {/* ── Leave Policy Modal ──────────────────────────────────── */}
       {showPolicyModal && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 10000,
-          background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(4px)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "16px"
-        }} onClick={() => setShowPolicyModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowPolicyModal(false)}>
           <div style={{
             background: "#ffffff", borderRadius: "20px",
             boxShadow: "0 30px 80px rgba(0,0,0,0.18)",
@@ -1185,7 +1141,6 @@ function ProfileView({
   profilePhoto,
   profilePhotoInputRef,
   handleProfilePhotoChange,
-  handleProfilePhotoRemove,
 }) {
   const [stats, setStats] = useState({ total: ANNUAL_PAID_ALLOCATION, taken: 0, pending: 0, approved: 0 });
 
@@ -1223,7 +1178,6 @@ function ProfileView({
             photoUrl={profilePhoto}
             fileInputRef={profilePhotoInputRef}
             onPhotoChange={handleProfilePhotoChange}
-            onRemovePhoto={handleProfilePhotoRemove}
           />
           <div className="hero-details">
             <div className="employee-name">
@@ -1367,6 +1321,16 @@ function LeaveSummaryView() {
   const todayDate = new Date();
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth()); // 0-indexed
+
+  // Body scroll lock — prevents page scroll when calendar detail modal is open
+  useEffect(() => {
+    if (showCalDetailModal) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+    return () => document.body.classList.remove("modal-open");
+  }, [showCalDetailModal]);
 
   useEffect(() => {
     fetchLeaveSummary();
@@ -1948,11 +1912,7 @@ function LeaveSummaryView() {
 
       {/* Calendar Date Detail Modal */}
       {showCalDetailModal && selectedCalDate && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 9999,
-          background: "rgba(15, 23, 42, 0.45)", backdropFilter: "blur(3px)",
-          display: "flex", alignItems: "center", justifyContent: "center"
-        }} onClick={() => setShowCalDetailModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowCalDetailModal(false)}>
           <div style={{
             background: "#ffffff", borderRadius: "20px",
             boxShadow: "0 20px 50px rgba(0,0,0,0.15)", width: "100%", maxWidth: "450px",
@@ -2538,6 +2498,31 @@ function EmployeeDashboard({ onLogout }) {
   const [leaveRefreshKey, setLeaveRefreshKey] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  const [toast, setToast] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+  };
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // Body scroll lock — prevents page scroll when any modal is open
+  useEffect(() => {
+    const anyModalOpen = showLogoutModal || !!photoPreview;
+    if (anyModalOpen) {
+      document.body.classList.add("modal-open");
+    } else {
+      document.body.classList.remove("modal-open");
+    }
+    return () => document.body.classList.remove("modal-open");
+  }, [showLogoutModal, photoPreview]);
+
   const loggedInUser = JSON.parse(localStorage.getItem("user"));
 
   const [profileData, setProfileData] = useState({
@@ -2589,16 +2574,34 @@ function EmployeeDashboard({ onLogout }) {
   );
   const profilePhotoInputRef = useRef(null);
 
-  const handleProfilePhotoChange = async (e) => {
+  const handleProfilePhotoChange = (e) => {
     const file = e.target.files[0];
-    const user = JSON.parse(localStorage.getItem("user"));
+    if (!file) return;
 
-    if (!file || !user) return;
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+    const allowedExtensions = ["jpg", "jpeg", "png"];
+    const fileExt = file.name.split(".").pop().toLowerCase();
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExt)) {
+      showToast("Only JPG, JPEG, and PNG images are allowed.", "error");
+      if (e.target) e.target.value = "";
+      return;
+    }
+
+    setPendingPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    if (e.target) e.target.value = "";
+  };
+
+  const handleUploadConfirm = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!pendingPhotoFile || !user) return;
 
     const formData = new FormData();
-    formData.append("profile_photo", file);
+    formData.append("profile_photo", pendingPhotoFile);
 
     try {
+      showToast("Uploading profile photo...", "info");
       const response = await fetch(
         `http://localhost:5000/api/profile/upload-photo/${user.id}`,
         {
@@ -2617,13 +2620,15 @@ function EmployeeDashboard({ onLogout }) {
 
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(data.profile_photo);
-        alert("Profile photo updated successfully");
+        showToast("Profile photo updated successfully", "success");
+        setPhotoPreview(null);
+        setPendingPhotoFile(null);
       } else {
-        alert("Failed to upload profile photo");
+        showToast(data.message || "Failed to upload profile photo", "error");
       }
     } catch (error) {
       console.error("Photo upload error:", error);
-      alert("Backend connection failed");
+      showToast("Backend connection failed", "error");
     }
   };
 
@@ -2649,13 +2654,13 @@ function EmployeeDashboard({ onLogout }) {
 
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(null);
-        alert("Profile photo removed successfully");
+        showToast("Profile photo removed successfully", "success");
       } else {
-        alert("Failed to remove profile photo");
+        showToast("Failed to remove profile photo", "error");
       }
     } catch (error) {
       console.error("Photo removal error:", error);
-      alert("Backend connection failed");
+      showToast("Backend connection failed", "error");
     }
   };
 
@@ -2801,7 +2806,6 @@ function EmployeeDashboard({ onLogout }) {
               profilePhoto={profilePhoto}
               profilePhotoInputRef={profilePhotoInputRef}
               handleProfilePhotoChange={handleProfilePhotoChange}
-              handleProfilePhotoRemove={handleProfilePhotoRemove}
             />
           )}
           {activeView === "leave" && (
@@ -2828,6 +2832,53 @@ function EmployeeDashboard({ onLogout }) {
           onCancel={() => setShowLogoutModal(false)}
           onConfirm={onLogout}
         />
+      )}
+
+      {photoPreview && (
+        <div className="profile-preview-modal-overlay">
+          <div className="profile-preview-modal-card">
+            <div className="profile-preview-modal-header">
+              <h3>Preview Photo</h3>
+            </div>
+            <div className="profile-preview-modal-body">
+              <div className="profile-preview-avatar-container">
+                <img
+                  src={photoPreview}
+                  alt="Profile Preview"
+                  className="profile-preview-avatar"
+                />
+              </div>
+            </div>
+            <div className="profile-preview-modal-actions">
+              <button
+                type="button"
+                className="preview-cancel-btn"
+                onClick={() => {
+                  setPhotoPreview(null);
+                  setPendingPhotoFile(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="preview-upload-btn"
+                onClick={handleUploadConfirm}
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === "success" && <FaCheck style={{ color: "#22c55e" }} />}
+          {toast.type === "error" && <FaTimes style={{ color: "#ef4444" }} />}
+          {toast.type === "info" && <FaInfoCircle style={{ color: "#3b82f6" }} />}
+          <span>{toast.message}</span>
+        </div>
       )}
     </main>
   );

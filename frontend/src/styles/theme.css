@@ -767,13 +767,50 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MODALS & OVERLAYS
+   MODALS & OVERLAYS — Universal Full-Viewport Fix
    ═══════════════════════════════════════════════════════════ */
+
+/* Body scroll lock when any modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Universal Modal Overlay / Backdrop styling (Light mode by default) */
+.logout-modal-overlay,
+.confirm-modal-overlay,
+.popup-overlay,
+.profile-preview-modal-overlay,
+.employee-dashboard .logout-page,
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999999 !important; /* Extremely high z-index to stack above sidebar, content, and header */
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Elevate the container of nested modals to stack above sidebar when active */
+body.modal-open .profile-panel {
+  z-index: 9999999 !important;
+}
+
+/* Dark mode: deeper dimming for all overlay types */
 [data-theme="dark"] .logout-modal-overlay,
 [data-theme="dark"] .confirm-modal-overlay,
+[data-theme="dark"] .popup-overlay,
+[data-theme="dark"] .profile-preview-modal-overlay,
+[data-theme="dark"] .employee-dashboard .logout-page,
 [data-theme="dark"] .modal-overlay {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 [data-theme="dark"] .logout-modal-card,
@@ -1270,11 +1307,15 @@
 
 /* ── Overrides for inline styles ── */
 
-/* Overlay wrapper for fixed modals */
+/* Overlay wrapper for fixed modals (inline styles) */
 [data-theme="dark"] div[style*="fixed"][style*="rgba(0, 0, 0, 0.5)"],
-[data-theme="dark"] div[style*="fixed"][style*="rgba(0,0,0,0.5)"] {
-  background: rgba(0, 0, 0, 0.75) !important;
-  backdrop-filter: blur(4px);
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0,0,0,0.5)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0, 0, 0, 0.45)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(0,0,0,0.45)"],
+[data-theme="dark"] div[style*="fixed"][style*="rgba(15, 23, 42"] {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
 }
 
 /* Modals / card elements with inline background #ffffff or #fff */
@@ -2201,3 +2242,977 @@
   background-color: rgba(59, 130, 246, 0.12) !important;
   color: #93c5fd !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — MANAGER DASHBOARD OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Main layout background override */
+[data-theme="dark"] .manager-dashboard {
+  background: var(--bg-base) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Sidebar background override */
+[data-theme="dark"] .manager-dashboard .sidebar {
+  background: var(--bg-sidebar) !important;
+  border-color: var(--border) !important;
+}
+
+/* Stats cards (Leave Approval) */
+[data-theme="dark"] .manager-dashboard .stats-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .stats-card-body {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .stats-number {
+  color: var(--text-high) !important;
+}
+
+/* Approval & Report Filter Bars */
+[data-theme="dark"] .manager-dashboard .approval-filters-bar,
+[data-theme="dark"] .manager-dashboard .report-filters-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper,
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper input,
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper select {
+  color: var(--text-high) !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button {
+  background: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-status-pills button.active {
+  background: var(--accent-orange) !important;
+  color: #fff !important;
+  border-color: var(--accent-orange) !important;
+}
+
+/* Report stats cards (Total Employees, Total Leaves Taken...) */
+[data-theme="dark"] .manager-dashboard .report-stats-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card .card-value {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-stats-card .card-label {
+  color: var(--text-low) !important;
+}
+
+/* Report Charts (Leave Type Distribution, Paid vs Unpaid) */
+[data-theme="dark"] .manager-dashboard .report-chart-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-chart-title {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-center {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-num {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-donut-lbl {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .dist-legend-label {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-label {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-days {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-pct {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-total-row {
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-total-row strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .pvu-bar-track {
+  background: var(--bg-input) !important;
+}
+
+/* Profiles on manager dashboard */
+[data-theme="dark"] .manager-dashboard .profile-hero-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .info-card,
+[data-theme="dark"] .manager-dashboard .info-card-ro {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .info-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .profile-role-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Holiday Calendar section wrapper and controls */
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper button {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper span {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .calendar-legend-bar span {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid > div[style*="borderBottom"] {
+  border-bottom-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Weekly Off indicator styling */
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid span[style*="color: #ea580c"],
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid span[style*="color: #c2410c"] {
+  color: var(--accent-orange-lt) !important;
+}
+
+/* Calendar day number cells */
+[data-theme="dark"] .manager-dashboard .manager-calendar-grid > div[style*="background"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+/* Monthly Holiday List Card */
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] span[style*="color"] {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] strong {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard div[style*="boxShadow"][style*="rgba(242,92,5,0.04)"] li {
+  border-color: var(--border) !important;
+}
+
+/* Action dropdowns, buttons and details in Leave Approval table */
+[data-theme="dark"] .manager-dashboard .action-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .action-btn:hover {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-high) !important;
+}
+
+/* Action / Details button in reports */
+[data-theme="dark"] .manager-dashboard .report-action-btn,
+[data-theme="dark"] .manager-dashboard button[class*="action"],
+[data-theme="dark"] .manager-dashboard button[class*="btn"] {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-mid);
+}
+[data-theme="dark"] .manager-dashboard button[class*="action"]:hover,
+[data-theme="dark"] .manager-dashboard button[class*="btn"]:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-high);
+}
+
+/* Preserve active primary buttons like "Apply Leave", "Take Action", "Download Report" etc. */
+[data-theme="dark"] .manager-dashboard .btn-primary,
+[data-theme="dark"] .manager-dashboard button[style*="background: linear-gradient"],
+[data-theme="dark"] .manager-dashboard button[style*="background: #f25c05"],
+[data-theme="dark"] .manager-dashboard .add-holiday-btn,
+[data-theme="dark"] .manager-dashboard .report-download-btn {
+  background: linear-gradient(135deg, #f25c05, #ff7e33) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — MANAGER REPORT & CALENDAR EXTRA OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Top 4 report sum cards */
+[data-theme="dark"] .manager-dashboard .report-sum-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-orange) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card .report-sum-value {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card .report-sum-label {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.orange .report-sum-icon {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--accent-orange-lt) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.blue .report-sum-icon {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: var(--accent-blue-lt) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.green .report-sum-icon {
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .report-sum-card.red .report-sum-icon {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fca5a5 !important;
+}
+
+/* Monthly holiday card in calendar tab */
+[data-theme="dark"] .manager-dashboard .monthly-holidays-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .monthly-holidays-card h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-list-item {
+  background: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-name-text {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .holiday-type-badge {
+  background: rgba(249, 115, 22, 0.15) !important;
+  color: var(--accent-orange-lt) !important;
+}
+
+/* Details card & Description panel */
+[data-theme="dark"] .manager-dashboard .details-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+[data-theme="dark"] .manager-dashboard .selected-holiday-desc {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Delete holiday button */
+[data-theme="dark"] .manager-dashboard .delete-holiday-btn {
+  background: var(--danger-bg) !important;
+  color: #fca5a5 !important;
+  border-color: var(--danger) !important;
+}
+[data-theme="dark"] .manager-dashboard .delete-holiday-btn:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — CALENDAR & MODAL OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Calendar nav pill */
+[data-theme="dark"] .manager-dashboard .calendar-nav-wrapper {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Calendar main card */
+[data-theme="dark"] .manager-dashboard .calendar-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Add Holiday modal body */
+[data-theme="dark"] .add-holiday-modal-body {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+/* Form select inside modal */
+[data-theme="dark"] .manager-dashboard .modal-form-select {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .modal-form-select option {
+  background-color: var(--bg-card);
+  color: var(--text-high);
+}
+
+/* Generic modal cancel btn */
+[data-theme="dark"] .manager-dashboard .modal-cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Confirmation modal overlay card */
+[data-theme="dark"] .confirm-modal-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .confirm-modal-title {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .confirm-modal-body {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--orange {
+  background: rgba(249, 115, 22, 0.15) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--green {
+  background: rgba(34, 197, 94, 0.12) !important;
+}
+[data-theme="dark"] .confirm-modal-icon--red {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+[data-theme="dark"] .confirm-modal-card .modal-cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — VIEW HISTORY / VIEW REPORT MODALS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Main popup card shell */
+[data-theme="dark"] .details-popup-card,
+[data-theme="dark"] .report-detail-modal-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Popup header */
+[data-theme="dark"] .popup-card-header {
+  border-bottom-color: var(--border) !important;
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .popup-card-header h3 {
+  color: var(--text-high) !important;
+}
+
+/* Close button */
+[data-theme="dark"] .close-popup-btn {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .close-popup-btn:hover {
+  color: var(--text-high) !important;
+}
+
+/* Popup card body */
+[data-theme="dark"] .popup-card-body {
+  background: var(--bg-card) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Scrollbar in modal body */
+[data-theme="dark"] .scrollable-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-input) !important;
+}
+[data-theme="dark"] .scrollable-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+}
+
+/* Employee header section inside modal */
+[data-theme="dark"] .popup-employee-header {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .popup-employee-info h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .popup-employee-id {
+  color: var(--text-low) !important;
+}
+
+/* ── Employee ID chip in the table ── */
+[data-theme="dark"] .manager-dashboard .emp-id-chip {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ── Report Modal — 4 stats cards ── */
+[data-theme="dark"] .modal-stat-card.entitlement-card {
+  background: rgba(242, 92, 5, 0.1) !important;
+  border-color: rgba(242, 92, 5, 0.2) !important;
+  color: #fdba74 !important;
+}
+[data-theme="dark"] .modal-stat-card.entitlement-card .modal-stat-label {
+  color: #fb923c !important;
+}
+[data-theme="dark"] .modal-stat-card.entitlement-card .modal-stat-value {
+  color: #fb923c !important;
+}
+
+[data-theme="dark"] .modal-stat-card.used-card {
+  background: rgba(79, 70, 229, 0.1) !important;
+  border-color: rgba(79, 70, 229, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.used-card .modal-stat-label {
+  color: #a5b4fc !important;
+}
+[data-theme="dark"] .modal-stat-card.used-card .modal-stat-value {
+  color: #818cf8 !important;
+}
+
+[data-theme="dark"] .modal-stat-card.remaining-card {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.remaining-card .modal-stat-label {
+  color: #6ee7b7 !important;
+}
+[data-theme="dark"] .modal-stat-card.remaining-card .modal-stat-value {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .modal-stat-card.attendance-card {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+}
+[data-theme="dark"] .modal-stat-card.attendance-card .modal-stat-label {
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .modal-stat-card.attendance-card .modal-stat-value {
+  color: #f87171 !important;
+}
+
+/* ── Leave Breakdown Section ── */
+[data-theme="dark"] .leave-breakdown-section {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .leave-breakdown-section h5 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .legend-label {
+  color: var(--text-mid) !important;
+}
+
+/* Donut chart center circle */
+[data-theme="dark"] .donut-center {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] .donut-number {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .donut-label {
+  color: var(--text-low) !important;
+}
+
+/* ── History list items ── */
+[data-theme="dark"] .modal-history-section h5 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .history-list-item {
+  border-color: var(--border) !important;
+  background: var(--bg-input) !important;
+}
+[data-theme="dark"] .history-item-dates {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .history-item-type {
+  color: var(--text-low) !important;
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .history-item-reason {
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .empty-history-text {
+  color: var(--text-low) !important;
+}
+
+/* ── Extra: popup employee header section ── */
+[data-theme="dark"] .popup-employee-header {
+  border-bottom-color: var(--border) !important;
+}
+[data-theme="dark"] .popup-employee-info h4 {
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .popup-employee-id {
+  color: var(--text-low) !important;
+}
+
+/* ── Report table name & department text ── */
+[data-theme="dark"] .manager-dashboard .report-row td div[style] {
+  color: var(--text-mid) !important;
+}
+
+/* Catch-all: any remaining #f1f5f9 badge backgrounds inside dark modal */
+[data-theme="dark"] .details-popup-card .history-item-type,
+[data-theme="dark"] .report-detail-modal-card .history-item-type {
+  background-color: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — SELECTED DATE DETAILS BADGE & TITLE
+   ═══════════════════════════════════════════════════════════ */
+
+/* Working Day badge (the main white offender) */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--working,
+[data-theme="dark"] .manager-dashboard .detail-type-badge--default {
+  background-color: var(--bg-input) !important;
+  color: var(--text-mid) !important;
+  border-color: var(--border) !important;
+}
+
+/* Public Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--public {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Festival badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--festival {
+  background-color: rgba(234, 179, 8, 0.12) !important;
+  color: #fde047 !important;
+  border-color: rgba(234, 179, 8, 0.25) !important;
+}
+
+/* Company Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--company {
+  background-color: rgba(190, 24, 93, 0.12) !important;
+  color: #f9a8d4 !important;
+  border-color: rgba(190, 24, 93, 0.25) !important;
+}
+
+/* Sunday Holiday badge */
+[data-theme="dark"] .manager-dashboard .detail-type-badge--sunday {
+  background-color: rgba(234, 88, 12, 0.12) !important;
+  color: #fdba74 !important;
+  border-color: rgba(234, 88, 12, 0.25) !important;
+}
+
+/* Holiday name h4 */
+[data-theme="dark"] .manager-dashboard .detail-holiday-title {
+  color: var(--text-high) !important;
+}
+
+/* Date paragraph */
+[data-theme="dark"] .manager-dashboard .detail-holiday-date {
+  color: var(--text-low) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — FILTER BARS (Leave Approval + Employee Report)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Filter bar containers */
+[data-theme="dark"] .manager-dashboard .approval-filters-bar,
+[data-theme="dark"] .manager-dashboard .report-filters-bar {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Search input wrapper icon */
+[data-theme="dark"] .manager-dashboard .filter-search-wrapper .search-icon {
+  color: var(--text-low) !important;
+}
+
+/* Search text input */
+[data-theme="dark"] .manager-dashboard .report-search-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-search-input::placeholder {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-search-input:focus {
+  border-color: var(--accent-orange) !important;
+  box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.15) !important;
+}
+
+/* Dropdown select inputs */
+[data-theme="dark"] .manager-dashboard .report-text-input,
+[data-theme="dark"] .manager-dashboard .report-select-input,
+[data-theme="dark"] .manager-dashboard .modal-form-select {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-text-input:focus,
+[data-theme="dark"] .manager-dashboard .report-select-input:focus {
+  border-color: var(--accent-orange) !important;
+  box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.15) !important;
+}
+[data-theme="dark"] .manager-dashboard .report-select-input option,
+[data-theme="dark"] .manager-dashboard .report-text-input option {
+  background: var(--bg-card) !important;
+  color: var(--text-high) !important;
+}
+
+/* Field icons inside filter wrappers */
+[data-theme="dark"] .manager-dashboard .filter-select-field-wrapper .field-icon,
+[data-theme="dark"] .manager-dashboard .filter-input-field-wrapper .field-icon {
+  color: var(--text-low) !important;
+}
+[data-theme="dark"] .manager-dashboard .select-chevron {
+  color: var(--text-low) !important;
+}
+
+/* ── Approval status pills ── */
+[data-theme="dark"] .manager-dashboard .approval-pill.all {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all .pill-count {
+  background: var(--border) !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.all.active {
+  background: var(--accent-orange) !important;
+  border-color: var(--accent-orange) !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.all.active .pill-count {
+  background: rgba(255,255,255,0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.pending {
+  background: rgba(234, 179, 8, 0.1) !important;
+  border-color: rgba(234, 179, 8, 0.25) !important;
+  color: #fde047 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.pending .pill-count {
+  background: rgba(234, 179, 8, 0.2) !important;
+  color: #fde047 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.pending:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.pending.active {
+  background: rgba(234, 179, 8, 0.2) !important;
+  border-color: #fde047 !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.approved {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.25) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.approved .pill-count {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.approved:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.approved.active {
+  background: rgba(34, 197, 94, 0.2) !important;
+  border-color: #86efac !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected .pill-count {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.rejected.active {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled {
+  background: rgba(148, 163, 184, 0.1) !important;
+  border-color: rgba(148, 163, 184, 0.25) !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled .pill-count {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled:hover,
+[data-theme="dark"] .manager-dashboard .approval-pill.cancelled.active {
+  background: rgba(148, 163, 184, 0.2) !important;
+  border-color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROFILE PHOTO PREVIEW MODAL
+   ═══════════════════════════════════════════════════════════ */
+.profile-preview-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: profilePreviewFadeOverlay 0.2s ease;
+}
+
+@keyframes profilePreviewFadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.profile-preview-modal-card {
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: profilePreviewPopupFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .profile-preview-modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-modal);
+}
+
+@keyframes profilePreviewPopupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.profile-preview-modal-header {
+  width: 100%;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.profile-preview-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .profile-preview-modal-header h3 {
+  color: var(--text-high);
+}
+
+.profile-preview-modal-body {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.profile-preview-avatar-container {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .profile-preview-avatar-container {
+  border-color: var(--border);
+}
+
+.profile-preview-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-preview-modal-actions {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+}
+
+.profile-preview-modal-actions button {
+  flex: 1;
+  height: 48px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-preview-modal-actions .preview-cancel-btn {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #0F172A;
+}
+
+[data-theme="dark"] .profile-preview-modal-actions .preview-cancel-btn {
+  background: var(--bg-input);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+
+.profile-preview-modal-actions .preview-cancel-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+[data-theme="dark"] .profile-preview-modal-actions .preview-cancel-btn:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Upload buttons overrides for specific dashboards */
+.employee-dashboard .profile-preview-modal-actions .preview-upload-btn {
+  border: none;
+  background: #0868ef;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(8, 104, 239, 0.3);
+}
+
+.employee-dashboard .profile-preview-modal-actions .preview-upload-btn:hover {
+  background: #0656c9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(6, 86, 201, 0.4);
+}
+
+.manager-dashboard .profile-preview-modal-actions .preview-upload-btn {
+  border: none;
+  background: #f25c05;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(242, 92, 5, 0.3);
+}
+
+.manager-dashboard .profile-preview-modal-actions .preview-upload-btn:hover {
+  background: #d84b00;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(216, 75, 0, 0.4);
+}
+
+.profile-preview-modal-actions .preview-upload-btn:active {
+  transform: translateY(0);
+}
+
+/* Dark theme avatar border colors */
+[data-theme="dark"] .employee-avatar-img {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .manager-dashboard .avatar-wrapper .manager-avatar {
+  border-color: var(--border) !important;
+}
+
+/* Toast Notifications for Employee Dashboard */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 999999;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: toastNotificationFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .toast-notification {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--text-high);
+}
+
+.toast-notification.success {
+  border-left: 4px solid #22c55e;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #ef4444;
+}
+
+.toast-notification.info {
+  border-left: 4px solid #3b82f6;
+}
+
+@keyframes toastNotificationFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

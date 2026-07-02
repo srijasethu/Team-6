@@ -1805,16 +1805,6 @@
    LOGOUT VIEW
    ============================================ */
 .employee-dashboard .logout-page {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(11, 16, 36, 0.45);
-  backdrop-filter: blur(4px);
-  display: grid;
-  place-items: center;
-  z-index: 9999;
   animation: logoutFadeOverlay 0.25s ease-out;
 }
 
