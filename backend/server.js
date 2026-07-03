@@ -10,7 +10,14 @@ const holidayRoutes = require("./routes/holidayRoutes");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://team-6-omega.vercel.app",
+    "http://localhost:5173"
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Serve uploaded images
