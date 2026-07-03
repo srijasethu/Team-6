@@ -1,27 +1,37 @@
 const db = require("../config/db");
 
 const login = (req, res) => {
-  const { email, password, role } = req.body;
+  const email = req.body.email?.trim();
+  const password = req.body.password?.trim();
+  const role = req.body.role?.toLowerCase().trim();
 
-  const sql =
-    "SELECT * FROM users WHERE email = ? AND password = ? AND role = ?";
+  const sql = `
+    SELECT * FROM users 
+    WHERE email = ? 
+    AND password = ? 
+    AND LOWER(role) = ?
+  `;
 
   db.query(sql, [email, password, role], (err, result) => {
     if (err) {
-      return res.status(500).json(err);
+      console.error("Login DB error:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Database error",
+      });
     }
 
     if (result.length > 0) {
-      res.json({
+      return res.json({
         success: true,
         user: result[0],
       });
-    } else {
-      res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
     }
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid credentials",
+    });
   });
 };
 
