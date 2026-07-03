@@ -90,18 +90,57 @@ function EmployeeAvatar({
   photoUrl = null,
   fileInputRef = null,
   onPhotoChange = null,
+  onRemovePhoto = null,
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const menuRef = useRef(null);
+
+  // Reset imgError whenever photoUrl changes
+  useEffect(() => {
+    setImgError(false);
+  }, [photoUrl]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [menuOpen]);
+
+  const handleChangePicture = () => {
+    setMenuOpen(false);
+    if (fileInputRef && fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemovePicture = () => {
+    setMenuOpen(false);
+    if (onRemovePhoto) onRemovePhoto();
+  };
+
+  const showDefault = !photoUrl || imgError;
+
   return (
-    <div className={`avatar-wrapper${large ? " large" : ""}`}>
-      <img
-        src={photoUrl || "/default-profile.png"}
-        alt="Employee Avatar"
-        className={`employee-avatar-img${large ? " large" : ""}`}
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = "/default-profile.png";
-        }}
-      />
+    <div className={`avatar-wrapper${large ? " large" : ""}`} ref={menuRef}>
+      {showDefault ? (
+        <div className={`avatar-default-icon${large ? " large" : ""}`}>
+          <FaUser />
+        </div>
+      ) : (
+        <img
+          src={photoUrl}
+          alt="Employee Avatar"
+          className={`employee-avatar-img${large ? " large" : ""}`}
+          onError={() => setImgError(true)}
+        />
+      )}
       {fileInputRef && onPhotoChange && (
         <input
           ref={fileInputRef}
@@ -115,14 +154,34 @@ function EmployeeAvatar({
         type="button"
         className="avatar-edit-btn"
         title="Edit profile photo"
-        onClick={() => {
-          if (fileInputRef && fileInputRef.current) {
-            fileInputRef.current.click();
-          }
-        }}
+        onClick={() => setMenuOpen((prev) => !prev)}
+        aria-haspopup="true"
+        aria-expanded={menuOpen}
       >
         <FaPencilAlt />
       </button>
+
+      {menuOpen && (
+        <div className="avatar-menu" role="menu">
+          <button
+            type="button"
+            className="avatar-menu-item"
+            role="menuitem"
+            onClick={handleChangePicture}
+          >
+            📷 Change Profile Photo
+          </button>
+          <button
+            type="button"
+            className="avatar-menu-item remove"
+            role="menuitem"
+            onClick={handleRemovePicture}
+            disabled={!photoUrl}
+          >
+            🗑️ Remove Profile Photo
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1166,6 +1225,7 @@ function ProfileView({
   profilePhoto,
   profilePhotoInputRef,
   handleProfilePhotoChange,
+  handleProfilePhotoRemove,
 }) {
   const [stats, setStats] = useState({ total: ANNUAL_PAID_ALLOCATION, taken: 0, pending: 0, approved: 0 });
 
@@ -1203,6 +1263,7 @@ function ProfileView({
             photoUrl={profilePhoto}
             fileInputRef={profilePhotoInputRef}
             onPhotoChange={handleProfilePhotoChange}
+            onRemovePhoto={handleProfilePhotoRemove}
           />
           <div className="hero-details">
             <div className="employee-name">
@@ -2956,6 +3017,7 @@ function EmployeeDashboard({ onLogout }) {
               profilePhoto={profilePhoto}
               profilePhotoInputRef={profilePhotoInputRef}
               handleProfilePhotoChange={handleProfilePhotoChange}
+              handleProfilePhotoRemove={handleProfilePhotoRemove}
             />
           )}
           {activeView === "leave" && (
