@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
@@ -1220,6 +1220,79 @@ function fmtDate(raw) {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+function EmployeeGreetingCard({ name, stats }) {
+  const getGreetingText = () => {
+    const hr = new Date().getHours();
+    if (hr >= 5 && hr < 12) {
+      return { text: "Good Morning", emoji: "🌅" };
+    } else if (hr >= 12 && hr < 17) {
+      return { text: "Good Afternoon", emoji: "☀️" };
+    } else if (hr >= 17 && hr < 21) {
+      return { text: "Good Evening", emoji: "🌇" };
+    } else {
+      return { text: "Good Night", emoji: "🌙" };
+    }
+  };
+
+  const greeting = getGreetingText();
+  const todayStr = new Date().toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const pendingCount = stats.pending || 0;
+  const approvedCount = stats.approved || 0;
+
+  let subtext = "Everything looks up to date today.";
+  if (pendingCount > 0) {
+    subtext = `You have ${pendingCount} pending leave request${pendingCount > 1 ? "s" : ""} awaiting approval.`;
+  } else if (approvedCount > 0) {
+    subtext = `You have ${approvedCount} approved leave request${approvedCount > 1 ? "s" : ""} in history.`;
+  }
+
+  const motivationalMessage = useMemo(() => {
+    const messages = [
+      "Hope you have a productive day ahead!",
+      "Every great achievement begins with a well-planned day.",
+      "Stay organized, stay productive.",
+      "Let's make today count!",
+      "Plan your leaves wisely and stay balanced.",
+      "Consistency turns small efforts into big results.",
+      "Stay focused and make progress today.",
+      "Take care of your health and well-being.",
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }, []);
+
+  return (
+    <div className="dashboard-greeting-card">
+      <div className="greeting-text-section">
+        <h1
+          className="greeting-title"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span>
+            {greeting.emoji} {greeting.text}, {name}
+          </span>
+          <span className="wave-hand">👋</span>
+        </h1>
+        <p className="greeting-subtext">{subtext}</p>
+        <p className="greeting-motivation">"{motivationalMessage}"</p>
+      </div>
+      <div className="greeting-date-section">
+        <FaRegClock />
+        <span>Today • {todayStr}</span>
+      </div>
+    </div>
+  );
+}
+
 function ProfileView({
   profileData,
   profilePhoto,
@@ -1253,6 +1326,8 @@ function ProfileView({
         <FaRegUser />
         <h1>My Profile</h1>
       </div>
+
+      <EmployeeGreetingCard name={profileData.name} stats={stats} />
 
       {/* ── Hero card ─────────────────────────── */}
       <div className="profile-hero-card">
