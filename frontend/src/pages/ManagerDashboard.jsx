@@ -303,34 +303,48 @@ function formatRelativeTimeManager(dateString) {
   return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
 }
 
-function NotificationBellManager({ userId, refreshCountTrigger, setRefreshCountTrigger }) {
+function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }) {
   const [enabled, setEnabled] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const fetchSettingsAndCount = async () => {
+  // Helper to safely get the user id of the currently logged in user
+  const getLoggedInUserId = () => {
     try {
-      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${userId}`);
+      const user = JSON.parse(localStorage.getItem("user"));
+      return user?.id || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const fetchSettingsAndCount = async () => {
+    const activeUserId = getLoggedInUserId();
+    if (!activeUserId) return;
+    try {
+      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${activeUserId}`);
       const sData = await sRes.json();
       if (sData.success) setEnabled(sData.notifications_enabled);
 
-      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${userId}`);
+      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${activeUserId}`);
       const cData = await cRes.json();
       if (cData.success) setUnreadCount(cData.count);
     } catch (err) { console.error("Notif settings/count error:", err); }
   };
 
   const fetchNotificationsList = async () => {
+    const activeUserId = getLoggedInUserId();
+    if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${userId}`);
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${activeUserId}`);
       const data = await res.json();
       if (data.success) setNotifications(data.notifications || []);
     } catch (err) { console.error("Notif list error:", err); }
   };
 
-  useEffect(() => { fetchSettingsAndCount(); }, [userId, refreshCountTrigger]);
+  useEffect(() => { fetchSettingsAndCount(); }, [refreshCountTrigger]);
 
   useEffect(() => {
     if (dropdownOpen) {
@@ -349,7 +363,7 @@ function NotificationBellManager({ userId, refreshCountTrigger, setRefreshCountT
       if (enabled) fetchNotificationsList();
     }, 10000);
     return () => clearInterval(timer);
-  }, [userId, enabled]);
+  }, [enabled]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -363,8 +377,10 @@ function NotificationBellManager({ userId, refreshCountTrigger, setRefreshCountT
   }, [dropdownOpen]);
 
   const handleToggle = async () => {
+    const activeUserId = getLoggedInUserId();
+    if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${userId}`, { method: "PUT" });
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setEnabled(data.notifications_enabled);
@@ -376,8 +392,10 @@ function NotificationBellManager({ userId, refreshCountTrigger, setRefreshCountT
   };
 
   const handleMarkAllRead = async () => {
+    const activeUserId = getLoggedInUserId();
+    if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${userId}`, { method: "PUT" });
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setUnreadCount(0);
@@ -1625,7 +1643,6 @@ function ManagerDashboard({ onLogout }) {
             <div className="top-header-left" />
             <div className="top-header-right">
               <NotificationBellManager
-                userId={managerLoggedInUser?.id}
                 refreshCountTrigger={notifRefreshTrigger}
                 setRefreshCountTrigger={setNotifRefreshTrigger}
               />
