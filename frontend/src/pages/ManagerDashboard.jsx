@@ -1968,19 +1968,29 @@ function ManagerDashboard({ onLogout }) {
 
                 {/* Leave Requests Section */}
                 <div className="requests-table-section">
-                  <table className="requests-table">
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: "center" }}>Employee Name</th>
-                        <th style={{ textAlign: "center" }}>Employee ID</th>
-                        <th style={{ textAlign: "center" }}>Leave Type</th>
-                        <th style={{ textAlign: "center" }}>Date Range</th>
-                        <th style={{ textAlign: "center" }}>Days</th>
-                        <th style={{ textAlign: "center" }}>Status</th>
-                        <th style={{ textAlign: "center" }}>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div className="requests-table-scroll">
+                    <table className="requests-table">
+                      <colgroup>
+                        <col style={{ width: "18%" }} />{/* Employee Name */}
+                        <col style={{ width: "11%" }} />{/* Employee ID */}
+                        <col style={{ width: "24%" }} />{/* Leave Type */}
+                        <col style={{ width: "20%" }} />{/* Date Range */}
+                        <col style={{ width: "11%" }} />{/* Days */}
+                        <col style={{ width: "9%" }} />{/* Status */}
+                        <col style={{ width: "7%" }} />{/* Action */}
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th className="th-employee-name">Employee Name</th>
+                          <th className="th-employee-id">Employee ID</th>
+                          <th className="th-leave-type">Leave Type</th>
+                          <th className="th-date-range">Date Range</th>
+                          <th className="th-days">Days</th>
+                          <th className="th-status">Status</th>
+                          <th className="th-action">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                       {leavesLoading ? (
                         <tr className="manager-loading-row">
                           <td colSpan={7}>
@@ -2232,7 +2242,7 @@ function ManagerDashboard({ onLogout }) {
                                 </div>
                               </td>
                               {/* Employee ID column */}
-                              <td>
+                              <td className="td-employee-id">
                                 <span className="employee-id-badge">
                                   {request.id}
                                 </span>
@@ -2441,6 +2451,7 @@ function ManagerDashboard({ onLogout }) {
                       )}
                     </tbody>
                   </table>
+                  </div>{/* end .requests-table-scroll */}
                   {/* Close action popup when clicking outside */}
                   {approvalActionPopup && (
                     <div
