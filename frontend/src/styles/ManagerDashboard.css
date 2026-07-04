@@ -1208,23 +1208,43 @@
   position: relative;
 }
 
+/* Horizontal scroll on small screens */
+.requests-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .requests-table {
   width: 100%;
+  min-width: 860px;
   border-collapse: collapse;
   font-size: 15px;
+  table-layout: fixed;
 }
 
 .requests-table thead tr {
   border-bottom: 2px solid #f1f5f9;
 }
 
+/* Base th styles */
 .requests-table th {
-  padding: 16px 22px;
+  padding: 14px 16px;
   text-align: left;
   color: #0f172a;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
 }
+
+/* Per-column th alignment */
+.th-employee-name { text-align: left;   padding-left: 20px; }
+.th-employee-id   { text-align: center; }
+.th-leave-type    { text-align: left;   padding-left: 16px; }
+.th-date-range    { text-align: left; }
+.th-days          { text-align: center; }
+.th-status        { text-align: center; }
+.th-action        { text-align: center; }
 
 .requests-table tbody tr {
   border-bottom: 1px solid #f1f5f9;
@@ -1235,8 +1255,28 @@
 
 .requests-table tbody tr:hover { background: #fffaf7; }
 
+/* Base td padding */
 .requests-table td {
-  padding: 16px 22px;
+  padding: 14px 16px;
+  vertical-align: middle;
+}
+
+/* Employee Name — left-padded */
+.requests-table td:first-child {
+  padding-left: 20px;
+}
+
+/* Employee ID — centered, reduced side padding to close gap */
+.td-employee-id {
+  text-align: center;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+/* Leave Type td — left-aligned, no extra side padding */
+.leave-type-col-td {
+  padding-left: 16px !important;
+  padding-right: 12px !important;
   vertical-align: middle;
 }
 
@@ -1293,48 +1333,45 @@
 }
 
 .leave-type-text {
-  font-size: 16px;
+  font-size: 14px;
   color: #334155;
   font-weight: 500;
 }
 
-/* ── Redesigned Leave Type Column ── */
-.leave-type-col-td {
-  min-width: 200px;
-  vertical-align: middle;
-}
-
+/* ── Leave Type Column Layout ── */
 .leave-type-col-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   align-items: flex-start;
 }
 
-/* Top row: icon + name side-by-side */
+/* Title row: ℹ️ icon + leave type name */
 .leave-type-title-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
 }
 
-/* Leave type name text */
+/* Leave type name — bold, no-wrap */
 .leave-type-name {
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 700;
-  color: #334155;
+  color: #1e293b;
   line-height: 1.3;
   white-space: nowrap;
 }
 
-/* Badges row: horizontal, wrappable */
+/*
+  Badges row — indent = icon size (20px) + padding (4px) + gap (6px) = 30px
+  This keeps badges visually aligned under the leave type name text.
+*/
 .leave-type-badges-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
-  /* Indent slightly to align under the leave type name (after icon width + gap) */
-  padding-left: 27px;
+  padding-left: 30px;
 }
 
 /* Orange info icon */
@@ -1343,18 +1380,22 @@
   border: none;
   cursor: pointer;
   padding: 2px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   color: #f25c05;
-  font-size: 20px;
-  transition: opacity 0.2s;
+  font-size: 18px;
+  transition: opacity 0.2s, transform 0.15s;
   line-height: 1;
 }
 
-.info-icon-btn:hover { opacity: 0.75; }
+.info-icon-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.15);
+}
 
 .date-range-label {
-  font-size: 16px;
+  font-size: 14px;
   color: #475569;
   font-weight: 500;
 }
