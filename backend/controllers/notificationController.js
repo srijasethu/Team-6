@@ -34,6 +34,9 @@ const createNotification = (userId, title, message, type = "info", category = nu
 // GET /api/notifications/:userId
 const getNotifications = (req, res) => {
   const userId = req.params.userId;
+  if (!userId || userId === "undefined" || userId === "null") {
+    return res.json({ success: true, notifications: [] });
+  }
   const sql = `
     SELECT id, title, message, type, category, is_read, created_at
     FROM notifications
@@ -52,6 +55,9 @@ const getNotifications = (req, res) => {
 // GET /api/notifications/unread-count/:userId
 const getUnreadCount = (req, res) => {
   const userId = req.params.userId;
+  if (!userId || userId === "undefined" || userId === "null") {
+    return res.json({ success: true, count: 0 });
+  }
   // First check if user has notifications enabled
   const checkSql = "SELECT notifications_enabled FROM users WHERE id = ?";
   db.query(checkSql, [userId], (err, results) => {
@@ -111,6 +117,9 @@ const markAsRead = (req, res) => {
 // PUT /api/notifications/read-all/:userId
 const markAllAsRead = (req, res) => {
   const userId = req.params.userId;
+  if (!userId || userId === "undefined" || userId === "null") {
+    return res.json({ success: true, message: "No user specified" });
+  }
   const sql = "UPDATE notifications SET is_read = TRUE WHERE user_id = ? AND is_read = FALSE";
   db.query(sql, [userId], (err, result) => {
     if (err) {
@@ -124,6 +133,9 @@ const markAllAsRead = (req, res) => {
 // PUT /api/notifications/toggle/:userId
 const toggleNotifications = (req, res) => {
   const userId = req.params.userId;
+  if (!userId || userId === "undefined" || userId === "null") {
+    return res.json({ success: true, notifications_enabled: false });
+  }
   // Get current state to toggle it
   const selectSql = "SELECT notifications_enabled FROM users WHERE id = ?";
   db.query(selectSql, [userId], (selectErr, selectResult) => {
@@ -150,6 +162,9 @@ const toggleNotifications = (req, res) => {
 // GET /api/notifications/settings/:userId
 const getSettings = (req, res) => {
   const userId = req.params.userId;
+  if (!userId || userId === "undefined" || userId === "null") {
+    return res.json({ success: true, notifications_enabled: true });
+  }
   const sql = "SELECT notifications_enabled FROM users WHERE id = ?";
   db.query(sql, [userId], (err, results) => {
     if (err) {
