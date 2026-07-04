@@ -1,17 +1,33 @@
 const db = require("../config/db");
 
-// Internal helper to create a notification in DB directly
-const createNotificationInternal = (userId, title, message, type = "info", category = null, callback = () => {}) => {
-  const sql = `
-    INSERT INTO notifications (user_id, title, message, type, category)
-    VALUES (?, ?, ?, ?, ?)
-  `;
-  db.query(sql, [userId, title, message, type, category], (err, result) => {
-    if (err) {
-      console.error("Error inserting notification internally:", err);
-      return callback(err);
-    }
-    callback(null, result);
+// Helper function to create a notification in DB directly and verify the insertion
+const createNotification = (userId, title, message, type = "info", category = null) => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      INSERT INTO notifications (user_id, title, message, type, category)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    db.query(sql, [userId, title, message, type, category], (err, result) => {
+      if (err) {
+        console.error(err);
+        return reject(err);
+      }
+
+      // Check if it is a holiday notification (category === 'holiday')
+      if (category === "holiday") {
+        db.query("SELECT employee_id FROM users WHERE id = ?", [userId], (userErr, userResults) => {
+          if (!userErr && userResults && userResults.length > 0) {
+            console.log(`Holiday notification inserted for ${userResults[0].employee_id}`);
+          } else {
+            console.log(`Notification created for user ${userId}`);
+          }
+          resolve(result);
+        });
+      } else {
+        console.log(`Notification created for user ${userId}`);
+        resolve(result);
+      }
+    });
   });
 };
 
@@ -64,18 +80,19 @@ const getUnreadCount = (req, res) => {
 };
 
 // POST /api/notifications
-const createNotification = (req, res) => {
+const createNotificationAPI = (req, res) => {
   const { userId, title, message, type, category } = req.body;
   if (!userId || !title || !message) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
-  createNotificationInternal(userId, title, message, type, category, (err, result) => {
-    if (err) {
-      return res.status(500).json({ success: false, message: "Failed to create notification" });
-    }
-    res.status(201).json({ success: true, message: "Notification created successfully", notificationId: result.insertId });
-  });
+  createNotification(userId, title, message, type, category)
+    .then((result) => {
+      res.status(201).json({ success: true, message: "Notification created successfully", notificationId: result.insertId });
+    })
+    .catch((err) => {
+      res.status(500).json({ success: false, message: "Failed to create notification" });
+    });
 };
 
 // PUT /api/notifications/read/:id
@@ -147,10 +164,10 @@ const getSettings = (req, res) => {
 };
 
 module.exports = {
-  createNotificationInternal,
+  createNotification,
+  createNotificationAPI,
   getNotifications,
   getUnreadCount,
-  createNotification,
   markAsRead,
   markAllAsRead,
   toggleNotifications,

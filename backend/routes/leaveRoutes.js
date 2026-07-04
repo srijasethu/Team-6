@@ -1,7 +1,7 @@
 const express = require("express");
 const db = require("../config/db");
 const { recalculateForEmployee, MONTHLY_PAID_LIMIT, ANNUAL_PAID_ALLOCATION } = require("../utils/recalculate");
-const { createNotificationInternal } = require("../controllers/notificationController");
+const { createNotification } = require("../controllers/notificationController");
 
 const router = express.Router();
 
@@ -255,12 +255,12 @@ router.post("/apply", (req, res) => {
                 }
 
                 // Send submit notifications
-                createNotificationInternal(employee_id, "Leave Submitted", "Your leave request has been submitted successfully.", "info", "leave_request");
+                createNotification(employee_id, "Leave Submitted", "Your leave request has been submitted successfully.", "info", "leave_request");
 
                 db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
                   if (!mErr && managers) {
                     managers.forEach(mgr => {
-                      createNotificationInternal(mgr.id, "New Leave Request", `"${name}" submitted a leave request.`, "info", "leave_request");
+                      createNotification(mgr.id, "New Leave Request", `"${name}" submitted a leave request.`, "info", "leave_request");
                     });
                   }
                 });
@@ -278,7 +278,7 @@ router.post("/apply", (req, res) => {
                         const paidTaken = sumResult[0].paid_taken || 0;
                         const remaining = Math.max(0, 36 - paidTaken);
                         if (remaining <= 5) {
-                          createNotificationInternal(employee_id, "Low Leave Balance", "You have limited paid leave remaining.", "warning", "balance");
+                          createNotification(employee_id, "Low Leave Balance", "You have limited paid leave remaining.", "warning", "balance");
                         }
                       }
                     }
@@ -366,7 +366,7 @@ router.put("/cancel/:id", (req, res) => {
         }
 
         // Notify employee of cancellation
-        createNotificationInternal(employeeId, "Leave Cancelled", "Your leave request has been cancelled.", "warning", "leave_request");
+        createNotification(employeeId, "Leave Cancelled", "Your leave request has been cancelled.", "warning", "leave_request");
 
         // Recalculate all remaining leaves for this employee — freed paid slots may upgrade other leaves
         recalculateForEmployee(employeeId, db, (recalcErr) => {
