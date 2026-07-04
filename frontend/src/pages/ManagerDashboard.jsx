@@ -273,7 +273,6 @@ function DashboardGreetingCard({ name, leaveRequests, holidaysList }) {
           <span>
             {greeting.emoji} {greeting.text}, {name}
           </span>
-          <span className="wave-hand">👋</span>
         </h1>
         <p className="greeting-subtext">{subtext}</p>
         <p className="greeting-motivation">"{motivationalMessage}"</p>
