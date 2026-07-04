@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../config/db");
 const { recalculateForEmployee, MONTHLY_PAID_LIMIT, ANNUAL_PAID_ALLOCATION } = require("../utils/recalculate");
+const { createNotificationInternal } = require("../controllers/notificationController");
 
 const router = express.Router();
 
@@ -154,12 +155,13 @@ router.post("/apply", (req, res) => {
   }
 
   // Step 0: Eligibility check (gender + annual check)
-  const genderSql = "SELECT gender FROM users WHERE id = ?";
-  db.query(genderSql, [employee_id], (genderErr, genderResult) => {
+  const userSql = "SELECT name, gender FROM users WHERE id = ?";
+  db.query(userSql, [employee_id], (genderErr, userResult) => {
     if (genderErr) return res.status(500).json({ success: false, message: "Server error checking eligibility." });
-    if (genderResult.length === 0) return res.status(404).json({ success: false, message: "Employee not found." });
+    if (userResult.length === 0) return res.status(404).json({ success: false, message: "Employee not found." });
 
-    const gender = genderResult[0].gender;
+    const gender = userResult[0].gender;
+    const name = userResult[0].name;
 
     if (leave_type === "Maternity Leave" && gender === "Male") {
       return res.status(400).json({ success: false, message: "Maternity Leave is only eligible for Female employees." });
@@ -192,89 +194,116 @@ router.post("/apply", (req, res) => {
     } else {
       proceedWithOverlapCheck();
     }
-  });
 
-  function proceedWithOverlapCheck() {
-    // Step 1: overlap check
-    const overlapSql = `
-      SELECT id FROM leave_requests
-      WHERE employee_id = ?
-        AND status IN ('Pending', 'Approved')
-        AND ? <= end_date
-        AND ? >= start_date
-      LIMIT 1
-    `;
-    db.query(overlapSql, [employee_id, start_date, end_date], (overlapErr, overlapResult) => {
-      if (overlapErr) return res.status(500).json({ success: false, message: "Server error during overlap check." });
-      if (overlapResult.length > 0) {
-        return res.status(400).json({ success: false, message: "You already have a leave request for these dates." });
-      }
-
-      // Step 2: fetch existing Approved/Pending leaves for this employee
-      const existingSql = `
-        SELECT id, start_date, end_date, leave_type FROM leave_requests
-        WHERE employee_id = ? AND status IN ('Approved', 'Pending')
-        ORDER BY start_date ASC, id ASC
+    function proceedWithOverlapCheck() {
+      // Step 1: overlap check
+      const overlapSql = `
+        SELECT id FROM leave_requests
+        WHERE employee_id = ?
+          AND status IN ('Pending', 'Approved')
+          AND ? <= end_date
+          AND ? >= start_date
+        LIMIT 1
       `;
-      db.query(existingSql, [employee_id], (balErr, existingLeaves) => {
-        if (balErr) return res.status(500).json({ success: false, message: "Server error fetching existing leaves." });
+      db.query(overlapSql, [employee_id, start_date, end_date], (overlapErr, overlapResult) => {
+        if (overlapErr) return res.status(500).json({ success: false, message: "Server error during overlap check." });
+        if (overlapResult.length > 0) {
+          return res.status(400).json({ success: false, message: "You already have a leave request for these dates." });
+        }
 
-        // Fetch holidays from database
-        const holidaysSql = "SELECT DATE_FORMAT(holiday_date, '%Y-%m-%d') AS holiday_date FROM company_holidays";
-        db.query(holidaysSql, (holidaysErr, holidayRows) => {
-          if (holidaysErr) return res.status(500).json({ success: false, message: "Server error fetching holidays." });
+        // Step 2: fetch existing Approved/Pending leaves for this employee
+        const existingSql = `
+          SELECT id, start_date, end_date, leave_type FROM leave_requests
+          WHERE employee_id = ? AND status IN ('Approved', 'Pending')
+          ORDER BY start_date ASC, id ASC
+        `;
+        db.query(existingSql, [employee_id], (balErr, existingLeaves) => {
+          if (balErr) return res.status(500).json({ success: false, message: "Server error fetching existing leaves." });
 
-          const holidayDates = new Set();
-          if (holidayRows) {
-            holidayRows.forEach(row => {
-              holidayDates.add(row.holiday_date);
-            });
-          }
+          // Fetch holidays from database
+          const holidaysSql = "SELECT DATE_FORMAT(holiday_date, '%Y-%m-%d') AS holiday_date FROM company_holidays";
+          db.query(holidaysSql, (holidaysErr, holidayRows) => {
+            if (holidaysErr) return res.status(500).json({ success: false, message: "Server error fetching holidays." });
 
-          // Step 3: compute preview paid/unpaid for the new request
-          const counters = buildMonthlyCounters(existingLeaves, holidayDates);
-          const { paid, unpaid, total, excluded, actual_leave, benefitDaysUsed, monthlyPaidDaysUsed } = computePaidUnpaid(start_date, end_date, counters, leave_type, holidayDates);
-
-          const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave_type, benefitDaysUsed, monthlyPaidDaysUsed);
-
-          // Step 4: insert
-          const insertSql = `
-            INSERT INTO leave_requests
-            (employee_id, leave_type, start_date, end_date, reason, status,
-             total_days, excluded_days, actual_leave_days, paid_days, unpaid_days, payment_type, alert_message)
-            VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
-          `;
-          db.query(
-            insertSql,
-            [employee_id, leave_type, start_date, end_date, reason, total, excluded, actual_leave, paid, unpaid, payment_type, alert_message],
-            (insertErr, result) => {
-              if (insertErr) {
-                console.error("Apply leave error:", insertErr);
-                return res.status(500).json({ success: false, message: insertErr.message });
-              }
-
-              recalculateForEmployee(employee_id, db, (recalcErr) => {
-                if (recalcErr) console.error("Recalculate after apply error:", recalcErr);
-
-                res.json({
-                  success: true,
-                  message: "Leave applied successfully",
-                  leaveId: result.insertId,
-                  total_days: total,
-                  excluded_days: excluded,
-                  actual_leave_days: actual_leave,
-                  paid_days: paid,
-                  unpaid_days: unpaid,
-                  payment_type,
-                  alert_message,
-                });
+            const holidayDates = new Set();
+            if (holidayRows) {
+              holidayRows.forEach(row => {
+                holidayDates.add(row.holiday_date);
               });
             }
-          );
-        });   // close holidaysSql db.query
-      });     // close existingSql db.query
-    });       // close overlapSql db.query
-  }
+
+            // Step 3: compute preview paid/unpaid for the new request
+            const counters = buildMonthlyCounters(existingLeaves, holidayDates);
+            const { paid, unpaid, total, excluded, actual_leave, benefitDaysUsed, monthlyPaidDaysUsed } = computePaidUnpaid(start_date, end_date, counters, leave_type, holidayDates);
+
+            const { payment_type, alert_message } = resolvePaymentMeta(paid, unpaid, leave_type, benefitDaysUsed, monthlyPaidDaysUsed);
+
+            // Step 4: insert
+            const insertSql = `
+              INSERT INTO leave_requests
+              (employee_id, leave_type, start_date, end_date, reason, status,
+               total_days, excluded_days, actual_leave_days, paid_days, unpaid_days, payment_type, alert_message)
+              VALUES (?, ?, ?, ?, ?, 'Pending', ?, ?, ?, ?, ?, ?, ?)
+            `;
+            db.query(
+              insertSql,
+              [employee_id, leave_type, start_date, end_date, reason, total, excluded, actual_leave, paid, unpaid, payment_type, alert_message],
+              (insertErr, result) => {
+                if (insertErr) {
+                  console.error("Apply leave error:", insertErr);
+                  return res.status(500).json({ success: false, message: insertErr.message });
+                }
+
+                // Send submit notifications
+                createNotificationInternal(employee_id, "Leave Submitted", "Your leave request has been submitted successfully.", "info", "leave_request");
+
+                db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
+                  if (!mErr && managers) {
+                    managers.forEach(mgr => {
+                      createNotificationInternal(mgr.id, "New Leave Request", `"${name}" submitted a leave request.`, "info", "leave_request");
+                    });
+                  }
+                });
+
+                recalculateForEmployee(employee_id, db, (recalcErr) => {
+                  if (recalcErr) console.error("Recalculate after apply error:", recalcErr);
+
+                  // Check for low leave balance
+                  const queryYear = new Date(start_date).getFullYear();
+                  db.query(
+                    "SELECT SUM(paid_days) AS paid_taken FROM leave_requests WHERE employee_id = ? AND status = 'Approved' AND YEAR(start_date) = ?",
+                    [employee_id, queryYear],
+                    (sumErr, sumResult) => {
+                      if (!sumErr && sumResult.length > 0) {
+                        const paidTaken = sumResult[0].paid_taken || 0;
+                        const remaining = Math.max(0, 36 - paidTaken);
+                        if (remaining <= 5) {
+                          createNotificationInternal(employee_id, "Low Leave Balance", "You have limited paid leave remaining.", "warning", "balance");
+                        }
+                      }
+                    }
+                  );
+
+                  res.json({
+                    success: true,
+                    message: "Leave applied successfully",
+                    leaveId: result.insertId,
+                    total_days: total,
+                    excluded_days: excluded,
+                    actual_leave_days: actual_leave,
+                    paid_days: paid,
+                    unpaid_days: unpaid,
+                    payment_type,
+                    alert_message,
+                  });
+                });
+              }
+            );
+          });   // close holidaysSql db.query
+        });     // close existingSql db.query
+      });       // close overlapSql db.query
+    }
+  });
 
 });         // close router.post("/apply")
 
@@ -335,6 +364,9 @@ router.put("/cancel/:id", (req, res) => {
             message: "Leave request cannot be cancelled because it is not pending or does not exist.",
           });
         }
+
+        // Notify employee of cancellation
+        createNotificationInternal(employeeId, "Leave Cancelled", "Your leave request has been cancelled.", "warning", "leave_request");
 
         // Recalculate all remaining leaves for this employee — freed paid slots may upgrade other leaves
         recalculateForEmployee(employeeId, db, (recalcErr) => {
