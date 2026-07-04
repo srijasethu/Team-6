@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   getNotifications,
   getUnreadCount,
-  createNotification,
+  createNotificationAPI,
   markAsRead,
   markAllAsRead,
   toggleNotifications,
@@ -16,7 +16,7 @@ router.get("/settings/:userId", getSettings);
 router.put("/read-all/:userId", markAllAsRead);
 router.put("/toggle/:userId", toggleNotifications);
 router.put("/read/:id", markAsRead);
-router.post("/", createNotification);
+router.post("/", createNotificationAPI);
 // Generic dynamic route LAST
 router.get("/:userId", getNotifications);
 

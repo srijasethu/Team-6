@@ -1,7 +1,7 @@
 const express = require("express");
 const db = require("../config/db");
 const { recalculateForEmployee } = require("../utils/recalculate");
-const { createNotificationInternal } = require("../controllers/notificationController");
+const { createNotification } = require("../controllers/notificationController");
 
 const router = express.Router();
 
@@ -80,13 +80,13 @@ router.put("/approve/:id", (req, res) => {
         }
 
         // Notify employee of approval
-        createNotificationInternal(employeeId, "Leave Approved", "Your leave request has been approved.", "success", "leave_request");
+        createNotification(employeeId, "Leave Approved", "Your leave request has been approved.", "success", "leave_request");
 
         // Notify managers
         db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
           if (!mErr && managers) {
             managers.forEach(mgr => {
-              createNotificationInternal(mgr.id, "Approval Completed", "Leave approved successfully.", "success", "leave_request");
+              createNotification(mgr.id, "Approval Completed", "Leave approved successfully.", "success", "leave_request");
             });
           }
         });
@@ -133,13 +133,13 @@ router.put("/reject/:id", (req, res) => {
         }
 
         // Notify employee of rejection
-        createNotificationInternal(employeeId, "Leave Rejected", "Your leave request has been rejected.", "error", "leave_request");
+        createNotification(employeeId, "Leave Rejected", "Your leave request has been rejected.", "error", "leave_request");
 
         // Notify managers
         db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
           if (!mErr && managers) {
             managers.forEach(mgr => {
-              createNotificationInternal(mgr.id, "Rejection Completed", "Leave rejected successfully.", "success", "leave_request");
+              createNotification(mgr.id, "Rejection Completed", "Leave rejected successfully.", "success", "leave_request");
             });
           }
         });

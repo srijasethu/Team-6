@@ -1,6 +1,6 @@
 const express = require("express");
 const db = require("../config/db");
-const { createNotificationInternal } = require("../controllers/notificationController");
+const { createNotification } = require("../controllers/notificationController");
 
 const router = express.Router();
 
@@ -55,10 +55,10 @@ router.post("/", (req, res) => {
     db.query("SELECT id FROM users WHERE role = 'employee'", (empErr, employees) => {
       if (!empErr && employees) {
         employees.forEach(emp => {
-          createNotificationInternal(
+          createNotification(
             emp.id,
             "New Company Holiday",
-            `"${holiday_name}" has been added to the company calendar.`,
+            `${holiday_name} has been added to the company calendar.`,
             "info",
             "holiday"
           );
@@ -70,7 +70,7 @@ router.post("/", (req, res) => {
     db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
       if (!mErr && managers) {
         managers.forEach(mgr => {
-          createNotificationInternal(
+          createNotification(
             mgr.id,
             "Holiday Added",
             "Company holiday created successfully.",
@@ -115,7 +115,7 @@ router.put("/:id", (req, res) => {
     db.query("SELECT id FROM users WHERE role = 'employee'", (empErr, employees) => {
       if (!empErr && employees) {
         employees.forEach(emp => {
-          createNotificationInternal(
+          createNotification(
             emp.id,
             "Holiday Updated",
             "Company holiday details have been updated.",
@@ -130,7 +130,7 @@ router.put("/:id", (req, res) => {
     db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
       if (!mErr && managers) {
         managers.forEach(mgr => {
-          createNotificationInternal(
+          createNotification(
             mgr.id,
             "Holiday Updated",
             "Company holiday updated successfully.",
@@ -175,7 +175,7 @@ router.delete("/:id", (req, res) => {
       db.query("SELECT id FROM users WHERE role = 'employee'", (empErr, employees) => {
         if (!empErr && employees) {
           employees.forEach(emp => {
-            createNotificationInternal(
+            createNotification(
               emp.id,
               "Holiday Removed",
               "A company holiday has been removed.",
@@ -190,7 +190,7 @@ router.delete("/:id", (req, res) => {
       db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
         if (!mErr && managers) {
           managers.forEach(mgr => {
-            createNotificationInternal(
+            createNotification(
               mgr.id,
               "Holiday Removed",
               `Company holiday "${holidayName}" removed successfully.`,
