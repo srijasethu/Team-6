@@ -191,7 +191,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
             <div className="login-header-group">
               <h1 className="login-main-title">Log In</h1>
               <p className="login-helper-text">
-                Have an account?{" "}
+                Don't have an account?{" "}
                 <a href="mailto:leavetechsupport@gmail.com" className="admin-link">Contact Administrator</a>
               </p>
             </div>
