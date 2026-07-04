@@ -1298,6 +1298,45 @@
   font-weight: 500;
 }
 
+/* ── Redesigned Leave Type Column ── */
+.leave-type-col-td {
+  min-width: 200px;
+  vertical-align: middle;
+}
+
+.leave-type-col-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-start;
+}
+
+/* Top row: icon + name side-by-side */
+.leave-type-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Leave type name text */
+.leave-type-name {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #334155;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* Badges row: horizontal, wrappable */
+.leave-type-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  /* Indent slightly to align under the leave type name (after icon width + gap) */
+  padding-left: 27px;
+}
+
 /* Orange info icon */
 .info-icon-btn {
   background: none;

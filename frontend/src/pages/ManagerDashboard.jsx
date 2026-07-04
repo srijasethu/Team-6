@@ -2056,317 +2056,388 @@ function ManagerDashboard({ onLogout }) {
                           </td>
                         </tr>
                       ) : (
-                        filteredLeaveRequests.map((request, index) => (
-                          <tr key={`${request.dbId || request.id}-${index}`}>
-                            {/* Employee Name column */}
-                            <td>
-                              <div className="employee-info-cell">
-                                <span className="employee-name-label">
-                                  {request.name}
-                                </span>
-                              </div>
-                            </td>
-                            {/* Employee ID column */}
-                            <td>
-                              <span className="employee-id-badge">
-                                {request.id}
-                              </span>
-                            </td>
-                            {/* Leave Type column */}{" "}
-                            <td>
-                              <div className="leave-type-cell">
-                                <button
-                                  className="info-icon-btn"
-                                  type="button"
-                                  onClick={() => setSelectedRequest(request)}
-                                  aria-label="Show leave description"
-                                >
-                                  <FaInfoCircle />
-                                </button>
-                                <span className="leave-type-text">
-                                  {request.type}
-                                </span>
+                        filteredLeaveRequests.map((request, index) => {
+                          const getDetailBadges = () => {
+                            const badges = [];
 
-                                {/* Payment Type Badge */}
-                                <div
+                            // 1. Primary payment type badge (Paid / Partly Paid / Unpaid)
+                            const pType = request.payment_type || "Paid";
+                            let primaryBadgeStyle = {};
+                            let dotColor = "";
+
+                            if (pType === "Paid") {
+                              primaryBadgeStyle = {
+                                backgroundColor: "#f0fdf4",
+                                color: "#15803d",
+                                border: "1px solid #86efac",
+                              };
+                              dotColor = "#22c55e";
+                            } else if (pType === "Partly Paid") {
+                              // Orange style per user request
+                              primaryBadgeStyle = {
+                                backgroundColor: "#fff7ed",
+                                color: "#c2410c",
+                                border: "1px solid #fed7aa",
+                              };
+                              dotColor = "#f97316";
+                            } else {
+                              // Unpaid
+                              primaryBadgeStyle = {
+                                backgroundColor: "#fef2f2",
+                                color: "#b91c1c",
+                                border: "1px solid #fecaca",
+                              };
+                              dotColor = "#ef4444";
+                            }
+
+                            badges.push(
+                              <span
+                                key="primary-badge"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                  padding: "3px 9px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  letterSpacing: "0.02em",
+                                  ...primaryBadgeStyle,
+                                }}
+                              >
+                                <span
                                   style={{
-                                    marginTop: "5px",
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: "6px",
-                                    alignItems: "center",
+                                    width: "6px",
+                                    height: "6px",
+                                    borderRadius: "50%",
+                                    background: dotColor,
+                                    flexShrink: 0,
+                                    display: "inline-block",
                                   }}
-                                >
+                                />
+                                {pType}
+                              </span>
+                            );
+
+                            // 2. Secondary/Breakdown badges
+                            const msg = request.alert_message || "";
+                            const isBenefitBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
+
+                            if (isBenefitBreakdown) {
+                              const parts = msg.split("+").map(p => p.trim());
+                              parts.forEach((part, idx) => {
+                                let badgeStyle = {};
+                                
+                                if (part.includes("Paternity")) {
+                                  badgeStyle = {
+                                    backgroundColor: "#f5f3ff",
+                                    color: "#7c3aed",
+                                    border: "1px solid #ddd6fe",
+                                  };
+                                } else if (part.includes("Maternity")) {
+                                  badgeStyle = {
+                                    backgroundColor: "#fdf2f8",
+                                    color: "#db2777",
+                                    border: "1px solid #f9a8d4",
+                                  };
+                                } else if (part.includes("Monthly")) {
+                                  badgeStyle = {
+                                    backgroundColor: "#eff6ff",
+                                    color: "#1d4ed8",
+                                    border: "1px solid #bfdbfe",
+                                  };
+                                } else {
+                                  badgeStyle = {
+                                    backgroundColor: "#fef2f2",
+                                    color: "#b91c1c",
+                                    border: "1px solid #fecaca",
+                                  };
+                                }
+
+                                badges.push(
                                   <span
+                                    key={`benefit-badge-${idx}`}
                                     style={{
                                       display: "inline-flex",
                                       alignItems: "center",
-                                      gap: "4px",
-                                      backgroundColor:
-                                        request.payment_type === "Partly Paid"
-                                          ? "#ffe4e6"
-                                          : request.payment_type === "Unpaid"
-                                            ? "#fef2f2"
-                                            : "#f0fdf4",
-                                      color:
-                                        request.payment_type === "Partly Paid"
-                                          ? "#be123c"
-                                          : request.payment_type === "Unpaid"
-                                            ? "#b91c1c"
-                                            : "#15803d",
-                                      border: `1px solid ${
-                                        request.payment_type === "Partly Paid"
-                                          ? "#fecaca"
-                                          : request.payment_type === "Unpaid"
-                                            ? "#fecaca"
-                                            : "#86efac"
-                                      }`,
                                       padding: "3px 9px",
                                       borderRadius: "999px",
                                       fontSize: "11px",
                                       fontWeight: "700",
                                       letterSpacing: "0.02em",
+                                      ...badgeStyle,
                                     }}
                                   >
+                                    {part}
+                                  </span>
+                                );
+                              });
+                            } else {
+                              if (pType === "Unpaid") {
+                                badges.push(
+                                  <span
+                                    key="fully-unpaid"
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      backgroundColor: "#fff5f5",
+                                      color: "#dc2626",
+                                      border: "1px solid #fca5a5",
+                                      padding: "3px 9px",
+                                      borderRadius: "999px",
+                                      fontSize: "11px",
+                                      fontWeight: "700",
+                                    }}
+                                  >
+                                    <FaExclamationTriangle style={{ fontSize: "10px", flexShrink: 0 }} />
+                                    Fully Unpaid
+                                  </span>
+                                );
+                              } else if (pType === "Partly Paid") {
+                                badges.push(
+                                  <span
+                                    key="partly-paid-split"
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      backgroundColor: "#fff1f2",
+                                      color: "#be123c",
+                                      border: "1px solid #fda4af",
+                                      padding: "3px 9px",
+                                      borderRadius: "999px",
+                                      fontSize: "11px",
+                                      fontWeight: "700",
+                                    }}
+                                  >
+                                    <FaExclamationTriangle style={{ fontSize: "10px", flexShrink: 0 }} />
+                                    {`${request.paid_days} Paid + ${request.unpaid_days} Unpaid`}
+                                  </span>
+                                );
+                              }
+                            }
+
+                            return badges;
+                          };
+
+                          return (
+                            <tr key={`${request.dbId || request.id}-${index}`}>
+                              {/* Employee Name column */}
+                              <td>
+                                <div className="employee-info-cell">
+                                  <span className="employee-name-label">
+                                    {request.name}
+                                  </span>
+                                </div>
+                              </td>
+                              {/* Employee ID column */}
+                              <td>
+                                <span className="employee-id-badge">
+                                  {request.id}
+                                </span>
+                              </td>
+                              {/* Leave Type column */}
+                              <td className="leave-type-col-td">
+                                <div className="leave-type-col-wrapper">
+                                  {/* Title row: info icon + leave type name */}
+                                  <div className="leave-type-title-row">
+                                    <button
+                                      className="info-icon-btn"
+                                      type="button"
+                                      onClick={() => setSelectedRequest(request)}
+                                      aria-label="Show leave description"
+                                    >
+                                      <FaInfoCircle />
+                                    </button>
+                                    <span className="leave-type-name">
+                                      {request.type}
+                                    </span>
+                                  </div>
+                                  {/* Badges row: all payment/type badges in a horizontal row */}
+                                  <div className="leave-type-badges-row">
+                                    {getDetailBadges()}
+                                  </div>
+                                </div>
+                              </td>
+                              {/* Date Range column */}
+                              <td>
+                                <span className="date-range-label">
+                                  {(() => {
+                                    const parts = (request.dates || "").split(
+                                      " - "
+                                    );
+                                    if (parts.length === 2) {
+                                      return `${formatDateNicely(parts[0].trim())} – ${formatDateNicely(parts[1].trim())}`;
+                                    }
+                                    return request.dates;
+                                  })()}
+                                </span>
+                              </td>
+                              {/* Days column */}
+                              <td>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "2px",
+                                  }}
+                                >
+                                  <span
+                                    className="days-label"
+                                    style={{ display: "block" }}
+                                    title="Total calendar days selected"
+                                  >
+                                    {request.total_days || request.leaveDays}{" "}
+                                    {(request.total_days || request.leaveDays) ===
+                                    1
+                                      ? "Day"
+                                      : "Days"}
+                                  </span>
+                                  {request.excluded_days > 0 && (
                                     <span
                                       style={{
-                                        width: "6px",
-                                        height: "6px",
-                                        borderRadius: "50%",
-                                        background:
-                                          request.payment_type === "Partly Paid"
-                                            ? "#e11d48"
-                                            : request.payment_type === "Unpaid"
-                                              ? "#ef4444"
-                                              : "#22c55e",
-                                        flexShrink: 0,
-                                        display: "inline-block",
+                                        fontSize: "11px",
+                                        color: "#ea580c",
+                                        fontWeight: "600",
                                       }}
-                                    />
-                                    {request.payment_type || "Paid"}
+                                      title="Sundays and holidays excluded"
+                                    >
+                                      −{request.excluded_days} Excl.
+                                    </span>
+                                  )}
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "#2563eb",
+                                      fontWeight: "600",
+                                    }}
+                                    title="Actual working leave days"
+                                  >
+                                    {request.actual_leave_days} Actual
                                   </span>
-
-                                  {/* Breakdown sub-label */}
-                                  {(() => {
-                                    const msg = request.alert_message || "";
+                                  {request.unpaid_days > 0 && (
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#64748b",
+                                        fontWeight: "600",
+                                      }}
+                                    >
+                                      ({request.paid_days} Paid +{" "}
+                                      {request.unpaid_days} Unpaid)
+                                    </span>
+                                  )}
+                                  {request.unpaid_days === 0 && request.alert_message && (() => {
+                                    const msg = request.alert_message;
                                     const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-                                    if (isBreakdown) {
-                                      return (
-                                        <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
-                                          {msg}
-                                        </span>
-                                      );
-                                    }
-                                    if (request.payment_type === "Partly Paid" || request.payment_type === "Unpaid") {
-                                      return (
-                                        <span
-                                          style={{
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: "4px",
-                                            backgroundColor: "#fff1f2",
-                                            color: "#be123c",
-                                            border: "1px solid #fda4af",
-                                            padding: "3px 8px",
-                                            borderRadius: "6px",
-                                            fontSize: "11px",
-                                            fontWeight: "600",
-                                          }}
-                                        >
-                                          <FaExclamationTriangle
-                                            style={{
-                                              fontSize: "10px",
-                                              flexShrink: 0,
-                                            }}
-                                          />
-                                          {request.payment_type === "Unpaid"
-                                            ? "Fully Unpaid"
-                                            : `${request.paid_days}P + ${request.unpaid_days}U`}
-                                        </span>
-                                      );
-                                    }
-                                    return null;
+                                    return isBreakdown ? (
+                                      <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
+                                        ({msg})
+                                      </span>
+                                    ) : null;
                                   })()}
                                 </div>
-                              </div>
-                            </td>
-                            {/* Date Range column */}
-                            <td>
-                              <span className="date-range-label">
-                                {(() => {
-                                  const parts = (request.dates || "").split(
-                                    " - ",
-                                  );
-                                  if (parts.length === 2) {
-                                    return `${formatDateNicely(parts[0].trim())} – ${formatDateNicely(parts[1].trim())}`;
-                                  }
-                                  return request.dates;
-                                })()}
-                              </span>
-                            </td>
-                            {/* Days column */}
-                            <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "2px",
-                                }}
-                              >
+                              </td>
+                              {/* Status column */}
+                              <td>
                                 <span
-                                  className="days-label"
-                                  style={{ display: "block" }}
-                                  title="Total calendar days selected"
+                                  className={`approval-status-badge ${request.status.toLowerCase()}`}
                                 >
-                                  {request.total_days || request.leaveDays}{" "}
-                                  {(request.total_days || request.leaveDays) ===
-                                  1
-                                    ? "Day"
-                                    : "Days"}
+                                  {request.status === "Pending" && (
+                                    <span className="status-dot pending-dot" />
+                                  )}
+                                  {request.status === "Approved" && (
+                                    <span className="status-dot approved-dot" />
+                                  )}
+                                  {request.status === "Rejected" && (
+                                    <span className="status-dot rejected-dot" />
+                                  )}
+                                  {request.status === "Cancelled" && (
+                                    <span className="status-dot cancelled-dot" />
+                                  )}
+                                  {request.status}
                                 </span>
-                                {request.excluded_days > 0 && (
+                              </td>
+                              {/* Action column */}
+                              <td className="action-col-cell">
+                                {request.status === "Pending" ? (
+                                  <div className="action-popup-wrapper">
+                                    <button
+                                      type="button"
+                                      className="action-trigger-btn"
+                                      title="Take Action"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setApprovalActionPopup(
+                                          approvalActionPopup &&
+                                            approvalActionPopup.dbId ===
+                                              request.dbId
+                                            ? null
+                                            : request
+                                        );
+                                      }}
+                                    >
+                                      Take Action
+                                    </button>
+                                    {approvalActionPopup &&
+                                      approvalActionPopup.dbId ===
+                                        request.dbId && (
+                                        <div
+                                          className="action-inline-popup"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <div className="action-popup-arrow" />
+                                          <button
+                                            type="button"
+                                            className="popup-action-btn approve-action"
+                                            onClick={() => {
+                                              setApproveConfirmation({
+                                                show: true,
+                                                dbId: request.dbId || request.id,
+                                                requestName:
+                                                  request.name || "this employee",
+                                              });
+                                              setApprovalActionPopup(null);
+                                            }}
+                                          >
+                                            ✓ Approve
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="popup-action-btn reject-action"
+                                            onClick={() => {
+                                              setRejectConfirmation({
+                                                show: true,
+                                                dbId: request.dbId || request.id,
+                                                requestName:
+                                                  request.name || "this employee",
+                                              });
+                                              setApprovalActionPopup(null);
+                                            }}
+                                          >
+                                            ✗ Reject
+                                          </button>
+                                        </div>
+                                      )}
+                                  </div>
+                                ) : request.status === "Cancelled" ? (
                                   <span
                                     style={{
-                                      fontSize: "11px",
-                                      color: "#ea580c",
-                                      fontWeight: "600",
-                                    }}
-                                    title="Sundays and holidays excluded"
-                                  >
-                                    −{request.excluded_days} Excl.
-                                  </span>
-                                )}
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#2563eb",
-                                    fontWeight: "600",
-                                  }}
-                                  title="Actual working leave days"
-                                >
-                                  {request.actual_leave_days} Actual
-                                </span>
-                                {request.unpaid_days > 0 && (
-                                  <span
-                                    style={{
-                                      fontSize: "11px",
                                       color: "#64748b",
-                                      fontWeight: "600",
+                                      fontWeight: 600,
+                                      fontSize: "14px",
                                     }}
                                   >
-                                    ({request.paid_days} Paid +{" "}
-                                    {request.unpaid_days} Unpaid)
+                                    Cancelled by Employee
                                   </span>
+                                ) : (
+                                  "-"
                                 )}
-                                {request.unpaid_days === 0 && request.alert_message && (() => {
-                                  const msg = request.alert_message;
-                                  const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-                                  return isBreakdown ? (
-                                    <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
-                                      ({msg})
-                                    </span>
-                                  ) : null;
-                                })()}
-                              </div>
-                            </td>
-                            {/* Status column */}
-                            <td>
-                              <span
-                                className={`approval-status-badge ${request.status.toLowerCase()}`}
-                              >
-                                {request.status === "Pending" && (
-                                  <span className="status-dot pending-dot" />
-                                )}
-                                {request.status === "Approved" && (
-                                  <span className="status-dot approved-dot" />
-                                )}
-                                {request.status === "Rejected" && (
-                                  <span className="status-dot rejected-dot" />
-                                )}
-                                {request.status === "Cancelled" && (
-                                  <span className="status-dot cancelled-dot" />
-                                )}
-                                {request.status}
-                              </span>
-                            </td>
-                            {/* Action column */}
-                            <td className="action-col-cell">
-                              {request.status === "Pending" ? (
-                                <div className="action-popup-wrapper">
-                                  <button
-                                    type="button"
-                                    className="action-trigger-btn"
-                                    title="Take Action"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setApprovalActionPopup(
-                                        approvalActionPopup &&
-                                          approvalActionPopup.dbId ===
-                                            request.dbId
-                                          ? null
-                                          : request,
-                                      );
-                                    }}
-                                  >
-                                    Take Action
-                                  </button>
-                                  {approvalActionPopup &&
-                                    approvalActionPopup.dbId ===
-                                      request.dbId && (
-                                      <div
-                                        className="action-inline-popup"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <div className="action-popup-arrow" />
-                                        <button
-                                          type="button"
-                                          className="popup-action-btn approve-action"
-                                          onClick={() => {
-                                            setApproveConfirmation({
-                                              show: true,
-                                              dbId: request.dbId || request.id,
-                                              requestName:
-                                                request.name || "this employee",
-                                            });
-                                            setApprovalActionPopup(null);
-                                          }}
-                                        >
-                                          ✓ Approve
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="popup-action-btn reject-action"
-                                          onClick={() => {
-                                            setRejectConfirmation({
-                                              show: true,
-                                              dbId: request.dbId || request.id,
-                                              requestName:
-                                                request.name || "this employee",
-                                            });
-                                            setApprovalActionPopup(null);
-                                          }}
-                                        >
-                                          ✗ Reject
-                                        </button>
-                                      </div>
-                                    )}
-                                </div>
-                              ) : request.status === "Cancelled" ? (
-                                <span
-                                  style={{
-                                    color: "#64748b",
-                                    fontWeight: 600,
-                                    fontSize: "14px",
-                                  }}
-                                >
-                                  Cancelled by Employee
-                                </span>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                          </tr>
-                        ))
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
