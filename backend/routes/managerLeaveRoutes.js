@@ -1,6 +1,7 @@
 const express = require("express");
 const db = require("../config/db");
 const { recalculateForEmployee } = require("../utils/recalculate");
+const { createNotificationInternal } = require("../controllers/notificationController");
 
 const router = express.Router();
 
@@ -78,6 +79,18 @@ router.put("/approve/:id", (req, res) => {
           });
         }
 
+        // Notify employee of approval
+        createNotificationInternal(employeeId, "Leave Approved", "Your leave request has been approved.", "success", "leave_request");
+
+        // Notify managers
+        db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
+          if (!mErr && managers) {
+            managers.forEach(mgr => {
+              createNotificationInternal(mgr.id, "Approval Completed", "Leave approved successfully.", "success", "leave_request");
+            });
+          }
+        });
+
         // Recalculate all Pending+Approved leaves for this employee
         recalculateForEmployee(employeeId, db, (recalcErr) => {
           if (recalcErr) console.error("Recalculate after approve error:", recalcErr);
@@ -118,6 +131,18 @@ router.put("/reject/:id", (req, res) => {
             message: "Leave request cannot be rejected because it is not pending or does not exist.",
           });
         }
+
+        // Notify employee of rejection
+        createNotificationInternal(employeeId, "Leave Rejected", "Your leave request has been rejected.", "error", "leave_request");
+
+        // Notify managers
+        db.query("SELECT id FROM users WHERE role = 'manager'", (mErr, managers) => {
+          if (!mErr && managers) {
+            managers.forEach(mgr => {
+              createNotificationInternal(mgr.id, "Rejection Completed", "Leave rejected successfully.", "success", "leave_request");
+            });
+          }
+        });
 
         // Recalculate — rejected leave no longer counts, so other leaves may upgrade to Paid
         recalculateForEmployee(employeeId, db, (recalcErr) => {

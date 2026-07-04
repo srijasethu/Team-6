@@ -28,6 +28,8 @@ app.get("/api/profile/test", (req, res) => {
   res.json({ message: "Direct test working" });
 });
 
+const notificationRoutes = require("./routes/notificationRoutes");
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
@@ -35,6 +37,7 @@ app.use("/api/leave", leaveRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/manager", managerLeaveRoutes);
 app.use("/api/holidays", holidayRoutes);
+app.use("/api/notifications", notificationRoutes);
 require("./config/db");
 
 app.get("/", (req, res) => {

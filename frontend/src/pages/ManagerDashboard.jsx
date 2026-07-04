@@ -35,6 +35,8 @@ import {
   FaArrowLeft,
   FaArrowRight,
   FaFilePdf,
+  FaBell,
+  FaBellSlash,
 } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { jsPDF } from "jspdf";
@@ -284,6 +286,209 @@ function DashboardGreetingCard({ name, leaveRequests, holidaysList }) {
   );
 }
 
+function formatRelativeTimeManager(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffSec < 0) return "Just now";
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
+  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? "s" : ""} ago`;
+  if (diffDays === 1) return "Yesterday";
+  return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+}
+
+function NotificationBellManager({ userId, refreshCountTrigger, setRefreshCountTrigger }) {
+  const [enabled, setEnabled] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const fetchSettingsAndCount = async () => {
+    try {
+      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${userId}`);
+      const sData = await sRes.json();
+      if (sData.success) setEnabled(sData.notifications_enabled);
+
+      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${userId}`);
+      const cData = await cRes.json();
+      if (cData.success) setUnreadCount(cData.count);
+    } catch (err) { console.error("Notif settings/count error:", err); }
+  };
+
+  const fetchNotificationsList = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${userId}`);
+      const data = await res.json();
+      if (data.success) setNotifications(data.notifications || []);
+    } catch (err) { console.error("Notif list error:", err); }
+  };
+
+  useEffect(() => { fetchSettingsAndCount(); }, [userId, refreshCountTrigger]);
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      fetchNotificationsList();
+      if (enabled && "Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, [dropdownOpen, enabled]);
+
+  useEffect(() => {
+    fetchSettingsAndCount();
+    if (enabled) fetchNotificationsList();
+    const timer = setInterval(() => {
+      fetchSettingsAndCount();
+      if (enabled) fetchNotificationsList();
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [userId, enabled]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
+  const handleToggle = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${userId}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setEnabled(data.notifications_enabled);
+        if (data.notifications_enabled && "Notification" in window) Notification.requestPermission();
+        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+        else fetchSettingsAndCount();
+      }
+    } catch (err) { console.error("Toggle notif error:", err); }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${userId}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setUnreadCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+      }
+    } catch (err) { console.error("Mark all read error:", err); }
+  };
+
+  const handleMarkRead = async (id) => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read/${id}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+      }
+    } catch (err) { console.error("Mark single read error:", err); }
+  };
+
+  const [prevUnreadList, setPrevUnreadList] = useState([]);
+  useEffect(() => {
+    if (enabled && notifications.length > 0) {
+      const currentUnreads = notifications.filter(n => !n.is_read);
+      const newUnreads = currentUnreads.filter(n => !prevUnreadList.some(p => p.id === n.id));
+      if (newUnreads.length > 0 && "Notification" in window && Notification.permission === "granted") {
+        newUnreads.forEach(n => new Notification(n.title, { body: n.message, icon: "/favicon.ico" }));
+      }
+      setPrevUnreadList(currentUnreads);
+    }
+  }, [notifications, enabled]);
+
+  useEffect(() => {
+    if (dropdownOpen) setPrevUnreadList(notifications.filter(n => !n.is_read));
+  }, [notifications, dropdownOpen]);
+
+  const getNotifIcon = (type) => {
+    switch (type) {
+      case "success": return <FaCheck />;
+      case "warning": return <FaExclamationTriangle />;
+      case "error": return <FaTimes />;
+      default: return <FaInfoCircle />;
+    }
+  };
+
+  return (
+    <div className="notification-bell-container" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`notification-bell-btn ${!enabled ? 'muted' : ''}`}
+        onClick={() => setDropdownOpen(prev => !prev)}
+        title={enabled ? "View Notifications" : "Notifications Disabled"}
+      >
+        {enabled ? <FaBell /> : <FaBellSlash />}
+        {enabled && unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount}</span>
+        )}
+      </button>
+
+      {dropdownOpen && (
+        <div className="notification-dropdown">
+          <div className="notif-header">
+            <h3>Notifications</h3>
+            {enabled && unreadCount > 0 && (
+              <button type="button" className="notif-mark-all-btn" onClick={handleMarkAllRead}>
+                Mark all as read
+              </button>
+            )}
+          </div>
+
+          {!enabled ? (
+            <div className="notif-muted-message-box">
+              <p>Notifications are turned off.</p>
+              <button type="button" className="notif-enable-btn" onClick={handleToggle}>
+                Enable Notifications
+              </button>
+            </div>
+          ) : (
+            <div className="notif-list">
+              {notifications.length === 0 ? (
+                <div className="notif-empty-state">
+                  <span className="notif-empty-icon">🔔</span>
+                  <span>No notifications yet.</span>
+                </div>
+              ) : (
+                notifications.map(notif => (
+                  <div
+                    key={notif.id}
+                    className={`notif-card ${!notif.is_read ? 'unread' : ''}`}
+                    onClick={() => !notif.is_read && handleMarkRead(notif.id)}
+                  >
+                    <div className={`notif-icon-container ${notif.type || 'info'}`}>
+                      {getNotifIcon(notif.type)}
+                    </div>
+                    <div className="notif-body">
+                      <h4 className="notif-title">{notif.title}</h4>
+                      <p className="notif-message">{notif.message}</p>
+                      <span className="notif-time">{formatRelativeTimeManager(notif.created_at)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ManagerDashboard({ onLogout }) {
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("managerActiveView") || "profile";
@@ -295,6 +500,7 @@ function ManagerDashboard({ onLogout }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [notifRefreshTrigger, setNotifRefreshTrigger] = useState(0);
   const [toast, setToast] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [pendingPhotoFile, setPendingPhotoFile] = useState(null);
@@ -790,6 +996,29 @@ function ManagerDashboard({ onLogout }) {
   const profilePhotoInputRef = useRef(null);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const photoMenuRef = useRef(null);
+
+  // Notification settings for profile toggle
+  const [notifToggleEnabled, setNotifToggleEnabled] = useState(true);
+  useEffect(() => {
+    if (!managerLoggedInUser?.id) return;
+    fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${managerLoggedInUser.id}`)
+      .then(r => r.json())
+      .then(data => { if (data.success) setNotifToggleEnabled(data.notifications_enabled); })
+      .catch(() => {});
+  }, [notifRefreshTrigger]);
+
+  const handleManagerNotifToggle = async () => {
+    if (!managerLoggedInUser?.id) return;
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${managerLoggedInUser.id}`, { method: 'PUT' });
+      const data = await res.json();
+      if (data.success) {
+        setNotifToggleEnabled(data.notifications_enabled);
+        if (data.notifications_enabled && 'Notification' in window) Notification.requestPermission();
+        setNotifRefreshTrigger(prev => prev + 1);
+      }
+    } catch (err) { console.error('Manager notif toggle error:', err); }
+  };
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -1391,6 +1620,18 @@ function ManagerDashboard({ onLogout }) {
         </aside>
 
         <section className="profile-panel">
+          {/* Top Header Bar with Notification Bell */}
+          <div className="dashboard-top-header">
+            <div className="top-header-left" />
+            <div className="top-header-right">
+              <NotificationBellManager
+                userId={managerLoggedInUser?.id}
+                refreshCountTrigger={notifRefreshTrigger}
+                setRefreshCountTrigger={setNotifRefreshTrigger}
+              />
+            </div>
+          </div>
+
           <div key={activeView} className="page-transition-wrapper">
             {activeView === "profile" && (
               <>
@@ -1782,6 +2023,28 @@ function ManagerDashboard({ onLogout }) {
                       </svg>
                     </div>
                   </div>
+
+                  {/* ── Notification Settings Card ──── */}
+                  <p className="account-details-heading" style={{ marginTop: '28px' }}>System Settings</p>
+                  <div className="settings-section-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700' }}>Desktop Notifications</h4>
+                        <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+                          Receive browser alerts for leave requests, approvals, rejections, and holiday announcements.
+                        </p>
+                      </div>
+                      <label className="toggle-switch-label">
+                        <input
+                          type="checkbox"
+                          checked={notifToggleEnabled}
+                          onChange={handleManagerNotifToggle}
+                        />
+                        <span className="toggle-switch-slider" />
+                      </label>
+                    </div>
+                  </div>
+
                 </div>
               </>
             )}

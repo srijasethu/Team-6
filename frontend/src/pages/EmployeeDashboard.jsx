@@ -29,6 +29,8 @@ import {
   FaTimes,
   FaUser,
   FaInfoCircle,
+  FaBell,
+  FaBellSlash,
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
 
@@ -169,7 +171,7 @@ function EmployeeAvatar({
             role="menuitem"
             onClick={handleChangePicture}
           >
-            📷 Change Profile Photo
+            Change Profile Photo
           </button>
           <button
             type="button"
@@ -178,7 +180,7 @@ function EmployeeAvatar({
             onClick={handleRemovePicture}
             disabled={!photoUrl}
           >
-            🗑️ Remove Profile Photo
+            Remove Profile Photo
           </button>
         </div>
       )}
@@ -1299,7 +1301,38 @@ function ProfileView({
   profilePhotoInputRef,
   handleProfilePhotoChange,
   handleProfilePhotoRemove,
+  userId,
+  notifRefreshTrigger,
+  setNotifRefreshTrigger,
 }) {
+  const [notifEnabled, setNotifEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${userId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setNotifEnabled(data.notifications_enabled);
+      })
+      .catch(() => {});
+  }, [userId, notifRefreshTrigger]);
+
+  const handleNotifToggle = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${userId}`, { method: 'PUT' });
+      const data = await res.json();
+      if (data.success) {
+        setNotifEnabled(data.notifications_enabled);
+        if (data.notifications_enabled && 'Notification' in window) {
+          Notification.requestPermission();
+        }
+        if (setNotifRefreshTrigger) setNotifRefreshTrigger(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Error toggling notifications from profile:', err);
+    }
+  };
   const [stats, setStats] = useState({ total: ANNUAL_PAID_ALLOCATION, taken: 0, pending: 0, approved: 0 });
 
   useEffect(() => {
@@ -1421,6 +1454,27 @@ function ProfileView({
             <strong>Employee Type</strong>
             <span>{profileData.employeeType || "Full-Time"}</span>
           </div>
+        </div>
+      </div>
+
+      {/* ── Notification Settings Card ─────────── */}
+      <p className="account-details-heading" style={{ marginTop: '28px' }}>System Settings</p>
+      <div className="settings-section-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <div>
+            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700' }}>Desktop Notifications</h4>
+            <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+              Receive browser alerts for leave approvals, rejections, and holiday announcements.
+            </p>
+          </div>
+          <label className="toggle-switch-label">
+            <input
+              type="checkbox"
+              checked={notifEnabled}
+              onChange={handleNotifToggle}
+            />
+            <span className="toggle-switch-slider" />
+          </label>
         </div>
       </div>
 
@@ -2756,6 +2810,251 @@ function LogoutView({ onCancel, onConfirm }) {
   );
 }
 
+function formatRelativeTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffSec < 0) return "Just now";
+  if (diffSec < 60) return "Just now";
+  if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
+  if (diffHr < 24) return `${diffHr} hour${diffHr > 1 ? "s" : ""} ago`;
+  if (diffDays === 1) return "Yesterday";
+  return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+}
+
+function NotificationBell({ userId, isManager, refreshCountTrigger, setRefreshCountTrigger }) {
+  const [enabled, setEnabled] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const fetchSettingsAndCount = async () => {
+    try {
+      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${userId}`);
+      const sData = await sRes.json();
+      if (sData.success) {
+        setEnabled(sData.notifications_enabled);
+      }
+
+      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${userId}`);
+      const cData = await cRes.json();
+      if (cData.success) {
+        setUnreadCount(cData.count);
+      }
+    } catch (err) {
+      console.error("Error fetching notification settings/count:", err);
+    }
+  };
+
+  const fetchNotificationsList = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${userId}`);
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications list:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettingsAndCount();
+  }, [userId, refreshCountTrigger]);
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      fetchNotificationsList();
+      if (enabled && "Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+  }, [dropdownOpen, enabled]);
+
+  // Periodically refresh unread count and fetch list (if enabled) to trigger push notifications
+  useEffect(() => {
+    fetchSettingsAndCount();
+    if (enabled) {
+      fetchNotificationsList();
+    }
+    const timer = setInterval(() => {
+      fetchSettingsAndCount();
+      if (enabled) {
+        fetchNotificationsList();
+      }
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [userId, enabled]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
+  const handleToggle = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${userId}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setEnabled(data.notifications_enabled);
+        if (data.notifications_enabled) {
+          if ("Notification" in window) {
+            Notification.requestPermission();
+          }
+        }
+        if (setRefreshCountTrigger) {
+          setRefreshCountTrigger(prev => prev + 1);
+        } else {
+          fetchSettingsAndCount();
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling notifications:", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${userId}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setUnreadCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+        if (setRefreshCountTrigger) {
+          setRefreshCountTrigger(prev => prev + 1);
+        }
+      }
+    } catch (err) {
+      console.error("Error marking all read:", err);
+    }
+  };
+
+  const handleMarkRead = async (id) => {
+    try {
+      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read/${id}`, { method: "PUT" });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+        if (setRefreshCountTrigger) {
+          setRefreshCountTrigger(prev => prev + 1);
+        }
+      }
+    } catch (err) {
+      console.error("Error marking notification read:", err);
+    }
+  };
+
+  // Logic to show HTML5 Browser Notification for new unread notifications
+  const [prevUnreadList, setPrevUnreadList] = useState([]);
+  useEffect(() => {
+    if (enabled && notifications.length > 0) {
+      const currentUnreads = notifications.filter(n => !n.is_read);
+      const newUnreads = currentUnreads.filter(n => !prevUnreadList.some(p => p.id === n.id));
+      if (newUnreads.length > 0 && "Notification" in window && Notification.permission === "granted") {
+        newUnreads.forEach(n => {
+          new Notification(n.title, { body: n.message, icon: "/favicon.ico" });
+        });
+      }
+      setPrevUnreadList(currentUnreads);
+    }
+  }, [notifications, enabled]);
+
+  // Sync state if dropdown is open and we fetch list
+  useEffect(() => {
+    if (dropdownOpen) {
+      const currentUnreads = notifications.filter(n => !n.is_read);
+      setPrevUnreadList(currentUnreads);
+    }
+  }, [notifications, dropdownOpen]);
+
+  const getNotifIcon = (type) => {
+    switch (type) {
+      case "success": return <FaCheck />;
+      case "warning": return <FaExclamationTriangle />;
+      case "error": return <FaTimes />;
+      default: return <FaInfoCircle />;
+    }
+  };
+
+  return (
+    <div className="notification-bell-container" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`notification-bell-btn ${!enabled ? 'muted' : ''}`}
+        onClick={() => setDropdownOpen(prev => !prev)}
+        title={enabled ? "View Notifications" : "Notifications Disabled"}
+      >
+        {enabled ? <FaBell /> : <FaBellSlash />}
+        {enabled && unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount}</span>
+        )}
+      </button>
+
+      {dropdownOpen && (
+        <div className="notification-dropdown">
+          <div className="notif-header">
+            <h3>Notifications</h3>
+            {enabled && unreadCount > 0 && (
+              <button type="button" className="notif-mark-all-btn" onClick={handleMarkAllRead}>
+                Mark all as read
+              </button>
+            )}
+          </div>
+
+          {!enabled ? (
+            <div className="notif-muted-message-box">
+              <p>Notifications are turned off.</p>
+              <button type="button" className="notif-enable-btn" onClick={handleToggle}>
+                Enable Notifications
+              </button>
+            </div>
+          ) : (
+            <div className="notif-list">
+              {notifications.length === 0 ? (
+                <div className="notif-empty-state">
+                  <span className="notif-empty-icon">🔔</span>
+                  <span>No notifications yet.</span>
+                </div>
+              ) : (
+                notifications.map(notif => (
+                  <div
+                    key={notif.id}
+                    className={`notif-card ${!notif.is_read ? 'unread' : ''}`}
+                    onClick={() => !notif.is_read && handleMarkRead(notif.id)}
+                  >
+                    <div className={`notif-icon-container ${notif.type || 'info'}`}>
+                      {getNotifIcon(notif.type)}
+                    </div>
+                    <div className="notif-body">
+                      <h4 className="notif-title">{notif.title}</h4>
+                      <p className="notif-message">{notif.message}</p>
+                      <span className="notif-time">{formatRelativeTime(notif.created_at)}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EmployeeDashboard({ onLogout }) {
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("employeeActiveView") || "profile";
@@ -2783,6 +3082,7 @@ function EmployeeDashboard({ onLogout }) {
   const [isEditing, setIsEditing] = useState(false);
   const [leaveRefreshKey, setLeaveRefreshKey] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [notifRefreshTrigger, setNotifRefreshTrigger] = useState(0);
 
   const [toast, setToast] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -3086,6 +3386,19 @@ function EmployeeDashboard({ onLogout }) {
         </aside>
 
         <section className="profile-panel">
+          {/* Top Header Bar with Notification Bell */}
+          <div className="dashboard-top-header">
+            <div className="top-header-left" />
+            <div className="top-header-right">
+              <NotificationBell
+                userId={loggedInUser?.id}
+                isManager={false}
+                refreshCountTrigger={notifRefreshTrigger}
+                setRefreshCountTrigger={setNotifRefreshTrigger}
+              />
+            </div>
+          </div>
+
           {activeView === "profile" && (
             <ProfileView
               profileData={profileData}
@@ -3093,6 +3406,9 @@ function EmployeeDashboard({ onLogout }) {
               profilePhotoInputRef={profilePhotoInputRef}
               handleProfilePhotoChange={handleProfilePhotoChange}
               handleProfilePhotoRemove={handleProfilePhotoRemove}
+              userId={loggedInUser?.id}
+              notifRefreshTrigger={notifRefreshTrigger}
+              setNotifRefreshTrigger={setNotifRefreshTrigger}
             />
           )}
           {activeView === "leave" && (
