@@ -1380,15 +1380,17 @@ function ProfileView({
             <div className="employee-meta">
               <span>
                 <FaRegCalendarAlt />
-                Employee ID:&nbsp;<strong className="emp-id-val">{profileData.employeeId}</strong>
+                <span className="meta-text">
+                  Employee ID:&nbsp;<strong className="emp-id-val">{profileData.employeeId}</strong>
+                </span>
               </span>
               <span>
                 <FaBuilding />
-                {profileData.department} Department
+                <span className="meta-text">{profileData.department} Department</span>
               </span>
               <span>
                 <FaRegUser />
-                {profileData.gender || "Male"}
+                <span className="meta-text">{profileData.gender || "Male"}</span>
               </span>
             </div>
           </div>
