@@ -373,7 +373,8 @@
 
 /* ── Hero card ─────────────────────────────── */
 .employee-dashboard .profile-hero-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
   align-items: stretch;
   gap: 0;
   background: #ffffff;
@@ -388,7 +389,6 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  flex: 1 1 auto;
   padding: 28px 32px;
   border-right: 1px solid #e8eff8;
   border-top-left-radius: 15px;
@@ -396,8 +396,6 @@
 }
 
 .employee-dashboard .profile-hero-right {
-  flex: 0 0 50%;
-  min-width: 300px;
   position: relative;
   background: linear-gradient(135deg, #f0f4f9 0%, #e2ecf7 100%);
   padding: 32px 32px 28px 36px;
@@ -2026,6 +2024,31 @@
 
 @media (max-width: 700px) {
   .employee-dashboard .profile-hero,
+  .employee-dashboard .profile-hero-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .employee-dashboard .profile-hero-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .employee-dashboard .profile-hero-left {
+    border-right: none;
+    border-bottom: 1px solid #e8eff8;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    border-bottom-left-radius: 0;
+  }
+
+  .employee-dashboard .profile-hero-right {
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+  }
+
   .employee-dashboard .employee-name {
     align-items: flex-start;
     flex-direction: column;
