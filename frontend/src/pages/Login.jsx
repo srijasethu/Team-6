@@ -12,6 +12,8 @@ import {
 } from "react-icons/fa";
 import "./../styles/Login.css";
 
+const SUPPORT_MAILTO = "mailto:leavetechsupport@gmail.com?subject=LeaveWise%20Support%20Request&body=Hello%20Administrator%2C%0D%0A%0D%0AI%20need%20assistance%20with%20my%20LeaveWise%20account.%0D%0A%0D%0AName%3A%0D%0AEmployee%20ID%3A%0D%0ARole%20(Employee%2FManager)%3A%0D%0AContact%20Number%3A%0D%0AIssue%3A";
+
 function Login({ onEmployeeLogin, onManagerLogin }) {
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
@@ -192,7 +194,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <h1 className="login-main-title">Log In</h1>
               <p className="login-helper-text">
                 Don't have an account?{" "}
-                <a href="mailto:leavetechsupport@gmail.com" className="admin-link">Contact Administrator</a>
+                <a href={SUPPORT_MAILTO} className="admin-link">Contact Administrator</a>
               </p>
             </div>
 
@@ -275,7 +277,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
 
               <div className="forgot-password-block">
                 <span className="forgot-text">Forgot your password?</span>
-                <a href="mailto:leavetechsupport@gmail.com" className="admin-link">Contact Administrator</a>
+                <a href={SUPPORT_MAILTO} className="admin-link">Contact Administrator</a>
               </div>
             </div>
           </form>
