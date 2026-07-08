@@ -1625,7 +1625,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Monthly Paid Leave Limit", [
                     ["Paid leave days per month", "3 days"],
                     ["Leave beyond 3 days in a month", "Unpaid Leave"],
-                    ["Maximum paid leave per year", "36 days (3 × 12 months)"],
+                    ["Maximum paid leave per year", "36 days (3 x 12 months)"],
                   ]);
 
                   addSection(
@@ -4699,7 +4699,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
         Notification.permission === "granted"
       ) {
         newUnreads.forEach((n) => {
-          new Notification(n.title, { body: n.message, icon: "/favicon.ico" });
+          new Notification(n.title, { body: n.message, });
         });
       }
       setPrevUnreadList(currentUnreads);
