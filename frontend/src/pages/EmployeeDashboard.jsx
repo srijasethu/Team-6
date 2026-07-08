@@ -487,7 +487,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
           setExistingLeaves(d.leaves || []);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     fetch(`${API_BASE_URL}/api/holidays`)
       .then((r) => r.json())
@@ -496,7 +496,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
           setHolidays(d.holidays || []);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleReset = () => {
@@ -1946,7 +1946,7 @@ function ProfileView({
       .then((data) => {
         if (data.success) setNotifEnabled(data.notifications_enabled);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [userId, notifRefreshTrigger]);
 
   const handleNotifToggle = async () => {
@@ -1989,7 +1989,7 @@ function ProfileView({
           approved: data.summary.approvedRequests,
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   return (
@@ -2049,7 +2049,7 @@ function ProfileView({
           <span className="pq-icon">&ldquo;</span>
           <p className="pq-text">
             {profileData.about ||
-              "Every successful team is built on responsibility, trust, and consistency. ✨ LeaveWise"}
+              "Every successful team is built on responsibility, trust, and consistency. - LeaveWise"}
           </p>
         </div>
       </div>
@@ -3736,9 +3736,9 @@ function LeaveSummaryView() {
             marginTop: "16px",
           }}
         >
-          <span>ℹ️</span>
-          <strong>Note:</strong> If you take more than {MONTHLY_PAID_LIMIT} days
-          of leave in a month, the extra days will be marked as unpaid leave.
+          <span>💡</span>
+          <strong>Note:</strong> Any leave exceeding {MONTHLY_PAID_LIMIT} days
+          in a month will be treated as LOSS OF PAY.
         </div>
       </div>
 
