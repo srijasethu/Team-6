@@ -3911,6 +3911,7 @@ function ManagerDashboard({ onLogout }) {
                                       e.stopPropagation();
                                       setSelectedEmpReport(emp);
                                       handleViewReport(emp.id);
+                                      setActiveView("employee-leave-report");
                                     }}
                                   >
                                     <FaRegChartBar />
@@ -3928,300 +3929,373 @@ function ManagerDashboard({ onLogout }) {
 
                 {/* Old showHistoryModal popup removed */}
 
-                {/* ── View Report Modal ── */}
-                {selectedEmpReport && (
-                  <div
-                    className="popup-overlay"
+                {/* Old View Report Modal Removed */}
+              </div>
+            )}
+            {activeView === "employee-leave-report" && selectedEmpReport && (
+              <div className="employee-report-content">
+                <div className="section-title">
+                  <FaRegChartBar className="profile-title-icon" />
+                  <div>
+                    <h1>Employee Leave Report — {selectedEmpReport.name}</h1>
+                    <p className="profile-subtitle">
+                      Detailed leave report for {selectedEmpReport.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div 
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "24px",
+                    flexWrap: "wrap",
+                    gap: "16px"
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="modal-cancel-btn"
                     onClick={() => {
                       setSelectedEmpReport(null);
                       setReportEmpData(null);
+                      setActiveView("employee-report");
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 20px",
+                      background: "var(--bg-card, #ffffff)",
+                      border: "1.5px solid var(--border-color, #cbd5e1)",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      color: "var(--text-main, #334155)"
                     }}
                   >
-                    <div
-                      className="details-popup-card report-detail-modal-card"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="popup-card-header">
-                        <h3>Employee Leave Report</h3>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className="report-download-btn"
-                            onClick={handleDownloadPDF}
-                            disabled={reportEmpDataLoading || !reportEmpData}
-                            title="Download as PDF"
-                          >
-                            <FaFilePdf style={{ marginRight: "6px" }} />
-                            {reportEmpDataLoading
-                              ? "Loading..."
-                              : "Download Report"}
-                          </button>
-                          <button
-                            className="close-popup-btn"
-                            type="button"
-                            onClick={() => {
-                              setSelectedEmpReport(null);
-                              setReportEmpData(null);
-                            }}
-                          >
-                            <FaTimes />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="popup-card-body scrollable-modal-body">
-                        <div className="popup-employee-header">
-                          <div
-                            className="popup-employee-initials"
-                            style={{ backgroundColor: "#f25c05" }}
-                          >
-                            {(selectedEmpReport.name || "?")
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .substring(0, 2)
-                              .toUpperCase()}
-                          </div>
-                          <div className="popup-employee-info">
-                            <h4>{selectedEmpReport.name}</h4>
-                            <span className="popup-employee-id">
-                              {selectedEmpReport.employee_id} —{" "}
-                              {selectedEmpReport.department}
-                            </span>
-                            {(reportEmpData?.employee?.designation ||
-                              selectedEmpReport.designation) && (
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#f25c05",
-                                  fontWeight: "600",
-                                  display: "block",
-                                  marginTop: "2px",
-                                }}
-                              >
-                                {reportEmpData?.employee?.designation ||
-                                  selectedEmpReport.designation}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <FaArrowLeft /> Back to Report
+                  </button>
 
-                        {/* 4 Summary Cards */}
-                        <div className="report-modal-stats-grid">
-                          <div className="modal-stat-card entitlement-card">
-                            <span className="modal-stat-label">
-                              Total Entitlement
-                            </span>
-                            <span className="modal-stat-value">
-                              {reportEmpData
-                                ? reportEmpData.employee.totalEntitlement
-                                : selectedEmpReport.totalEntitlement}{" "}
-                              Days
-                            </span>
-                          </div>
-                          <div className="modal-stat-card used-card">
-                            <span className="modal-stat-label">
-                              Paid Leave Used
-                            </span>
-                            <span className="modal-stat-value">
-                              {reportEmpData
-                                ? reportEmpData.employee.paidLeavesTaken
-                                : selectedEmpReport.paidLeavesTaken}{" "}
-                              Days
-                            </span>
-                          </div>
-                          <div className="modal-stat-card remaining-card">
-                            <span className="modal-stat-label">
-                              Remaining Balance
-                            </span>
-                            <span className="modal-stat-value">
-                              {reportEmpData
-                                ? reportEmpData.employee.remainingBalance
-                                : selectedEmpReport.remainingBalance}{" "}
-                              Days
-                            </span>
-                          </div>
-                          <div
-                            className="modal-stat-card attendance-card"
-                            style={{ borderLeft: "4px solid #ef4444" }}
-                          >
-                            <span className="modal-stat-label">
-                              Unpaid Leave Used
-                            </span>
-                            <span
-                              className="modal-stat-value"
-                              style={{ color: "#ef4444" }}
-                            >
-                              {reportEmpData
-                                ? reportEmpData.employee.unpaidLeavesTaken
-                                : selectedEmpReport.unpaidLeavesTaken}{" "}
-                              Days
-                            </span>
-                          </div>
-                        </div>
+                  <button
+                    type="button"
+                    className="report-download-btn"
+                    onClick={handleDownloadPDF}
+                    disabled={reportEmpDataLoading || !reportEmpData}
+                    title="Download as PDF"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 20px",
+                      background: "linear-gradient(135deg, #f25c05, #ff7e33)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#ffffff",
+                      fontWeight: "700",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <FaFilePdf />
+                    {reportEmpDataLoading ? "Loading..." : "Download Report"}
+                  </button>
+                </div>
 
-                        {/* Leave type breakdown from real backend data */}
-                        {reportEmpData &&
-                          (() => {
-                            const total = Object.values(
-                              reportEmpData.leaveTypeUsage || {},
-                            ).reduce((a, b) => a + b, 0);
-                            if (total === 0) {
-                              return (
-                                <div className="leave-breakdown-section">
-                                  <h5>Leave Type Breakdown</h5>
-                                  <div className="empty-chart-message">
-                                    No approved leaves recorded yet.
-                                  </div>
-                                </div>
-                              );
-                            }
-                            const dist = {
-                              "Personal Leave": 0,
-                              "Medical Leave": 0,
-                              "Maternity Leave": 0,
-                              "Paternity Leave": 0,
-                              ...(reportEmpData.leaveTypeUsage || {}),
-                            };
-                            const TYPE_COLORS = {
-                              "Personal Leave": "#f25c05",
-                              "Medical Leave": "#4f46e5",
-                              "Maternity Leave": "#10b981",
-                              "Paternity Leave": "#e11d48",
-                            };
-                            const entries = Object.entries(dist);
-                            const conicEntries = entries.filter(
-                              (e) => e[1] > 0,
-                            );
-                            return (
-                              <div className="leave-breakdown-section">
-                                <h5>Leave Type Breakdown</h5>
-                                <div className="breakdown-chart-flex">
-                                  <div className="donut-chart-container">
-                                    <div
-                                      className="donut-chart"
-                                      style={{
-                                        background:
-                                          conicEntries.length > 0
-                                            ? `conic-gradient(${conicEntries
-                                                .map((e, i) => {
-                                                  const color =
-                                                    TYPE_COLORS[e[0]] ||
-                                                    "#64748b";
-                                                  const startPct = conicEntries
-                                                    .slice(0, i)
-                                                    .reduce(
-                                                      (a, ee) =>
-                                                        a +
-                                                        (total > 0
-                                                          ? (ee[1] / total) *
-                                                            100
-                                                          : 0),
-                                                      0,
-                                                    );
-                                                  const endPct = conicEntries
-                                                    .slice(0, i + 1)
-                                                    .reduce(
-                                                      (a, ee) =>
-                                                        a +
-                                                        (total > 0
-                                                          ? (ee[1] / total) *
-                                                            100
-                                                          : 0),
-                                                      0,
-                                                    );
-                                                  return `${color} ${startPct}% ${endPct}%`;
-                                                })
-                                                .join(", ")})`
-                                            : "#cbd5e1",
-                                      }}
-                                    >
-                                      <div className="donut-center">
-                                        <span className="donut-number">
-                                          {total}
-                                        </span>
-                                        <span className="donut-label">
-                                          Days
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="donut-chart-legend">
-                                    {entries.map(([type, days]) => {
-                                      const pct =
-                                        total > 0
-                                          ? Math.round((days / total) * 100)
-                                          : 0;
-                                      const color =
-                                        TYPE_COLORS[type] || "#64748b";
-                                      return (
-                                        <div key={type} className="legend-row">
-                                          <span
-                                            className="legend-indicator"
-                                            style={{ backgroundColor: color }}
-                                          />
-                                          <span className="legend-label">
-                                            {type} — {days} days — {pct}%
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
+                <div 
+                  className="profile-hero-card" 
+                  style={{ 
+                    marginBottom: "24px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "20px",
+                    padding: "20px",
+                    background: "var(--bg-card, #ffffff)",
+                    borderRadius: "16px",
+                    border: "1.5px solid var(--border-color, #e2e8f0)"
+                  }}
+                >
+                  <div
+                    className="popup-employee-initials"
+                    style={{ 
+                      backgroundColor: "#f25c05",
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontSize: "20px",
+                      fontWeight: "700"
+                    }}
+                  >
+                    {(selectedEmpReport.name || "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="popup-employee-info" style={{ flex: 1 }}>
+                    <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-main, #1e293b)" }}>{selectedEmpReport.name}</h3>
+                    <span className="popup-employee-id" style={{ fontSize: "14px", color: "var(--text-muted, #64748b)" }}>
+                      Employee ID: <strong>{selectedEmpReport.employee_id}</strong> — {selectedEmpReport.department}
+                    </span>
+                    {(reportEmpData?.employee?.designation || selectedEmpReport.designation) && (
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#f25c05",
+                          fontWeight: "600",
+                          display: "block",
+                          marginTop: "2px"
+                        }}
+                      >
+                        {reportEmpData?.employee?.designation || selectedEmpReport.designation}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4 Summary Cards */}
+                <div className="report-modal-stats-grid" style={{ marginBottom: "24px" }}>
+                  <div className="modal-stat-card entitlement-card">
+                    <span className="modal-stat-label">Total Entitlement</span>
+                    <span className="modal-stat-value">
+                      {reportEmpData
+                        ? reportEmpData.employee.totalEntitlement
+                        : selectedEmpReport.totalEntitlement}{" "}
+                      Days
+                    </span>
+                  </div>
+                  <div className="modal-stat-card used-card">
+                    <span className="modal-stat-label">Paid Leave Used</span>
+                    <span className="modal-stat-value">
+                      {reportEmpData
+                        ? reportEmpData.employee.paidLeavesTaken
+                        : selectedEmpReport.paidLeavesTaken}{" "}
+                      Days
+                    </span>
+                  </div>
+                  <div className="modal-stat-card remaining-card">
+                    <span className="modal-stat-label">Remaining Balance</span>
+                    <span className="modal-stat-value">
+                      {reportEmpData
+                        ? reportEmpData.employee.remainingBalance
+                        : selectedEmpReport.remainingBalance}{" "}
+                      Days
+                    </span>
+                  </div>
+                  <div
+                    className="modal-stat-card attendance-card"
+                    style={{ borderLeft: "4px solid #ef4444" }}
+                  >
+                    <span className="modal-stat-label">Unpaid Leave Used</span>
+                    <span className="modal-stat-value" style={{ color: "#ef4444" }}>
+                      {reportEmpData
+                        ? reportEmpData.employee.unpaidLeavesTaken
+                        : selectedEmpReport.unpaidLeavesTaken}{" "}
+                      Days
+                    </span>
+                  </div>
+                </div>
+
+                {/* Breakdown and History Row */}
+                <div 
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                    gap: "24px",
+                    marginBottom: "24px"
+                  }}
+                >
+                  {/* Left: Leave Type Breakdown */}
+                  <div
+                    style={{
+                      background: "var(--bg-card, #ffffff)",
+                      borderRadius: "16px",
+                      border: "1.5px solid var(--border-color, #e2e8f0)",
+                      padding: "20px"
+                    }}
+                  >
+                    {reportEmpData &&
+                      (() => {
+                        const total = Object.values(
+                          reportEmpData.leaveTypeUsage || {},
+                        ).reduce((a, b) => a + b, 0);
+                        if (total === 0) {
+                          return (
+                            <div className="leave-breakdown-section">
+                              <h5>Leave Type Breakdown</h5>
+                              <div className="empty-chart-message">
+                                No approved leaves recorded yet.
+                              </div>
+                            </div>
+                          );
+                        }
+                        const dist = {
+                          "Personal Leave": 0,
+                          "Medical Leave": 0,
+                          "Maternity Leave": 0,
+                          "Paternity Leave": 0,
+                          ...(reportEmpData.leaveTypeUsage || {}),
+                        };
+                        const TYPE_COLORS = {
+                          "Personal Leave": "#f25c05",
+                          "Medical Leave": "#4f46e5",
+                          "Maternity Leave": "#10b981",
+                          "Paternity Leave": "#e11d48",
+                        };
+                        const entries = Object.entries(dist);
+                        const conicEntries = entries.filter(
+                          (e) => e[1] > 0,
+                        );
+                        return (
+                          <div className="leave-breakdown-section">
+                            <h5>Leave Type Breakdown</h5>
+                            <div className="breakdown-chart-flex">
+                              <div className="donut-chart-container">
+                                <div
+                                  className="donut-chart"
+                                  style={{
+                                    background:
+                                      conicEntries.length > 0
+                                        ? `conic-gradient(${conicEntries
+                                            .map((e, i) => {
+                                              const color =
+                                                TYPE_COLORS[e[0]] ||
+                                                "#64748b";
+                                              const startPct = conicEntries
+                                                .slice(0, i)
+                                                .reduce(
+                                                  (a, ee) =>
+                                                    a +
+                                                    (total > 0
+                                                      ? (ee[1] / total) *
+                                                        100
+                                                      : 0),
+                                                  0,
+                                                );
+                                              const endPct = conicEntries
+                                                .slice(0, i + 1)
+                                                .reduce(
+                                                  (a, ee) =>
+                                                    a +
+                                                    (total > 0
+                                                      ? (ee[1] / total) *
+                                                        100
+                                                      : 0),
+                                                  0,
+                                                );
+                                              return `${color} ${startPct}% ${endPct}%`;
+                                            })
+                                            .join(", ")})`
+                                        : "#cbd5e1",
+                                  }}
+                                >
+                                  <div className="donut-center">
+                                    <span className="donut-number">
+                                      {total}
+                                    </span>
+                                    <span className="donut-label">
+                                      Days
+                                    </span>
                                   </div>
                                 </div>
                               </div>
-                            );
-                          })()}
-
-                        {/* Recent Leave History from real backend */}
-                        {reportEmpData && (
-                          <div className="modal-history-section">
-                            <h5>Recent Leave History</h5>
-                            <div className="modal-history-list">
-                              {(reportEmpData.history || []).length === 0 ? (
-                                <p className="empty-history-text">
-                                  No leave history records found.
-                                </p>
-                              ) : (
-                                reportEmpData.history.map((hist, idx) => (
-                                  <div
-                                    key={hist.id || idx}
-                                    className="history-list-item"
-                                  >
-                                    <div className="item-meta">
-                                      <span className="history-item-dates">
-                                        {hist.start_date} — {hist.end_date}
-                                      </span>
-                                      <span className="history-item-type">
-                                        {hist.leave_type}
-                                      </span>
-                                    </div>
-                                    <div className="item-status-reason">
+                              <div className="donut-chart-legend">
+                                {entries.map(([type, days]) => {
+                                  const pct =
+                                    total > 0
+                                      ? Math.round((days / total) * 100)
+                                      : 0;
+                                  const color =
+                                    TYPE_COLORS[type] || "#64748b";
+                                  return (
+                                    <div key={type} className="legend-row">
                                       <span
-                                        className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}
-                                      >
-                                        {hist.status}
+                                        className="legend-indicator"
+                                        style={{ backgroundColor: color }}
+                                      />
+                                      <span className="legend-label">
+                                        {type} — {days} days — {pct}%
                                       </span>
-                                      <p className="history-item-reason">
-                                        {hist.reason}
-                                      </p>
                                     </div>
-                                  </div>
-                                ))
-                              )}
+                                  );
+                                })}
+                              </div>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        );
+                      })()}
                   </div>
-                )}
+
+                  {/* Right: Recent Leave History */}
+                  <div
+                    style={{
+                      background: "var(--bg-card, #ffffff)",
+                      borderRadius: "16px",
+                      border: "1.5px solid var(--border-color, #e2e8f0)",
+                      padding: "20px"
+                    }}
+                  >
+                    {reportEmpData && (
+                      <div className="modal-history-section" style={{ height: "100%" }}>
+                        <h5>Recent Leave History</h5>
+                        <div className="modal-history-list" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                          {(reportEmpData.history || []).length === 0 ? (
+                            <p className="empty-history-text">
+                              No leave history records found.
+                            </p>
+                          ) : (
+                            reportEmpData.history.map((hist, idx) => (
+                              <div
+                                key={hist.id || idx}
+                                className="history-list-item"
+                                style={{
+                                  padding: "12px",
+                                  borderBottom: "1px solid var(--border-color, #e2e8f0)",
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                <div 
+                                  className="item-meta"
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    marginBottom: "6px",
+                                  }}
+                                >
+                                  <span className="history-item-dates" style={{ fontWeight: "600", fontSize: "13px" }}>
+                                    {formatDateNicely(hist.start_date)} — {formatDateNicely(hist.end_date)}
+                                  </span>
+                                  <span className="history-item-type" style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", backgroundColor: "#f1f5f9", color: "#475569", fontWeight: "600" }}>
+                                    {hist.leave_type}
+                                  </span>
+                                </div>
+                                <div className="item-status-reason" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                  <span
+                                    className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}
+                                  >
+                                    {hist.status}
+                                  </span>
+                                  <p className="history-item-reason" style={{ margin: 0, fontSize: "12px", color: "#475569" }}>
+                                    {hist.reason || "—"}
+                                  </p>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
+
             {activeView === "employee-leave-history" && historyEmpData && (
               <div className="employee-report-content">
                 <div className="section-title">
