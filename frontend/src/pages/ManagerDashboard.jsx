@@ -2747,26 +2747,40 @@ function ManagerDashboard({ onLogout }) {
                                 msg.includes("Maternity") ||
                                 msg.includes("Monthly");
 
-                              if (isBenefitBreakdown) {
+                              if (isSpecialLeave) {
+                                // Compact single badge for Maternity / Paternity
+                                const unpaidVal = request.unpaid_days ?? 0;
+                                const compactText = isMaternity
+                                  ? `+182 Paid Maternity • ${unpaidVal} Unpaid`
+                                  : `+15 Paid Paternity • ${unpaidVal} Unpaid`;
+                                const specialBadgeStyle = isMaternity
+                                  ? { backgroundColor: "#fdf2f8", color: "#db2777", border: "1px solid #f9a8d4" }
+                                  : { backgroundColor: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
+                                badges.push(
+                                  <span
+                                    key="special-compact-badge"
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      padding: "3px 9px",
+                                      borderRadius: "999px",
+                                      fontSize: "11px",
+                                      fontWeight: "700",
+                                      letterSpacing: "0.02em",
+                                      ...specialBadgeStyle,
+                                    }}
+                                  >
+                                    {compactText}
+                                  </span>,
+                                );
+                              } else if (isBenefitBreakdown) {
                                 const parts = msg
                                   .split("+")
                                   .map((p) => p.trim());
                                 parts.forEach((part, idx) => {
                                   let badgeStyle = {};
 
-                                  if (part.includes("Paternity")) {
-                                    badgeStyle = {
-                                      backgroundColor: "#f5f3ff",
-                                      color: "#7c3aed",
-                                      border: "1px solid #ddd6fe",
-                                    };
-                                  } else if (part.includes("Maternity")) {
-                                    badgeStyle = {
-                                      backgroundColor: "#fdf2f8",
-                                      color: "#db2777",
-                                      border: "1px solid #f9a8d4",
-                                    };
-                                  } else if (part.includes("Monthly")) {
+                                  if (part.includes("Monthly")) {
                                     badgeStyle = {
                                       backgroundColor: "#eff6ff",
                                       color: "#1d4ed8",
@@ -2992,18 +3006,11 @@ function ManagerDashboard({ onLogout }) {
                                       <span
                                         style={{
                                           fontSize: "11px",
-                                          color: isMaternity ? "#db2777" : "#7c3aed",
-                                          fontWeight: "700",
-                                          background: isMaternity ? "#fdf2f8" : "#f5f3ff",
-                                          border: isMaternity ? "1px solid #f9a8d4" : "1px solid #ddd6fe",
-                                          borderRadius: "6px",
-                                          padding: "2px 6px",
-                                          marginTop: "2px",
-                                          display: "inline-block",
-                                          width: "max-content"
+                                          color: "#64748b",
+                                          fontWeight: "600",
                                         }}
                                       >
-                                        {formatMaternityPaternityText()}
+                                        ({request.paid_days} Paid + {request.unpaid_days} Unpaid)
                                       </span>
                                     )}
                                     {!isSpecialLeave &&
