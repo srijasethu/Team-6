@@ -53,7 +53,7 @@ const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
   return new Date(dateString).toLocaleDateString("en-GB", {
     day: "2-digit",
-    month: "long",
+    month: "short",
     year: "numeric",
   });
 };
@@ -75,7 +75,7 @@ const formatDateNicely = (dateStr) => {
   if (isNaN(dateObj.getTime())) return dateStr;
   return dateObj.toLocaleDateString("en-GB", {
     day: "2-digit",
-    month: "long",
+    month: "short",
     year: "numeric",
   });
 };
@@ -1031,10 +1031,10 @@ function ManagerDashboard({ onLogout }) {
       [
         "Joining Date",
         employee.joining_date
-          ? new Date(employee.joining_date).toLocaleDateString("en-US", {
+          ? new Date(employee.joining_date).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
             year: "numeric",
-            month: "long",
-            day: "numeric",
           })
           : "N/A",
       ],
@@ -1251,7 +1251,7 @@ function ManagerDashboard({ onLogout }) {
     doc.text(
       new Date().toLocaleDateString("en-GB", {
         day: "2-digit",
-        month: "long",
+        month: "short",
         year: "numeric",
       }) +
       " at " +
@@ -5249,7 +5249,7 @@ function ManagerDashboard({ onLogout }) {
                               );
                               return d.toLocaleDateString("en-GB", {
                                 day: "2-digit",
-                                month: "long",
+                                month: "short",
                                 year: "numeric",
                               });
                             }

@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
@@ -696,8 +696,8 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     showMonthDropdown
                     showYearDropdown
                     dropdownMode="select"
-                    dateFormat="dd-MM-yyyy"
-                    placeholderText="DD-MM-YYYY"
+                    dateFormat="dd MMM yyyy"
+                    placeholderText="DD MMM YYYY"
                     className="datepicker-input"
                     popperPlacement="bottom-start"
                     showPopperArrow={false}
@@ -738,8 +738,8 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     showMonthDropdown
                     showYearDropdown
                     dropdownMode="select"
-                    dateFormat="dd-MM-yyyy"
-                    placeholderText="DD-MM-YYYY"
+                    dateFormat="dd MMM yyyy"
+                    placeholderText="DD MMM YYYY"
                     className="datepicker-input"
                     popperPlacement="bottom-start"
                     showPopperArrow={false}
@@ -1843,14 +1843,14 @@ function PolicyNote({ children }) {
   );
 }
 
-// Format ISO date → "22 June 2026"
+// Format ISO date → "22 Jun 2026"
 function fmtDate(raw) {
   if (!raw) return "—";
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   return d.toLocaleDateString("en-GB", {
     day: "2-digit",
-    month: "long",
+    month: "short",
     year: "numeric",
   });
 }
@@ -3810,7 +3810,7 @@ function LeaveSummaryView() {
                 Date:{" "}
                 {selectedCalDate.toLocaleDateString("en-GB", {
                   day: "2-digit",
-                  month: "long",
+                  month: "short",
                   year: "numeric",
                 })}
               </div>
