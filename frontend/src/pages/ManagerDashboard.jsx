@@ -4108,7 +4108,8 @@ function ManagerDashboard({ onLogout }) {
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
                     gap: "24px",
-                    marginBottom: "24px"
+                    marginBottom: "24px",
+                    alignItems: "stretch"
                   }}
                 >
                   {/* Left: Leave Type Breakdown */}
@@ -4117,7 +4118,11 @@ function ManagerDashboard({ onLogout }) {
                       background: "var(--bg-card, #ffffff)",
                       borderRadius: "16px",
                       border: "1.5px solid var(--border-color, #e2e8f0)",
-                      padding: "20px"
+                      padding: "24px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      flexGrow: 1
                     }}
                   >
                     {reportEmpData &&
@@ -4127,9 +4132,9 @@ function ManagerDashboard({ onLogout }) {
                         ).reduce((a, b) => a + b, 0);
                         if (total === 0) {
                           return (
-                            <div className="leave-breakdown-section">
-                              <h5>Leave Type Breakdown</h5>
-                              <div className="empty-chart-message">
+                            <div className="leave-breakdown-section" style={{ border: "none", background: "none", padding: 0, margin: 0, height: "100%", display: "flex", flexDirection: "column" }}>
+                              <h5 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>Leave Type Breakdown</h5>
+                              <div className="empty-chart-message" style={{ flexGrow: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 No approved leaves recorded yet.
                               </div>
                             </div>
@@ -4153,13 +4158,21 @@ function ManagerDashboard({ onLogout }) {
                           (e) => e[1] > 0,
                         );
                         return (
-                          <div className="leave-breakdown-section">
-                            <h5>Leave Type Breakdown</h5>
-                            <div className="breakdown-chart-flex">
-                              <div className="donut-chart-container">
+                          <div className="leave-breakdown-section" style={{ border: "none", background: "none", padding: 0, margin: 0, height: "100%", display: "flex", flexDirection: "column" }}>
+                            <h5 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>Leave Type Breakdown</h5>
+                            <div className="breakdown-chart-flex" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "32px", flexGrow: 1, padding: "10px 0" }}>
+                              <div className="donut-chart-container" style={{ flexShrink: 0 }}>
                                 <div
                                   className="donut-chart"
                                   style={{
+                                    width: "185px",
+                                    height: "185px",
+                                    borderRadius: "50%",
+                                    position: "relative",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    boxShadow: "0 4px 14px rgba(0, 0, 0, 0.08)",
                                     background:
                                       conicEntries.length > 0
                                         ? `conic-gradient(${conicEntries
@@ -4195,17 +4208,17 @@ function ManagerDashboard({ onLogout }) {
                                         : "#cbd5e1",
                                   }}
                                 >
-                                  <div className="donut-center">
-                                    <span className="donut-number">
+                                  <div className="donut-center" style={{ width: "130px", height: "130px", borderRadius: "50%", background: "#ffffff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 8px rgba(0, 0, 0, 0.06)" }}>
+                                    <span className="donut-number" style={{ fontSize: "32px", fontWeight: "800", color: "#0f172a" }}>
                                       {total}
                                     </span>
-                                    <span className="donut-label">
+                                    <span className="donut-label" style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                                       Days
                                     </span>
                                   </div>
                                 </div>
                               </div>
-                              <div className="donut-chart-legend">
+                              <div className="donut-chart-legend" style={{ display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1, minWidth: "160px" }}>
                                 {entries.map(([type, days]) => {
                                   const pct =
                                     total > 0
@@ -4214,12 +4227,12 @@ function ManagerDashboard({ onLogout }) {
                                   const color =
                                     TYPE_COLORS[type] || "#64748b";
                                   return (
-                                    <div key={type} className="legend-row">
+                                    <div key={type} className="legend-row" style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px" }}>
                                       <span
                                         className="legend-indicator"
-                                        style={{ backgroundColor: color }}
+                                        style={{ backgroundColor: color, width: "11px", height: "11px", borderRadius: "50%", flexShrink: 0 }}
                                       />
-                                      <span className="legend-label">
+                                      <span className="legend-label" style={{ fontSize: "13.5px", fontWeight: "700", color: "#334155" }}>
                                         {type} — {days} days — {pct}%
                                       </span>
                                     </div>
@@ -4238,15 +4251,19 @@ function ManagerDashboard({ onLogout }) {
                       background: "var(--bg-card, #ffffff)",
                       borderRadius: "16px",
                       border: "1.5px solid var(--border-color, #e2e8f0)",
-                      padding: "20px"
+                      padding: "24px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      flexGrow: 1
                     }}
                   >
                     {reportEmpData && (
-                      <div className="modal-history-section" style={{ height: "100%" }}>
-                        <h5>Recent Leave History</h5>
-                        <div className="modal-history-list" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                      <div className="modal-history-section" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                        <h5 style={{ margin: "0 0 16px", fontSize: "15px", fontWeight: "800", color: "#0f172a" }}>Recent Leave History</h5>
+                        <div className="modal-history-list" style={{ maxHeight: "300px", overflowY: "auto", flexGrow: 1 }}>
                           {(reportEmpData.history || []).length === 0 ? (
-                            <p className="empty-history-text">
+                            <p className="empty-history-text" style={{ margin: "auto", textAlign: "center", color: "#94a3b8" }}>
                               No leave history records found.
                             </p>
                           ) : (
