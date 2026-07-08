@@ -2575,6 +2575,10 @@ function ManagerDashboard({ onLogout }) {
                           </tr>
                         ) : (
                           filteredLeaveRequests.map((request, index) => {
+                            const isMaternity = (request.type || "").toLowerCase().includes("maternity");
+                            const isPaternity = (request.type || "").toLowerCase().includes("paternity");
+                            const isSpecialLeave = isMaternity || isPaternity;
+
                             const getDetailBadges = () => {
                               const badges = [];
 
@@ -2754,9 +2758,29 @@ function ManagerDashboard({ onLogout }) {
                               return badges;
                             };
 
+                            const formatMaternityPaternityText = () => {
+                              const paidVal = request.paid_days ?? 0;
+                              const unpaidVal = request.unpaid_days ?? 0;
+                              if (isMaternity) {
+                                return `+182 Paid Maternity • ${unpaidVal} Unpaid`;
+                              }
+                              if (isPaternity) {
+                                return `+15 Paid Paternity • ${unpaidVal} Unpaid`;
+                              }
+                              return "";
+                            };
+
+                            const rowStyle = isSpecialLeave ? {
+                              background: isMaternity
+                                ? "linear-gradient(90deg, rgba(253, 242, 248, 0.5) 0%, rgba(255, 255, 255, 1) 100%)"
+                                : "linear-gradient(90deg, rgba(245, 243, 255, 0.5) 0%, rgba(255, 255, 255, 1) 100%)",
+                              borderLeft: isMaternity ? "4px solid #f9a8d4" : "4px solid #ddd6fe"
+                            } : {};
+
                             return (
                               <tr
                                 key={`${request.dbId || request.id}-${index}`}
+                                style={rowStyle}
                               >
                                 {/* Employee Name column */}
                                 <td>
@@ -2787,8 +2811,8 @@ function ManagerDashboard({ onLogout }) {
                                       >
                                         <FaInfoCircle />
                                       </button>
-                                      <span className="leave-type-name">
-                                        {request.type}
+                                      <span className="leave-type-name" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                        {request.type} {isSpecialLeave && <span style={{ fontSize: "12px" }}>✨</span>}
                                       </span>
                                     </div>
                                     {/* Badges row: all payment/type badges in a horizontal row */}
@@ -2853,7 +2877,7 @@ function ManagerDashboard({ onLogout }) {
                                     >
                                       {request.actual_leave_days} Actual
                                     </span>
-                                    {request.unpaid_days > 0 && (
+                                    {request.unpaid_days > 0 && !isSpecialLeave && (
                                       <span
                                         style={{
                                           fontSize: "11px",
@@ -2865,7 +2889,26 @@ function ManagerDashboard({ onLogout }) {
                                         {request.unpaid_days} Unpaid)
                                       </span>
                                     )}
-                                    {request.unpaid_days === 0 &&
+                                    {isSpecialLeave && (
+                                      <span
+                                        style={{
+                                          fontSize: "11px",
+                                          color: isMaternity ? "#db2777" : "#7c3aed",
+                                          fontWeight: "700",
+                                          background: isMaternity ? "#fdf2f8" : "#f5f3ff",
+                                          border: isMaternity ? "1px solid #f9a8d4" : "1px solid #ddd6fe",
+                                          borderRadius: "6px",
+                                          padding: "2px 6px",
+                                          marginTop: "2px",
+                                          display: "inline-block",
+                                          width: "max-content"
+                                        }}
+                                      >
+                                        {formatMaternityPaternityText()}
+                                      </span>
+                                    )}
+                                    {!isSpecialLeave &&
+                                      request.unpaid_days === 0 &&
                                       request.alert_message &&
                                       (() => {
                                         const msg = request.alert_message;
