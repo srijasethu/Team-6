@@ -87,7 +87,7 @@ function HistoryLoader({ empId }) {
     const fetchHistory = async () => {
       try {
         const res = await fetch(
-          `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empId}`,
+          `${API_BASE_URL}/api/manager/reports/employee/${empId}`,
         );
         const data = await res.json();
         if (data.success) {
@@ -302,7 +302,10 @@ function formatRelativeTimeManager(dateString) {
   return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
 }
 
-function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }) {
+function NotificationBellManager({
+  refreshCountTrigger,
+  setRefreshCountTrigger,
+}) {
   const [enabled, setEnabled] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
@@ -323,32 +326,48 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${activeUserId}`);
+      const sRes = await fetch(
+        `${API_BASE_URL}/api/notifications/settings/${activeUserId}`,
+      );
       const sData = await sRes.json();
       if (sData.success) setEnabled(sData.notifications_enabled);
 
-      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${activeUserId}`);
+      const cRes = await fetch(
+        `${API_BASE_URL}/api/notifications/unread-count/${activeUserId}`,
+      );
       const cData = await cRes.json();
       if (cData.success) setUnreadCount(cData.count);
-    } catch (err) { console.error("Notif settings/count error:", err); }
+    } catch (err) {
+      console.error("Notif settings/count error:", err);
+    }
   };
 
   const fetchNotificationsList = async () => {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${activeUserId}`);
+      const res = await fetch(
+        `${API_BASE_URL}/api/notifications/${activeUserId}`,
+      );
       const data = await res.json();
       if (data.success) setNotifications(data.notifications || []);
-    } catch (err) { console.error("Notif list error:", err); }
+    } catch (err) {
+      console.error("Notif list error:", err);
+    }
   };
 
-  useEffect(() => { fetchSettingsAndCount(); }, [refreshCountTrigger]);
+  useEffect(() => {
+    fetchSettingsAndCount();
+  }, [refreshCountTrigger]);
 
   useEffect(() => {
     if (dropdownOpen) {
       fetchNotificationsList();
-      if (enabled && "Notification" in window && Notification.permission === "default") {
+      if (
+        enabled &&
+        "Notification" in window &&
+        Notification.permission === "default"
+      ) {
         Notification.requestPermission();
       }
     }
@@ -379,65 +398,99 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(
+        `${API_BASE_URL}/api/notifications/toggle/${activeUserId}`,
+        { method: "PUT" },
+      );
       const data = await res.json();
       if (data.success) {
         setEnabled(data.notifications_enabled);
-        if (data.notifications_enabled && "Notification" in window) Notification.requestPermission();
-        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+        if (data.notifications_enabled && "Notification" in window)
+          Notification.requestPermission();
+        if (setRefreshCountTrigger) setRefreshCountTrigger((prev) => prev + 1);
         else fetchSettingsAndCount();
       }
-    } catch (err) { console.error("Toggle notif error:", err); }
+    } catch (err) {
+      console.error("Toggle notif error:", err);
+    }
   };
 
   const handleMarkAllRead = async () => {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(
+        `${API_BASE_URL}/api/notifications/read-all/${activeUserId}`,
+        { method: "PUT" },
+      );
       const data = await res.json();
       if (data.success) {
         setUnreadCount(0);
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
-        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+        if (setRefreshCountTrigger) setRefreshCountTrigger((prev) => prev + 1);
       }
-    } catch (err) { console.error("Mark all read error:", err); }
+    } catch (err) {
+      console.error("Mark all read error:", err);
+    }
   };
 
   const handleMarkRead = async (id) => {
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read/${id}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read/${id}`, {
+        method: "PUT",
+      });
       const data = await res.json();
       if (data.success) {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
-        setUnreadCount(prev => Math.max(0, prev - 1));
-        if (setRefreshCountTrigger) setRefreshCountTrigger(prev => prev + 1);
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)),
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        if (setRefreshCountTrigger) setRefreshCountTrigger((prev) => prev + 1);
       }
-    } catch (err) { console.error("Mark single read error:", err); }
+    } catch (err) {
+      console.error("Mark single read error:", err);
+    }
   };
 
   const [prevUnreadList, setPrevUnreadList] = useState([]);
   useEffect(() => {
     if (enabled && notifications.length > 0) {
-      const currentUnreads = notifications.filter(n => !n.is_read);
-      const newUnreads = currentUnreads.filter(n => !prevUnreadList.some(p => p.id === n.id));
-      if (newUnreads.length > 0 && "Notification" in window && Notification.permission === "granted") {
-        newUnreads.forEach(n => new Notification(n.title, { body: n.message, icon: "/favicon.ico" }));
+      const currentUnreads = notifications.filter((n) => !n.is_read);
+      const newUnreads = currentUnreads.filter(
+        (n) => !prevUnreadList.some((p) => p.id === n.id),
+      );
+      if (
+        newUnreads.length > 0 &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        newUnreads.forEach(
+          (n) =>
+            new Notification(n.title, {
+              body: n.message,
+              icon: "/favicon.ico",
+            }),
+        );
       }
       setPrevUnreadList(currentUnreads);
     }
   }, [notifications, enabled]);
 
   useEffect(() => {
-    if (dropdownOpen) setPrevUnreadList(notifications.filter(n => !n.is_read));
+    if (dropdownOpen)
+      setPrevUnreadList(notifications.filter((n) => !n.is_read));
   }, [notifications, dropdownOpen]);
 
   const getNotifIcon = (type) => {
     switch (type) {
-      case "success": return <FaCheck />;
-      case "warning": return <FaExclamationTriangle />;
-      case "error": return <FaTimes />;
-      default: return <FaInfoCircle />;
+      case "success":
+        return <FaCheck />;
+      case "warning":
+        return <FaExclamationTriangle />;
+      case "error":
+        return <FaTimes />;
+      default:
+        return <FaInfoCircle />;
     }
   };
 
@@ -445,8 +498,8 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     <div className="notification-bell-container" ref={dropdownRef}>
       <button
         type="button"
-        className={`notification-bell-btn ${!enabled ? 'muted' : ''}`}
-        onClick={() => setDropdownOpen(prev => !prev)}
+        className={`notification-bell-btn ${!enabled ? "muted" : ""}`}
+        onClick={() => setDropdownOpen((prev) => !prev)}
         title={enabled ? "View Notifications" : "Notifications Disabled"}
       >
         {enabled ? <FaBell /> : <FaBellSlash />}
@@ -460,7 +513,11 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
           <div className="notif-header">
             <h3>Notifications</h3>
             {enabled && unreadCount > 0 && (
-              <button type="button" className="notif-mark-all-btn" onClick={handleMarkAllRead}>
+              <button
+                type="button"
+                className="notif-mark-all-btn"
+                onClick={handleMarkAllRead}
+              >
                 Mark all as read
               </button>
             )}
@@ -469,7 +526,11 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
           {!enabled ? (
             <div className="notif-muted-message-box">
               <p>Notifications are turned off.</p>
-              <button type="button" className="notif-enable-btn" onClick={handleToggle}>
+              <button
+                type="button"
+                className="notif-enable-btn"
+                onClick={handleToggle}
+              >
                 Enable Notifications
               </button>
             </div>
@@ -481,19 +542,23 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
                   <span>No notifications yet.</span>
                 </div>
               ) : (
-                notifications.map(notif => (
+                notifications.map((notif) => (
                   <div
                     key={notif.id}
-                    className={`notif-card ${!notif.is_read ? 'unread' : ''}`}
+                    className={`notif-card ${!notif.is_read ? "unread" : ""}`}
                     onClick={() => !notif.is_read && handleMarkRead(notif.id)}
                   >
-                    <div className={`notif-icon-container ${notif.type || 'info'}`}>
+                    <div
+                      className={`notif-icon-container ${notif.type || "info"}`}
+                    >
                       {getNotifIcon(notif.type)}
                     </div>
                     <div className="notif-body">
                       <h4 className="notif-title">{notif.title}</h4>
                       <p className="notif-message">{notif.message}</p>
-                      <span className="notif-time">{formatRelativeTimeManager(notif.created_at)}</span>
+                      <span className="notif-time">
+                        {formatRelativeTimeManager(notif.created_at)}
+                      </span>
                     </div>
                   </div>
                 ))
@@ -507,6 +572,7 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
 }
 
 function ManagerDashboard({ onLogout }) {
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("managerActiveView") || "profile";
   });
@@ -568,7 +634,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays");
+      const response = await fetch("${API_BASE_URL}/api/holidays");
       const data = await response.json();
       if (data.success) {
         setHolidaysList(data.holidays || []);
@@ -647,8 +713,8 @@ function ManagerDashboard({ onLogout }) {
       if (endDate) params.append("endDate", endDate);
       const qs = params.toString() ? `?${params.toString()}` : "";
       const [summaryRes, empRes] = await Promise.all([
-        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/summary${qs}`),
-        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/employees${qs}`),
+        fetch(`${API_BASE_URL}/api/manager/reports/summary${qs}`),
+        fetch(`${API_BASE_URL}/api/manager/reports/employees${qs}`),
       ]);
       const summaryData = await summaryRes.json();
       const empData = await empRes.json();
@@ -666,7 +732,7 @@ function ManagerDashboard({ onLogout }) {
     setReportEmpDataLoading(true);
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empDbId}`,
+        `${API_BASE_URL}/api/manager/reports/employee/${empDbId}`,
       );
       const data = await response.json();
       if (data.success) {
@@ -1018,23 +1084,33 @@ function ManagerDashboard({ onLogout }) {
   const [notifToggleEnabled, setNotifToggleEnabled] = useState(true);
   useEffect(() => {
     if (!managerLoggedInUser?.id) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${managerLoggedInUser.id}`)
-      .then(r => r.json())
-      .then(data => { if (data.success) setNotifToggleEnabled(data.notifications_enabled); })
+    fetch(
+      `${API_BASE_URL}/api/notifications/settings/${managerLoggedInUser.id}`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) setNotifToggleEnabled(data.notifications_enabled);
+      })
       .catch(() => {});
   }, [notifRefreshTrigger]);
 
   const handleManagerNotifToggle = async () => {
     if (!managerLoggedInUser?.id) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${managerLoggedInUser.id}`, { method: 'PUT' });
+      const res = await fetch(
+        `${API_BASE_URL}/api/notifications/toggle/${managerLoggedInUser.id}`,
+        { method: "PUT" },
+      );
       const data = await res.json();
       if (data.success) {
         setNotifToggleEnabled(data.notifications_enabled);
-        if (data.notifications_enabled && 'Notification' in window) Notification.requestPermission();
-        setNotifRefreshTrigger(prev => prev + 1);
+        if (data.notifications_enabled && "Notification" in window)
+          Notification.requestPermission();
+        setNotifRefreshTrigger((prev) => prev + 1);
       }
-    } catch (err) { console.error('Manager notif toggle error:', err); }
+    } catch (err) {
+      console.error("Manager notif toggle error:", err);
+    }
   };
 
   useEffect(() => {
@@ -1109,7 +1185,7 @@ function ManagerDashboard({ onLogout }) {
     try {
       showToast("Uploading profile photo...", "info");
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/upload-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/upload-photo/${user.id}`,
         {
           method: "PUT",
           body: formData,
@@ -1138,7 +1214,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/remove-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/remove-photo/${user.id}`,
         {
           method: "DELETE",
         },
@@ -1280,7 +1356,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchManagerLeaves = async () => {
     setLeavesLoading(true);
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/manager/leaves");
+      const response = await fetch("${API_BASE_URL}/api/manager/leaves");
       const data = await response.json();
       console.log("Manager leaves:", data.leaves);
       if (data.success) {
@@ -1330,7 +1406,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/update/${user.id}`,
+        `${API_BASE_URL}/api/profile/update/${user.id}`,
         {
           method: "PUT",
           headers: {
@@ -1395,7 +1471,7 @@ function ManagerDashboard({ onLogout }) {
   const handleApproveRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/approve/${dbId}`,
+        `${API_BASE_URL}/api/manager/approve/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1423,7 +1499,7 @@ function ManagerDashboard({ onLogout }) {
   const handleRejectRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/reject/${dbId}`,
+        `${API_BASE_URL}/api/manager/reject/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1452,7 +1528,7 @@ function ManagerDashboard({ onLogout }) {
     e.preventDefault();
     setAddError("");
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays", {
+      const response = await fetch("${API_BASE_URL}/api/holidays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2041,13 +2117,41 @@ function ManagerDashboard({ onLogout }) {
                   </div>
 
                   {/* ── Notification Settings Card ──── */}
-                  <p className="account-details-heading" style={{ marginTop: '28px' }}>System Settings</p>
+                  <p
+                    className="account-details-heading"
+                    style={{ marginTop: "28px" }}
+                  >
+                    System Settings
+                  </p>
                   <div className="settings-section-card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "16px",
+                      }}
+                    >
                       <div>
-                        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700' }}>Desktop Notifications</h4>
-                        <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
-                          Receive browser alerts for leave requests, approvals, rejections, and holiday announcements.
+                        <h4
+                          style={{
+                            margin: 0,
+                            fontSize: "15px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          Desktop Notifications
+                        </h4>
+                        <p
+                          style={{
+                            margin: "5px 0 0",
+                            fontSize: "13px",
+                            color: "#64748b",
+                            lineHeight: "1.5",
+                          }}
+                        >
+                          Receive browser alerts for leave requests, approvals,
+                          rejections, and holiday announcements.
                         </p>
                       </div>
                       <label className="toggle-switch-label">
@@ -2060,7 +2164,6 @@ function ManagerDashboard({ onLogout }) {
                       </label>
                     </div>
                   </div>
-
                 </div>
               </>
             )}
@@ -2250,13 +2353,20 @@ function ManagerDashboard({ onLogout }) {
                   <div className="requests-table-scroll">
                     <table className="requests-table">
                       <colgroup>
-                        <col style={{ width: "18%" }} />{/* Employee Name */}
-                        <col style={{ width: "11%" }} />{/* Employee ID */}
-                        <col style={{ width: "24%" }} />{/* Leave Type */}
-                        <col style={{ width: "20%" }} />{/* Date Range */}
-                        <col style={{ width: "11%" }} />{/* Days */}
-                        <col style={{ width: "9%" }} />{/* Status */}
-                        <col style={{ width: "7%" }} />{/* Action */}
+                        <col style={{ width: "18%" }} />
+                        {/* Employee Name */}
+                        <col style={{ width: "11%" }} />
+                        {/* Employee ID */}
+                        <col style={{ width: "24%" }} />
+                        {/* Leave Type */}
+                        <col style={{ width: "20%" }} />
+                        {/* Date Range */}
+                        <col style={{ width: "11%" }} />
+                        {/* Days */}
+                        <col style={{ width: "9%" }} />
+                        {/* Status */}
+                        <col style={{ width: "7%" }} />
+                        {/* Action */}
                       </colgroup>
                       <thead>
                         <tr>
@@ -2270,467 +2380,502 @@ function ManagerDashboard({ onLogout }) {
                         </tr>
                       </thead>
                       <tbody>
-                      {leavesLoading ? (
-                        <tr className="manager-loading-row">
-                          <td colSpan={7}>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "10px",
-                                padding: "32px 0",
-                                color: "#ea580c",
-                                fontWeight: "600",
-                              }}
-                            >
-                              <svg
-                                width="36"
-                                height="36"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#ea580c"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 6v6l4 2" />
-                              </svg>
-                              <span>Loading leave requests...</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : filteredLeaveRequests.length === 0 ? (
-                        <tr className="manager-empty-row">
-                          <td colSpan={7}>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "12px",
-                                padding: "48px 0",
-                                color: "#94a3b8",
-                              }}
-                            >
-                              <svg
-                                width="52"
-                                height="52"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#cbd5e1"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M9 11l3 3L22 4" />
-                                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                              </svg>
+                        {leavesLoading ? (
+                          <tr className="manager-loading-row">
+                            <td colSpan={7}>
                               <div
                                 style={{
-                                  fontWeight: "700",
-                                  fontSize: "15px",
-                                  color: "#64748b",
-                                }}
-                              >
-                                No leave requests available
-                              </div>
-                              <div
-                                style={{ fontSize: "13px", color: "#94a3b8" }}
-                              >
-                                Pending employee requests will appear here.
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredLeaveRequests.map((request, index) => {
-                          const getDetailBadges = () => {
-                            const badges = [];
-
-                            // 1. Primary payment type badge (Paid / Partly Paid / Unpaid)
-                            const pType = request.payment_type || "Paid";
-                            let primaryBadgeStyle = {};
-                            let dotColor = "";
-
-                            if (pType === "Paid") {
-                              primaryBadgeStyle = {
-                                backgroundColor: "#f0fdf4",
-                                color: "#15803d",
-                                border: "1px solid #86efac",
-                              };
-                              dotColor = "#22c55e";
-                            } else if (pType === "Partly Paid") {
-                              // Orange style per user request
-                              primaryBadgeStyle = {
-                                backgroundColor: "#fff7ed",
-                                color: "#c2410c",
-                                border: "1px solid #fed7aa",
-                              };
-                              dotColor = "#f97316";
-                            } else {
-                              // Unpaid
-                              primaryBadgeStyle = {
-                                backgroundColor: "#fef2f2",
-                                color: "#b91c1c",
-                                border: "1px solid #fecaca",
-                              };
-                              dotColor = "#ef4444";
-                            }
-
-                            badges.push(
-                              <span
-                                key="primary-badge"
-                                style={{
-                                  display: "inline-flex",
+                                  display: "flex",
+                                  flexDirection: "column",
                                   alignItems: "center",
-                                  gap: "4px",
-                                  padding: "3px 9px",
-                                  borderRadius: "999px",
-                                  fontSize: "11px",
-                                  fontWeight: "700",
-                                  letterSpacing: "0.02em",
-                                  ...primaryBadgeStyle,
+                                  gap: "10px",
+                                  padding: "32px 0",
+                                  color: "#ea580c",
+                                  fontWeight: "600",
                                 }}
                               >
-                                <span
-                                  style={{
-                                    width: "6px",
-                                    height: "6px",
-                                    borderRadius: "50%",
-                                    background: dotColor,
-                                    flexShrink: 0,
-                                    display: "inline-block",
-                                  }}
-                                />
-                                {pType}
-                              </span>
-                            );
-
-                            // 2. Secondary/Breakdown badges
-                            const msg = request.alert_message || "";
-                            const isBenefitBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-
-                            if (isBenefitBreakdown) {
-                              const parts = msg.split("+").map(p => p.trim());
-                              parts.forEach((part, idx) => {
-                                let badgeStyle = {};
-                                
-                                if (part.includes("Paternity")) {
-                                  badgeStyle = {
-                                    backgroundColor: "#f5f3ff",
-                                    color: "#7c3aed",
-                                    border: "1px solid #ddd6fe",
-                                  };
-                                } else if (part.includes("Maternity")) {
-                                  badgeStyle = {
-                                    backgroundColor: "#fdf2f8",
-                                    color: "#db2777",
-                                    border: "1px solid #f9a8d4",
-                                  };
-                                } else if (part.includes("Monthly")) {
-                                  badgeStyle = {
-                                    backgroundColor: "#eff6ff",
-                                    color: "#1d4ed8",
-                                    border: "1px solid #bfdbfe",
-                                  };
-                                } else {
-                                  badgeStyle = {
-                                    backgroundColor: "#fef2f2",
-                                    color: "#b91c1c",
-                                    border: "1px solid #fecaca",
-                                  };
-                                }
-
-                                badges.push(
-                                  <span
-                                    key={`benefit-badge-${idx}`}
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      padding: "3px 9px",
-                                      borderRadius: "999px",
-                                      fontSize: "11px",
-                                      fontWeight: "700",
-                                      letterSpacing: "0.02em",
-                                      ...badgeStyle,
-                                    }}
-                                  >
-                                    {part}
-                                  </span>
-                                );
-                              });
-                            } else {
-                              if (pType === "Unpaid") {
-                                badges.push(
-                                  <span
-                                    key="fully-unpaid"
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      backgroundColor: "#fff5f5",
-                                      color: "#dc2626",
-                                      border: "1px solid #fca5a5",
-                                      padding: "3px 9px",
-                                      borderRadius: "999px",
-                                      fontSize: "11px",
-                                      fontWeight: "700",
-                                    }}
-                                  >
-                                    <FaExclamationTriangle style={{ fontSize: "10px", flexShrink: 0 }} />
-                                    Fully Unpaid
-                                  </span>
-                                );
-                              } else if (pType === "Partly Paid") {
-                                badges.push(
-                                  <span
-                                    key="partly-paid-split"
-                                    style={{
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      backgroundColor: "#fff1f2",
-                                      color: "#be123c",
-                                      border: "1px solid #fda4af",
-                                      padding: "3px 9px",
-                                      borderRadius: "999px",
-                                      fontSize: "11px",
-                                      fontWeight: "700",
-                                    }}
-                                  >
-                                    <FaExclamationTriangle style={{ fontSize: "10px", flexShrink: 0 }} />
-                                    {`${request.paid_days} Paid + ${request.unpaid_days} Unpaid`}
-                                  </span>
-                                );
-                              }
-                            }
-
-                            return badges;
-                          };
-
-                          return (
-                            <tr key={`${request.dbId || request.id}-${index}`}>
-                              {/* Employee Name column */}
-                              <td>
-                                <div className="employee-info-cell">
-                                  <span className="employee-name-label">
-                                    {request.name}
-                                  </span>
-                                </div>
-                              </td>
-                              {/* Employee ID column */}
-                              <td className="td-employee-id">
-                                <span className="employee-id-badge">
-                                  {request.id}
-                                </span>
-                              </td>
-                              {/* Leave Type column */}
-                              <td className="leave-type-col-td">
-                                <div className="leave-type-col-wrapper">
-                                  {/* Title row: info icon + leave type name */}
-                                  <div className="leave-type-title-row">
-                                    <button
-                                      className="info-icon-btn"
-                                      type="button"
-                                      onClick={() => setSelectedRequest(request)}
-                                      aria-label="Show leave description"
-                                    >
-                                      <FaInfoCircle />
-                                    </button>
-                                    <span className="leave-type-name">
-                                      {request.type}
-                                    </span>
-                                  </div>
-                                  {/* Badges row: all payment/type badges in a horizontal row */}
-                                  <div className="leave-type-badges-row">
-                                    {getDetailBadges()}
-                                  </div>
-                                </div>
-                              </td>
-                              {/* Date Range column */}
-                              <td>
-                                <span className="date-range-label">
-                                  {(() => {
-                                    const parts = (request.dates || "").split(
-                                      " - "
-                                    );
-                                    if (parts.length === 2) {
-                                      return `${formatDateNicely(parts[0].trim())} – ${formatDateNicely(parts[1].trim())}`;
-                                    }
-                                    return request.dates;
-                                  })()}
-                                </span>
-                              </td>
-                              {/* Days column */}
-                              <td>
+                                <svg
+                                  width="36"
+                                  height="36"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#ea580c"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="M12 6v6l4 2" />
+                                </svg>
+                                <span>Loading leave requests...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : filteredLeaveRequests.length === 0 ? (
+                          <tr className="manager-empty-row">
+                            <td colSpan={7}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  gap: "12px",
+                                  padding: "48px 0",
+                                  color: "#94a3b8",
+                                }}
+                              >
+                                <svg
+                                  width="52"
+                                  height="52"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#cbd5e1"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M9 11l3 3L22 4" />
+                                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                                </svg>
                                 <div
                                   style={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: "2px",
+                                    fontWeight: "700",
+                                    fontSize: "15px",
+                                    color: "#64748b",
+                                  }}
+                                >
+                                  No leave requests available
+                                </div>
+                                <div
+                                  style={{ fontSize: "13px", color: "#94a3b8" }}
+                                >
+                                  Pending employee requests will appear here.
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredLeaveRequests.map((request, index) => {
+                            const getDetailBadges = () => {
+                              const badges = [];
+
+                              // 1. Primary payment type badge (Paid / Partly Paid / Unpaid)
+                              const pType = request.payment_type || "Paid";
+                              let primaryBadgeStyle = {};
+                              let dotColor = "";
+
+                              if (pType === "Paid") {
+                                primaryBadgeStyle = {
+                                  backgroundColor: "#f0fdf4",
+                                  color: "#15803d",
+                                  border: "1px solid #86efac",
+                                };
+                                dotColor = "#22c55e";
+                              } else if (pType === "Partly Paid") {
+                                // Orange style per user request
+                                primaryBadgeStyle = {
+                                  backgroundColor: "#fff7ed",
+                                  color: "#c2410c",
+                                  border: "1px solid #fed7aa",
+                                };
+                                dotColor = "#f97316";
+                              } else {
+                                // Unpaid
+                                primaryBadgeStyle = {
+                                  backgroundColor: "#fef2f2",
+                                  color: "#b91c1c",
+                                  border: "1px solid #fecaca",
+                                };
+                                dotColor = "#ef4444";
+                              }
+
+                              badges.push(
+                                <span
+                                  key="primary-badge"
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    padding: "3px 9px",
+                                    borderRadius: "999px",
+                                    fontSize: "11px",
+                                    fontWeight: "700",
+                                    letterSpacing: "0.02em",
+                                    ...primaryBadgeStyle,
                                   }}
                                 >
                                   <span
-                                    className="days-label"
-                                    style={{ display: "block" }}
-                                    title="Total calendar days selected"
-                                  >
-                                    {request.total_days || request.leaveDays}{" "}
-                                    {(request.total_days || request.leaveDays) ===
-                                    1
-                                      ? "Day"
-                                      : "Days"}
-                                  </span>
-                                  {request.excluded_days > 0 && (
-                                    <span
-                                      style={{
-                                        fontSize: "11px",
-                                        color: "#ea580c",
-                                        fontWeight: "600",
-                                      }}
-                                      title="Sundays and holidays excluded"
-                                    >
-                                      −{request.excluded_days} Excl.
-                                    </span>
-                                  )}
-                                  <span
                                     style={{
-                                      fontSize: "11px",
-                                      color: "#2563eb",
-                                      fontWeight: "600",
+                                      width: "6px",
+                                      height: "6px",
+                                      borderRadius: "50%",
+                                      background: dotColor,
+                                      flexShrink: 0,
+                                      display: "inline-block",
                                     }}
-                                    title="Actual working leave days"
-                                  >
-                                    {request.actual_leave_days} Actual
-                                  </span>
-                                  {request.unpaid_days > 0 && (
+                                  />
+                                  {pType}
+                                </span>,
+                              );
+
+                              // 2. Secondary/Breakdown badges
+                              const msg = request.alert_message || "";
+                              const isBenefitBreakdown =
+                                msg.includes("Paternity") ||
+                                msg.includes("Maternity") ||
+                                msg.includes("Monthly");
+
+                              if (isBenefitBreakdown) {
+                                const parts = msg
+                                  .split("+")
+                                  .map((p) => p.trim());
+                                parts.forEach((part, idx) => {
+                                  let badgeStyle = {};
+
+                                  if (part.includes("Paternity")) {
+                                    badgeStyle = {
+                                      backgroundColor: "#f5f3ff",
+                                      color: "#7c3aed",
+                                      border: "1px solid #ddd6fe",
+                                    };
+                                  } else if (part.includes("Maternity")) {
+                                    badgeStyle = {
+                                      backgroundColor: "#fdf2f8",
+                                      color: "#db2777",
+                                      border: "1px solid #f9a8d4",
+                                    };
+                                  } else if (part.includes("Monthly")) {
+                                    badgeStyle = {
+                                      backgroundColor: "#eff6ff",
+                                      color: "#1d4ed8",
+                                      border: "1px solid #bfdbfe",
+                                    };
+                                  } else {
+                                    badgeStyle = {
+                                      backgroundColor: "#fef2f2",
+                                      color: "#b91c1c",
+                                      border: "1px solid #fecaca",
+                                    };
+                                  }
+
+                                  badges.push(
                                     <span
+                                      key={`benefit-badge-${idx}`}
                                       style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        padding: "3px 9px",
+                                        borderRadius: "999px",
                                         fontSize: "11px",
-                                        color: "#64748b",
-                                        fontWeight: "600",
+                                        fontWeight: "700",
+                                        letterSpacing: "0.02em",
+                                        ...badgeStyle,
                                       }}
                                     >
-                                      ({request.paid_days} Paid +{" "}
-                                      {request.unpaid_days} Unpaid)
+                                      {part}
+                                    </span>,
+                                  );
+                                });
+                              } else {
+                                if (pType === "Unpaid") {
+                                  badges.push(
+                                    <span
+                                      key="fully-unpaid"
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        backgroundColor: "#fff5f5",
+                                        color: "#dc2626",
+                                        border: "1px solid #fca5a5",
+                                        padding: "3px 9px",
+                                        borderRadius: "999px",
+                                        fontSize: "11px",
+                                        fontWeight: "700",
+                                      }}
+                                    >
+                                      <FaExclamationTriangle
+                                        style={{
+                                          fontSize: "10px",
+                                          flexShrink: 0,
+                                        }}
+                                      />
+                                      Fully Unpaid
+                                    </span>,
+                                  );
+                                } else if (pType === "Partly Paid") {
+                                  badges.push(
+                                    <span
+                                      key="partly-paid-split"
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "4px",
+                                        backgroundColor: "#fff1f2",
+                                        color: "#be123c",
+                                        border: "1px solid #fda4af",
+                                        padding: "3px 9px",
+                                        borderRadius: "999px",
+                                        fontSize: "11px",
+                                        fontWeight: "700",
+                                      }}
+                                    >
+                                      <FaExclamationTriangle
+                                        style={{
+                                          fontSize: "10px",
+                                          flexShrink: 0,
+                                        }}
+                                      />
+                                      {`${request.paid_days} Paid + ${request.unpaid_days} Unpaid`}
+                                    </span>,
+                                  );
+                                }
+                              }
+
+                              return badges;
+                            };
+
+                            return (
+                              <tr
+                                key={`${request.dbId || request.id}-${index}`}
+                              >
+                                {/* Employee Name column */}
+                                <td>
+                                  <div className="employee-info-cell">
+                                    <span className="employee-name-label">
+                                      {request.name}
                                     </span>
-                                  )}
-                                  {request.unpaid_days === 0 && request.alert_message && (() => {
-                                    const msg = request.alert_message;
-                                    const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-                                    return isBreakdown ? (
-                                      <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "600" }}>
-                                        ({msg})
-                                      </span>
-                                    ) : null;
-                                  })()}
-                                </div>
-                              </td>
-                              {/* Status column */}
-                              <td>
-                                <span
-                                  className={`approval-status-badge ${request.status.toLowerCase()}`}
-                                >
-                                  {request.status === "Pending" && (
-                                    <span className="status-dot pending-dot" />
-                                  )}
-                                  {request.status === "Approved" && (
-                                    <span className="status-dot approved-dot" />
-                                  )}
-                                  {request.status === "Rejected" && (
-                                    <span className="status-dot rejected-dot" />
-                                  )}
-                                  {request.status === "Cancelled" && (
-                                    <span className="status-dot cancelled-dot" />
-                                  )}
-                                  {request.status}
-                                </span>
-                              </td>
-                              {/* Action column */}
-                              <td className="action-col-cell">
-                                {request.status === "Pending" ? (
-                                  <div className="action-popup-wrapper">
-                                    <button
-                                      type="button"
-                                      className="action-trigger-btn"
-                                      title="Take Action"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setApprovalActionPopup(
-                                          approvalActionPopup &&
-                                            approvalActionPopup.dbId ===
-                                              request.dbId
-                                            ? null
-                                            : request
-                                        );
-                                      }}
-                                    >
-                                      Take Action
-                                    </button>
-                                    {approvalActionPopup &&
-                                      approvalActionPopup.dbId ===
-                                        request.dbId && (
-                                        <div
-                                          className="action-inline-popup"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          <div className="action-popup-arrow" />
-                                          <button
-                                            type="button"
-                                            className="popup-action-btn approve-action"
-                                            onClick={() => {
-                                              setApproveConfirmation({
-                                                show: true,
-                                                dbId: request.dbId || request.id,
-                                                requestName:
-                                                  request.name || "this employee",
-                                              });
-                                              setApprovalActionPopup(null);
-                                            }}
-                                          >
-                                            ✓ Approve
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="popup-action-btn reject-action"
-                                            onClick={() => {
-                                              setRejectConfirmation({
-                                                show: true,
-                                                dbId: request.dbId || request.id,
-                                                requestName:
-                                                  request.name || "this employee",
-                                              });
-                                              setApprovalActionPopup(null);
-                                            }}
-                                          >
-                                            ✗ Reject
-                                          </button>
-                                        </div>
-                                      )}
                                   </div>
-                                ) : request.status === "Cancelled" ? (
-                                  <span
+                                </td>
+                                {/* Employee ID column */}
+                                <td className="td-employee-id">
+                                  <span className="employee-id-badge">
+                                    {request.id}
+                                  </span>
+                                </td>
+                                {/* Leave Type column */}
+                                <td className="leave-type-col-td">
+                                  <div className="leave-type-col-wrapper">
+                                    {/* Title row: info icon + leave type name */}
+                                    <div className="leave-type-title-row">
+                                      <button
+                                        className="info-icon-btn"
+                                        type="button"
+                                        onClick={() =>
+                                          setSelectedRequest(request)
+                                        }
+                                        aria-label="Show leave description"
+                                      >
+                                        <FaInfoCircle />
+                                      </button>
+                                      <span className="leave-type-name">
+                                        {request.type}
+                                      </span>
+                                    </div>
+                                    {/* Badges row: all payment/type badges in a horizontal row */}
+                                    <div className="leave-type-badges-row">
+                                      {getDetailBadges()}
+                                    </div>
+                                  </div>
+                                </td>
+                                {/* Date Range column */}
+                                <td>
+                                  <span className="date-range-label">
+                                    {(() => {
+                                      const parts = (request.dates || "").split(
+                                        " - ",
+                                      );
+                                      if (parts.length === 2) {
+                                        return `${formatDateNicely(parts[0].trim())} – ${formatDateNicely(parts[1].trim())}`;
+                                      }
+                                      return request.dates;
+                                    })()}
+                                  </span>
+                                </td>
+                                {/* Days column */}
+                                <td>
+                                  <div
                                     style={{
-                                      color: "#64748b",
-                                      fontWeight: 600,
-                                      fontSize: "14px",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "2px",
                                     }}
                                   >
-                                    Cancelled by Employee
+                                    <span
+                                      className="days-label"
+                                      style={{ display: "block" }}
+                                      title="Total calendar days selected"
+                                    >
+                                      {request.total_days || request.leaveDays}{" "}
+                                      {(request.total_days ||
+                                        request.leaveDays) === 1
+                                        ? "Day"
+                                        : "Days"}
+                                    </span>
+                                    {request.excluded_days > 0 && (
+                                      <span
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#ea580c",
+                                          fontWeight: "600",
+                                        }}
+                                        title="Sundays and holidays excluded"
+                                      >
+                                        −{request.excluded_days} Excl.
+                                      </span>
+                                    )}
+                                    <span
+                                      style={{
+                                        fontSize: "11px",
+                                        color: "#2563eb",
+                                        fontWeight: "600",
+                                      }}
+                                      title="Actual working leave days"
+                                    >
+                                      {request.actual_leave_days} Actual
+                                    </span>
+                                    {request.unpaid_days > 0 && (
+                                      <span
+                                        style={{
+                                          fontSize: "11px",
+                                          color: "#64748b",
+                                          fontWeight: "600",
+                                        }}
+                                      >
+                                        ({request.paid_days} Paid +{" "}
+                                        {request.unpaid_days} Unpaid)
+                                      </span>
+                                    )}
+                                    {request.unpaid_days === 0 &&
+                                      request.alert_message &&
+                                      (() => {
+                                        const msg = request.alert_message;
+                                        const isBreakdown =
+                                          msg.includes("Paternity") ||
+                                          msg.includes("Maternity") ||
+                                          msg.includes("Monthly");
+                                        return isBreakdown ? (
+                                          <span
+                                            style={{
+                                              fontSize: "11px",
+                                              color: "#64748b",
+                                              fontWeight: "600",
+                                            }}
+                                          >
+                                            ({msg})
+                                          </span>
+                                        ) : null;
+                                      })()}
+                                  </div>
+                                </td>
+                                {/* Status column */}
+                                <td>
+                                  <span
+                                    className={`approval-status-badge ${request.status.toLowerCase()}`}
+                                  >
+                                    {request.status === "Pending" && (
+                                      <span className="status-dot pending-dot" />
+                                    )}
+                                    {request.status === "Approved" && (
+                                      <span className="status-dot approved-dot" />
+                                    )}
+                                    {request.status === "Rejected" && (
+                                      <span className="status-dot rejected-dot" />
+                                    )}
+                                    {request.status === "Cancelled" && (
+                                      <span className="status-dot cancelled-dot" />
+                                    )}
+                                    {request.status}
                                   </span>
-                                ) : (
-                                  "-"
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                  </div>{/* end .requests-table-scroll */}
+                                </td>
+                                {/* Action column */}
+                                <td className="action-col-cell">
+                                  {request.status === "Pending" ? (
+                                    <div className="action-popup-wrapper">
+                                      <button
+                                        type="button"
+                                        className="action-trigger-btn"
+                                        title="Take Action"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setApprovalActionPopup(
+                                            approvalActionPopup &&
+                                              approvalActionPopup.dbId ===
+                                                request.dbId
+                                              ? null
+                                              : request,
+                                          );
+                                        }}
+                                      >
+                                        Take Action
+                                      </button>
+                                      {approvalActionPopup &&
+                                        approvalActionPopup.dbId ===
+                                          request.dbId && (
+                                          <div
+                                            className="action-inline-popup"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <div className="action-popup-arrow" />
+                                            <button
+                                              type="button"
+                                              className="popup-action-btn approve-action"
+                                              onClick={() => {
+                                                setApproveConfirmation({
+                                                  show: true,
+                                                  dbId:
+                                                    request.dbId || request.id,
+                                                  requestName:
+                                                    request.name ||
+                                                    "this employee",
+                                                });
+                                                setApprovalActionPopup(null);
+                                              }}
+                                            >
+                                              ✓ Approve
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="popup-action-btn reject-action"
+                                              onClick={() => {
+                                                setRejectConfirmation({
+                                                  show: true,
+                                                  dbId:
+                                                    request.dbId || request.id,
+                                                  requestName:
+                                                    request.name ||
+                                                    "this employee",
+                                                });
+                                                setApprovalActionPopup(null);
+                                              }}
+                                            >
+                                              ✗ Reject
+                                            </button>
+                                          </div>
+                                        )}
+                                    </div>
+                                  ) : request.status === "Cancelled" ? (
+                                    <span
+                                      style={{
+                                        color: "#64748b",
+                                        fontWeight: 600,
+                                        fontSize: "14px",
+                                      }}
+                                    >
+                                      Cancelled by Employee
+                                    </span>
+                                  ) : (
+                                    "-"
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* end .requests-table-scroll */}
                   {/* Close action popup when clicking outside */}
                   {approvalActionPopup && (
                     <div
@@ -2763,13 +2908,18 @@ function ManagerDashboard({ onLogout }) {
                         </button>
                       </div>
                       <div className="popup-card-body">
-                        {((selectedRequest.payment_type === "Partly Paid" ||
-                          selectedRequest.payment_type === "Unpaid") ||
-                          (selectedRequest.alert_message && (
-                            selectedRequest.alert_message.includes("Paternity") ||
-                            selectedRequest.alert_message.includes("Maternity") ||
-                            selectedRequest.alert_message.includes("Monthly")
-                          ))) && (
+                        {(selectedRequest.payment_type === "Partly Paid" ||
+                          selectedRequest.payment_type === "Unpaid" ||
+                          (selectedRequest.alert_message &&
+                            (selectedRequest.alert_message.includes(
+                              "Paternity",
+                            ) ||
+                              selectedRequest.alert_message.includes(
+                                "Maternity",
+                              ) ||
+                              selectedRequest.alert_message.includes(
+                                "Monthly",
+                              )))) && (
                           <div
                             style={{
                               padding: "14px 16px",
@@ -2803,7 +2953,10 @@ function ManagerDashboard({ onLogout }) {
                                 style={{
                                   fontWeight: "700",
                                   fontSize: "13px",
-                                  color: selectedRequest.payment_type === "Paid" ? "#15803d" : "#be123c",
+                                  color:
+                                    selectedRequest.payment_type === "Paid"
+                                      ? "#15803d"
+                                      : "#be123c",
                                   marginBottom: "3px",
                                 }}
                               >
@@ -2827,94 +2980,147 @@ function ManagerDashboard({ onLogout }) {
                                       : "This leave is partly unpaid because the monthly paid leave limit is exceeded.")}
                                 </div>
                               )}
-                              {selectedRequest.unpaid_days > 0 && (() => {
-                                const msg = selectedRequest.alert_message || "";
-                                const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-                                if (isBreakdown) {
+                              {selectedRequest.unpaid_days > 0 &&
+                                (() => {
+                                  const msg =
+                                    selectedRequest.alert_message || "";
+                                  const isBreakdown =
+                                    msg.includes("Paternity") ||
+                                    msg.includes("Maternity") ||
+                                    msg.includes("Monthly");
+                                  if (isBreakdown) {
+                                    return (
+                                      <div
+                                        style={{
+                                          marginTop: "8px",
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: "6px",
+                                        }}
+                                      >
+                                        {msg.split(" + ").map((part, i) => {
+                                          const isUnpaid =
+                                            part.includes("Unpaid");
+                                          const isMonthly =
+                                            part.includes("Monthly");
+                                          return (
+                                            <span
+                                              key={i}
+                                              style={{
+                                                fontSize: "12px",
+                                                fontWeight: "700",
+                                                color: isUnpaid
+                                                  ? "#b91c1c"
+                                                  : isMonthly
+                                                    ? "#2563eb"
+                                                    : "#15803d",
+                                                background: isUnpaid
+                                                  ? "#fef2f2"
+                                                  : isMonthly
+                                                    ? "#eff6ff"
+                                                    : "#f0fdf4",
+                                                border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
+                                                borderRadius: "999px",
+                                                padding: "2px 10px",
+                                              }}
+                                            >
+                                              {isUnpaid ? "✕" : "✓"}{" "}
+                                              {part.trim()}
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  }
                                   return (
-                                    <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                    <div
+                                      style={{
+                                        marginTop: "8px",
+                                        display: "flex",
+                                        gap: "10px",
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          fontWeight: "700",
+                                          color: "#15803d",
+                                          background: "#f0fdf4",
+                                          border: "1px solid #86efac",
+                                          borderRadius: "999px",
+                                          padding: "2px 10px",
+                                        }}
+                                      >
+                                        ✓ {selectedRequest.paid_days ?? 0} Paid
+                                      </span>
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          fontWeight: "700",
+                                          color: "#b91c1c",
+                                          background: "#fef2f2",
+                                          border: "1px solid #fca5a5",
+                                          borderRadius: "999px",
+                                          padding: "2px 10px",
+                                        }}
+                                      >
+                                        ✕ {selectedRequest.unpaid_days} Unpaid
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+
+                              {/* Show breakdown for fully-paid Maternity/Paternity */}
+                              {selectedRequest.unpaid_days === 0 &&
+                                selectedRequest.alert_message &&
+                                (() => {
+                                  const msg = selectedRequest.alert_message;
+                                  const isBreakdown =
+                                    msg.includes("Paternity") ||
+                                    msg.includes("Maternity") ||
+                                    msg.includes("Monthly");
+                                  return isBreakdown ? (
+                                    <div
+                                      style={{
+                                        marginTop: "8px",
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: "6px",
+                                      }}
+                                    >
                                       {msg.split(" + ").map((part, i) => {
-                                        const isUnpaid = part.includes("Unpaid");
-                                        const isMonthly = part.includes("Monthly");
+                                        const isUnpaid =
+                                          part.includes("Unpaid");
+                                        const isMonthly =
+                                          part.includes("Monthly");
                                         return (
-                                          <span key={i} style={{
-                                            fontSize: "12px", fontWeight: "700",
-                                            color: isUnpaid ? "#b91c1c" : isMonthly ? "#2563eb" : "#15803d",
-                                            background: isUnpaid ? "#fef2f2" : isMonthly ? "#eff6ff" : "#f0fdf4",
-                                            border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
-                                            borderRadius: "999px",
-                                            padding: "2px 10px",
-                                          }}>
+                                          <span
+                                            key={i}
+                                            style={{
+                                              fontSize: "12px",
+                                              fontWeight: "700",
+                                              color: isUnpaid
+                                                ? "#b91c1c"
+                                                : isMonthly
+                                                  ? "#2563eb"
+                                                  : "#15803d",
+                                              background: isUnpaid
+                                                ? "#fef2f2"
+                                                : isMonthly
+                                                  ? "#eff6ff"
+                                                  : "#f0fdf4",
+                                              border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
+                                              borderRadius: "999px",
+                                              padding: "2px 10px",
+                                            }}
+                                          >
                                             {isUnpaid ? "✕" : "✓"} {part.trim()}
                                           </span>
                                         );
                                       })}
                                     </div>
-                                  );
-                                }
-                                return (
-                                  <div
-                                    style={{
-                                      marginTop: "8px",
-                                      display: "flex",
-                                      gap: "10px",
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        fontSize: "12px",
-                                        fontWeight: "700",
-                                        color: "#15803d",
-                                        background: "#f0fdf4",
-                                        border: "1px solid #86efac",
-                                        borderRadius: "999px",
-                                        padding: "2px 10px",
-                                      }}
-                                    >
-                                      ✓ {selectedRequest.paid_days ?? 0} Paid
-                                    </span>
-                                    <span
-                                      style={{
-                                        fontSize: "12px",
-                                        fontWeight: "700",
-                                        color: "#b91c1c",
-                                        background: "#fef2f2",
-                                        border: "1px solid #fca5a5",
-                                        borderRadius: "999px",
-                                        padding: "2px 10px",
-                                      }}
-                                    >
-                                      ✕ {selectedRequest.unpaid_days} Unpaid
-                                    </span>
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Show breakdown for fully-paid Maternity/Paternity */}
-                              {selectedRequest.unpaid_days === 0 && selectedRequest.alert_message && (() => {
-                                const msg = selectedRequest.alert_message;
-                                const isBreakdown = msg.includes("Paternity") || msg.includes("Maternity") || msg.includes("Monthly");
-                                return isBreakdown ? (
-                                  <div style={{ marginTop: "8px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                                    {msg.split(" + ").map((part, i) => {
-                                      const isUnpaid = part.includes("Unpaid");
-                                      const isMonthly = part.includes("Monthly");
-                                      return (
-                                        <span key={i} style={{
-                                          fontSize: "12px", fontWeight: "700",
-                                          color: isUnpaid ? "#b91c1c" : isMonthly ? "#2563eb" : "#15803d",
-                                          background: isUnpaid ? "#fef2f2" : isMonthly ? "#eff6ff" : "#f0fdf4",
-                                          border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
-                                          borderRadius: "999px",
-                                          padding: "2px 10px",
-                                        }}>
-                                          {isUnpaid ? "✕" : "✓"} {part.trim()}
-                                        </span>
-                                      );
-                                    })}
-                                  </div>
-                                ) : null;
-                              })()}
+                                  ) : null;
+                                })()}
                             </div>
                           </div>
                         )}
@@ -5037,7 +5243,7 @@ function ManagerDashboard({ onLogout }) {
                   });
                   try {
                     const response = await fetch(
-                      `https://team-6-production-a95e.up.railway.app/api/holidays/${holidayId}`,
+                      `${API_BASE_URL}/api/holidays/${holidayId}`,
                       {
                         method: "DELETE",
                       },
