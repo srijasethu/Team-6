@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
 import {
@@ -79,6 +79,125 @@ const formatDateNicely = (dateStr) => {
     year: "numeric",
   });
 };
+
+function EmployeeLeaveHistoryList({ empId }) {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/manager/reports/employee/${empId}`,
+        );
+        const data = await res.json();
+        if (data.success) {
+          setHistory(data.history || []);
+        }
+      } catch (err) {
+        console.error("Error fetching history:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [empId]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center", color: "#f25c05", fontWeight: "600" }}>
+        Loading history...
+      </div>
+    );
+  }
+
+  if (history.length === 0) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center", color: "#64748b" }}>
+        No recent leave requests found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="report-table-wrapper" style={{ overflowX: "auto" }}>
+      <table className="report-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ borderBottom: "2px solid var(--border-color, #cbd5e1)" }}>
+            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Leave Type</th>
+            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>From Date</th>
+            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>To Date</th>
+            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Total Days</th>
+            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Breakdown</th>
+            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Reason</th>
+            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {history.map((hist, idx) => {
+            const totalDays = hist.total_days ?? hist.leave_days ?? 0;
+            const paidDays = hist.paid_days ?? 0;
+            const unpaidDays = hist.unpaid_days ?? 0;
+            return (
+              <tr key={hist.id || idx} style={{ borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
+                <td style={{ padding: "12px 8px", fontWeight: "600", color: "var(--text-main, #334155)" }}>
+                  {hist.leave_type}
+                </td>
+                <td style={{ padding: "12px 8px" }}>
+                  {formatDateNicely(hist.start_date)}
+                </td>
+                <td style={{ padding: "12px 8px" }}>
+                  {formatDateNicely(hist.end_date)}
+                </td>
+                <td style={{ padding: "12px 8px", textAlign: "center", fontWeight: "700" }}>
+                  {totalDays} Days
+                </td>
+                <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                  <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                    <span 
+                      style={{ 
+                        fontSize: "11px", 
+                        fontWeight: "700", 
+                        color: "#15803d", 
+                        background: "#f0fdf4", 
+                        border: "1px solid #86efac", 
+                        borderRadius: "999px", 
+                        padding: "2px 8px" 
+                      }}
+                    >
+                      {paidDays} Paid
+                    </span>
+                    <span 
+                      style={{ 
+                        fontSize: "11px", 
+                        fontWeight: "700", 
+                        color: "#b91c1c", 
+                        background: "#fef2f2", 
+                        border: "1px solid #fca5a5", 
+                        borderRadius: "999px", 
+                        padding: "2px 8px" 
+                      }}
+                    >
+                      {unpaidDays} Unpaid
+                    </span>
+                  </div>
+                </td>
+                <td style={{ padding: "12px 8px", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={hist.reason}>
+                  {hist.reason || "—"}
+                </td>
+                <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                  <span className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}>
+                    {hist.status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function HistoryLoader({ empId }) {
   const [history, setHistory] = useState([]);
@@ -3734,7 +3853,7 @@ function ManagerDashboard({ onLogout }) {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setHistoryEmpData(emp);
-                                      setShowHistoryModal(true);
+                                      setActiveView("employee-leave-history");
                                     }}
                                   >
                                     <FaHistory />
@@ -3764,66 +3883,7 @@ function ManagerDashboard({ onLogout }) {
                   )}
                 </div>
 
-                {/* ── View History Modal ── */}
-                {showHistoryModal && historyEmpData && (
-                  <div
-                    className="popup-overlay"
-                    onClick={() => setShowHistoryModal(false)}
-                  >
-                    <div
-                      className="details-popup-card report-detail-modal-card"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="popup-card-header">
-                        <h3>Leave History — {historyEmpData.name}</h3>
-                        <button
-                          className="close-popup-btn"
-                          type="button"
-                          onClick={() => setShowHistoryModal(false)}
-                        >
-                          <FaTimes />
-                        </button>
-                      </div>
-                      <div className="popup-card-body scrollable-modal-body">
-                        <div className="popup-employee-header">
-                          <div
-                            className="popup-employee-initials"
-                            style={{ backgroundColor: "#f25c05" }}
-                          >
-                            {(historyEmpData.name || "?")
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .substring(0, 2)
-                              .toUpperCase()}
-                          </div>
-                          <div className="popup-employee-info">
-                            <h4>{historyEmpData.name}</h4>
-                            <span className="popup-employee-id">
-                              {historyEmpData.employee_id} —{" "}
-                              {historyEmpData.department}
-                            </span>
-                            {historyEmpData.designation && (
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#f25c05",
-                                  fontWeight: "600",
-                                  display: "block",
-                                }}
-                              >
-                                {historyEmpData.designation}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="modal-history-section">
-                          <HistoryLoader empId={historyEmpData.id} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Old showHistoryModal popup removed */}
 
                 {/* ── View Report Modal ── */}
                 {selectedEmpReport && (
@@ -4119,6 +4179,122 @@ function ManagerDashboard({ onLogout }) {
                 )}
               </div>
             )}
+            {activeView === "employee-leave-history" && historyEmpData && (
+              <div className="employee-report-content">
+                <div className="section-title">
+                  <FaHistory className="profile-title-icon" />
+                  <div>
+                    <h1>Leave History — {historyEmpData.name}</h1>
+                    <p className="profile-subtitle">
+                      Detailed leave record for {historyEmpData.name}
+                    </p>
+                  </div>
+                </div>
+
+                <div 
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "24px",
+                    flexWrap: "wrap",
+                    gap: "16px"
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="modal-cancel-btn"
+                    onClick={() => setActiveView("employee-report")}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "10px 20px",
+                      background: "var(--bg-card, #ffffff)",
+                      border: "1.5px solid var(--border-color, #cbd5e1)",
+                      borderRadius: "8px",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      color: "var(--text-main, #334155)"
+                    }}
+                  >
+                    <FaArrowLeft /> Back to Report
+                  </button>
+                </div>
+
+                <div 
+                  className="profile-hero-card" 
+                  style={{ 
+                    marginBottom: "24px", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "20px",
+                    padding: "20px",
+                    background: "var(--bg-card, #ffffff)",
+                    borderRadius: "16px",
+                    border: "1.5px solid var(--border-color, #e2e8f0)"
+                  }}
+                >
+                  <div
+                    className="popup-employee-initials"
+                    style={{ 
+                      backgroundColor: "#f25c05",
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#ffffff",
+                      fontSize: "20px",
+                      fontWeight: "700"
+                    }}
+                  >
+                    {(historyEmpData.name || "?")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .substring(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="popup-employee-info" style={{ flex: 1 }}>
+                    <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-main, #1e293b)" }}>{historyEmpData.name}</h3>
+                    <span className="popup-employee-id" style={{ fontSize: "14px", color: "var(--text-muted, #64748b)" }}>
+                      Employee ID: <strong>{historyEmpData.employee_id}</strong> — {historyEmpData.department}
+                    </span>
+                    {historyEmpData.designation && (
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#f25c05",
+                          fontWeight: "600",
+                          display: "block",
+                          marginTop: "2px"
+                        }}
+                      >
+                        {historyEmpData.designation}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div 
+                  className="report-table-card"
+                  style={{
+                    background: "var(--bg-card, #ffffff)",
+                    borderRadius: "16px",
+                    border: "1.5px solid var(--border-color, #e2e8f0)",
+                    overflow: "hidden",
+                    padding: "20px"
+                  }}
+                >
+                  <EmployeeLeaveHistoryList empId={historyEmpData.id} />
+                </div>
+              </div>
+            )}
+
+
 
             {activeView === "holiday-calendar" && (
               <div className="holiday-calendar-content">
