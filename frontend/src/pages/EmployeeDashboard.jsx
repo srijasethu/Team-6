@@ -996,14 +996,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 <PolicyNote>Only Pending leaves can be cancelled by the employee.</PolicyNote>
               </PolicySection>
 
-              {/* Calculation Rules */}
-              <PolicySection type="calculation" title="📊 Leave Calculation Rules" color="#475569" bg="#f8fafc" border="#e2e8f0">
-                <PolicyRow label="Leave days counted" value="Calendar days (weekends included)" />
-                <PolicyRow label="Paid limit calculation" value="Per calendar month independently" />
-                <PolicyRow label="Personal + Medical share" value="Same 3-day monthly paid pool" />
-                <PolicyRow label="Overlapping leave requests" value="Not allowed" />
-                <PolicyRow label="Maternity / Paternity" value="Does NOT consume the 3-day monthly quota" />
-              </PolicySection>
+
 
             </div>
 
@@ -1146,13 +1139,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     ["Step 3", "Employee is notified via Leave Summary"],
                   ], ["Only Pending leaves can be cancelled by the employee."]);
 
-                  addSection("Leave Calculation Rules", [
-                    ["Leave days counted", "Calendar days (weekends included)"],
-                    ["Paid limit calculation", "Per calendar month independently"],
-                    ["Personal + Medical share", "Same 3-day monthly paid pool"],
-                    ["Overlapping leave requests", "Not allowed"],
-                    ["Maternity / Paternity", "Does NOT consume the 3-day monthly quota"],
-                  ]);
+
 
                   // Footer
                   const pages = doc.internal.getNumberOfPages();
