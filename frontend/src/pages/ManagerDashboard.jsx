@@ -83,6 +83,7 @@ const formatDateNicely = (dateStr) => {
 function EmployeeLeaveHistoryList({ empId }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedReason, setSelectedReason] = useState(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -120,82 +121,180 @@ function EmployeeLeaveHistoryList({ empId }) {
   }
 
   return (
-    <div className="report-table-wrapper" style={{ overflowX: "auto" }}>
-      <table className="report-table" style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ borderBottom: "2px solid var(--border-color, #cbd5e1)" }}>
-            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Leave Type</th>
-            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>From Date</th>
-            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>To Date</th>
-            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Total Days</th>
-            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Breakdown</th>
-            <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Reason</th>
-            <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {history.map((hist, idx) => {
-            const totalDays = hist.total_days ?? hist.leave_days ?? 0;
-            const paidDays = hist.paid_days ?? 0;
-            const unpaidDays = hist.unpaid_days ?? 0;
-            return (
-              <tr key={hist.id || idx} style={{ borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
-                <td style={{ padding: "12px 8px", fontWeight: "600", color: "var(--text-main, #334155)" }}>
-                  {hist.leave_type}
-                </td>
-                <td style={{ padding: "12px 8px" }}>
-                  {formatDateNicely(hist.start_date)}
-                </td>
-                <td style={{ padding: "12px 8px" }}>
-                  {formatDateNicely(hist.end_date)}
-                </td>
-                <td style={{ padding: "12px 8px", textAlign: "center", fontWeight: "700" }}>
-                  {totalDays} Days
-                </td>
-                <td style={{ padding: "12px 8px", textAlign: "center" }}>
-                  <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        color: "#15803d",
-                        background: "#f0fdf4",
-                        border: "1px solid #86efac",
-                        borderRadius: "999px",
-                        padding: "2px 8px"
-                      }}
-                    >
-                      {paidDays} Paid
+    <>
+      <div className="report-table-wrapper" style={{ overflowX: "auto" }}>
+        <table className="report-table" style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--border-color, #cbd5e1)" }}>
+              <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Leave Type</th>
+              <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>From Date</th>
+              <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>To Date</th>
+              <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Total Days</th>
+              <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Breakdown</th>
+              <th style={{ textAlign: "left", padding: "12px 8px", fontWeight: "600" }}>Reason</th>
+              <th style={{ textAlign: "center", padding: "12px 8px", fontWeight: "600" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((hist, idx) => {
+              const totalDays = hist.total_days ?? hist.leave_days ?? 0;
+              const paidDays = hist.paid_days ?? 0;
+              const unpaidDays = hist.unpaid_days ?? 0;
+              const reasonText = hist.reason || "—";
+              const isLong = reasonText.length > 60;
+              const displayedReason = isLong ? `${reasonText.slice(0, 60)}...` : reasonText;
+
+              return (
+                <tr key={hist.id || idx} style={{ borderBottom: "1px solid var(--border-color, #e2e8f0)" }}>
+                  <td style={{ padding: "12px 8px", fontWeight: "600", color: "var(--text-main, #334155)" }}>
+                    {hist.leave_type}
+                  </td>
+                  <td style={{ padding: "12px 8px" }}>
+                    {formatDateNicely(hist.start_date)}
+                  </td>
+                  <td style={{ padding: "12px 8px" }}>
+                    {formatDateNicely(hist.end_date)}
+                  </td>
+                  <td style={{ padding: "12px 8px", textAlign: "center", fontWeight: "700" }}>
+                    {totalDays} Days
+                  </td>
+                  <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                    <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          color: "#15803d",
+                          background: "#f0fdf4",
+                          border: "1px solid #86efac",
+                          borderRadius: "999px",
+                          padding: "2px 8px"
+                        }}
+                      >
+                        {paidDays} Paid
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          color: "#b91c1c",
+                          background: "#fef2f2",
+                          border: "1px solid #fca5a5",
+                          borderRadius: "999px",
+                          padding: "2px 8px"
+                        }}
+                      >
+                        {unpaidDays} Unpaid
+                      </span>
+                    </div>
+                  </td>
+                  <td style={{ 
+                    padding: "12px 8px", 
+                    maxWidth: "280px", 
+                    wordBreak: "break-word", 
+                    whiteSpace: "normal" 
+                  }}>
+                    <span>{displayedReason}</span>
+                    {isLong && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReason(reasonText)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#f25c05",
+                          cursor: "pointer",
+                          fontWeight: "700",
+                          fontSize: "12px",
+                          padding: "0",
+                          marginLeft: "6px",
+                          textDecoration: "underline",
+                          display: "inline-block",
+                          fontFamily: "inherit"
+                        }}
+                      >
+                        View More
+                      </button>
+                    )}
+                  </td>
+                  <td style={{ padding: "12px 8px", textAlign: "center" }}>
+                    <span className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}>
+                      {hist.status}
                     </span>
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        color: "#b91c1c",
-                        background: "#fef2f2",
-                        border: "1px solid #fca5a5",
-                        borderRadius: "999px",
-                        padding: "2px 8px"
-                      }}
-                    >
-                      {unpaidDays} Unpaid
-                    </span>
-                  </div>
-                </td>
-                <td style={{ padding: "12px 8px", maxWidth: "250px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={hist.reason}>
-                  {hist.reason || "—"}
-                </td>
-                <td style={{ padding: "12px 8px", textAlign: "center" }}>
-                  <span className={`status-badge-pill ${(hist.status || "").toLowerCase()}`}>
-                    {hist.status}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedReason && (
+        <div className="modal-overlay" onClick={() => setSelectedReason(null)}>
+          <div 
+            className="modal-card" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: "500px", 
+              width: "90%", 
+              padding: "28px", 
+              borderRadius: "16px",
+              boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
+              border: "1px solid var(--border-color, #e2e8f0)",
+              background: "var(--bg-card, #ffffff)"
+            }}
+          >
+            <h3 
+              className="modal-title" 
+              style={{ 
+                margin: "0 0 16px", 
+                fontSize: "18px", 
+                fontWeight: "800", 
+                color: "var(--text-main, #0f172a)" 
+              }}
+            >
+              Leave Reason
+            </h3>
+            <div 
+              className="modal-desc" 
+              style={{ 
+                fontSize: "14px", 
+                lineHeight: "1.6", 
+                wordBreak: "break-word", 
+                whiteSpace: "pre-wrap", 
+                color: "var(--text-main, #334155)",
+                maxHeight: "300px",
+                overflowY: "auto",
+                marginBottom: "24px",
+                textAlign: "left"
+              }}
+            >
+              {selectedReason}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button 
+                type="button" 
+                className="modal-cancel-btn" 
+                onClick={() => setSelectedReason(null)}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: "8px",
+                  border: "1.5px solid var(--border-color, #cbd5e1)",
+                  background: "var(--bg-card, #ffffff)",
+                  color: "var(--text-main, #334155)",
+                  fontWeight: "700",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                  fontFamily: "inherit"
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
