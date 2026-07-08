@@ -270,7 +270,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Body scroll lock inside ApplyLeaveForm � prevents page scroll when child modals are open
+  // Body scroll lock inside ApplyLeaveForm → prevents page scroll when child modals are open
   useEffect(() => {
     const anyModalOpen = confirmModal.show || showPolicyModal;
     if (anyModalOpen) {
@@ -442,10 +442,10 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         if (isBenefitType) {
           benefitCounter++;
           if (benefitCounter <= maxBenefitDays) {
-            // Within benefit quota � fully paid, does NOT consume monthly balance
+            // Within benefit quota → fully paid, does NOT consume monthly balance
             paid++;
           } else {
-            // Benefit exhausted � try monthly paid balance
+            // Benefit exhausted → try monthly paid balance
             const countInMonth = approvedOrPendingDaysByMonth[monthKey].size;
             if (countInMonth < MONTHLY_PAID_LIMIT) {
               paid++;
@@ -510,7 +510,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setSubmitError("");
   };
 
-  // The actual API call � invoked either directly (Paid) or after modal confirmation
+  // The actual API call → invoked either directly (Paid) or after modal confirmation
   const doSubmit = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) {
@@ -865,7 +865,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                           key={item.date}
                           style={{ fontSize: "12px", color: "#075985" }}
                         >
-                          {item.date} � {item.label}
+                          {item.date} — {item.label}
                         </li>
                       ))}
                     </ul>
@@ -1246,7 +1246,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                       opacity: 0.8,
                     }}
                   >
-                    Effective from January 2026 � All employees are subject to
+                    Effective from January 2026 · All employees are subject to
                     this policy
                   </p>
                 </div>
@@ -1581,7 +1581,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   doc.setFont("helvetica", "normal");
                   doc.setFontSize(9);
                   doc.text(
-                    "Effective from January 2026 � All employees are subject to this policy",
+                    "Effective from January 2026 · All employees are subject to this policy",
                     14,
                     35,
                   );
@@ -1673,7 +1673,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Maternity Leave", [
                     ["Eligible employees", "Female"],
                     ["Duration", "+182 paid days"],
-                    ["Payment", "Fully Paid � independent of monthly limit"],
+                    ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     [
                       "Date restrictions",
@@ -1685,7 +1685,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Paternity Leave", [
                     ["Eligible employees", "Male"],
                     ["Duration", "+15 paid days"],
-                    ["Payment", "Fully Paid � independent of monthly limit"],
+                    ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     [
                       "Date restrictions",
@@ -1698,7 +1698,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     ["Weekly off day", "Every Sunday"],
                     [
                       "Counted as leave",
-                      "No � Sundays are not counted as leave days",
+                      "No — Sundays are not counted as leave days",
                     ],
                   ]);
 
@@ -1711,7 +1711,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                       ],
                       [
                         "Company holidays",
-                        "Added by manager � not counted as leave days",
+                        "Added by manager — not counted as leave days",
                       ],
                     ],
                     [
@@ -1737,7 +1737,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     doc.setFontSize(8);
                     doc.setTextColor(148, 163, 184);
                     doc.text(
-                      `Page ${i} of ${pages}  �  Touchmark Technologies Leave Policy 2026`,
+                      `Page ${i} of ${pages}  ·  Touchmark Technologies Leave Policy 2026`,
                       14,
                       290,
                     );
@@ -1921,7 +1921,7 @@ function EmployeeGreetingCard({ name, stats }) {
       </div>
       <div className="greeting-date-section">
         <FaRegClock />
-        <span>Today � {todayStr}</span>
+        <span>Today • {todayStr}</span>
       </div>
     </div>
   );
@@ -2049,7 +2049,7 @@ function ProfileView({
           <span className="pq-icon">&ldquo;</span>
           <p className="pq-text">
             {profileData.about ||
-              "Every successful team is built on responsibility, trust, and consistency. � LeaveWise"}
+              "Every successful team is built on responsibility, trust, and consistency. ✨ LeaveWise"}
           </p>
         </div>
       </div>
@@ -2244,7 +2244,7 @@ function LeaveSummaryView() {
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth()); // 0-indexed
 
-  // Body scroll lock � prevents page scroll when calendar detail modal is open
+  // Body scroll lock → prevents page scroll when calendar detail modal is open
   useEffect(() => {
     if (showCalDetailModal) {
       document.body.classList.add("modal-open");
@@ -4847,7 +4847,7 @@ function EmployeeDashboard({ onLogout }) {
     }
   }, [toast]);
 
-  // Body scroll lock � prevents page scroll when any modal is open
+  // Body scroll lock → prevents page scroll when any modal is open
   useEffect(() => {
     const anyModalOpen = showLogoutModal || !!photoPreview;
     if (anyModalOpen) {
