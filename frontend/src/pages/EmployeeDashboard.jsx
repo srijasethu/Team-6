@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+﻿import { useState, useRef, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
@@ -849,7 +849,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                         marginBottom: "4px",
                       }}
                     >
-                      ?? The following dates are holidays / weekly off:
+                      The following dates are holidays / weekly off:
                     </div>
                     <ul
                       style={{
@@ -899,7 +899,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
         {submitError && (
           <div className="apply-leave-error-banner">
-            <span className="error-icon">??</span>
+            <span className="error-icon">⚠️</span>
             <span className="error-text">{submitError}</span>
           </div>
         )}
@@ -1237,7 +1237,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   <h2
                     style={{ margin: 0, fontSize: "22px", fontWeight: "800" }}
                   >
-                    ?? Company Leave Policy
+                    📄 Company Leave Policy
                   </h2>
                   <p
                     style={{
@@ -1277,7 +1277,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Monthly Paid Leave */}
               <PolicySection
                 type="monthly-paid"
-                title="?? Monthly Paid Leave Limit"
+                title="🗓 Monthly Paid Leave Limit"
                 color="#2563eb"
                 bg="#eff6ff"
                 border="#bfdbfe"
@@ -1290,14 +1290,14 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 />
                 <PolicyRow
                   label="Maximum paid leave per year"
-                  value="36 days (3 � 12 months)"
+                  value="36 days (3 × 12 months)"
                 />
               </PolicySection>
 
               {/* Use It or Lose It */}
               <PolicySection
                 type="use-or-lose"
-                title="?? Use It or Lose It Policy"
+                title="⚠️ Use It or Lose It Policy"
                 color="#b45309"
                 bg="#fffbeb"
                 border="#fde68a"
@@ -1333,7 +1333,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Personal Leave */}
               <PolicySection
                 type="personal"
-                title="?? Personal Leave"
+                title="👤 Personal Leave"
                 color="#0891b2"
                 bg="#ecfeff"
                 border="#a5f3fc"
@@ -1365,7 +1365,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Medical Leave */}
               <PolicySection
                 type="medical"
-                title="?? Medical Leave"
+                title="🏥 Medical Leave"
                 color="#16a34a"
                 bg="#f0fdf4"
                 border="#bbf7d0"
@@ -1398,7 +1398,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Maternity Leave */}
               <PolicySection
                 type="maternity"
-                title="?? Maternity Leave"
+                title="🤱 Maternity Leave"
                 color="#db2777"
                 bg="#fdf2f8"
                 border="#f9a8d4"
@@ -1411,7 +1411,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 />
                 <PolicyRow
                   label="Payment"
-                  value="Fully Paid � independent of monthly limit"
+                  value="Fully Paid — independent of monthly limit"
                   highlight="green"
                 />
                 <PolicyRow
@@ -1432,7 +1432,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Paternity Leave */}
               <PolicySection
                 type="paternity"
-                title="????? Paternity Leave"
+                title="👨‍👧 Paternity Leave"
                 color="#7c3aed"
                 bg="#f5f3ff"
                 border="#ddd6fe"
@@ -1445,7 +1445,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 />
                 <PolicyRow
                   label="Payment"
-                  value="Fully Paid � independent of monthly limit"
+                  value="Fully Paid — independent of monthly limit"
                   highlight="green"
                 />
                 <PolicyRow
@@ -1466,7 +1466,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Weekly Holidays */}
               <PolicySection
                 type="weekly-off"
-                title="?? Weekly Holidays"
+                title="🟠 Weekly Holidays"
                 color="#ea580c"
                 bg="#fff7ed"
                 border="#fed7aa"
@@ -1474,7 +1474,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 <PolicyRow label="Weekly off day" value="Every Sunday" />
                 <PolicyRow
                   label="Counted as leave"
-                  value="No � Sundays are not counted as leave days"
+                  value="No — Sundays are not counted as leave days"
                   highlight="green"
                 />
               </PolicySection>
@@ -1482,7 +1482,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Public & Company Holidays */}
               <PolicySection
                 type="public-holidays"
-                title="?? Public Holidays &amp; Company Holidays"
+                title="🔵 Public Holidays &amp; Company Holidays"
                 color="#1e40af"
                 bg="#eff6ff"
                 border="#bfdbfe"
@@ -1494,7 +1494,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                 />
                 <PolicyRow
                   label="Company holidays"
-                  value="Added by manager � not counted as leave days"
+                  value="Added by manager — not counted as leave days"
                   highlight="green"
                 />
                 <PolicyNote>
@@ -1506,7 +1506,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Leave Approval Process */}
               <PolicySection
                 type="approval-process"
-                title="? Leave Approval Process"
+                title="✅ Leave Approval Process"
                 color="#475569"
                 bg="#f8fafc"
                 border="#e2e8f0"
@@ -1625,7 +1625,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Monthly Paid Leave Limit", [
                     ["Paid leave days per month", "3 days"],
                     ["Leave beyond 3 days in a month", "Unpaid Leave"],
-                    ["Maximum paid leave per year", "36 days (3 x 12 months)"],
+                    ["Maximum paid leave per year", "36 days (3 × 12 months)"],
                   ]);
 
                   addSection(
@@ -1838,14 +1838,14 @@ function PolicyNote({ children }) {
         lineHeight: 1.5,
       }}
     >
-      ?? {children}
+      💡 {children}
     </p>
   );
 }
 
-// Format ISO date ? "22 June 2026"
+// Format ISO date → "22 June 2026"
 function fmtDate(raw) {
-  if (!raw) return "�";
+  if (!raw) return "—";
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   return d.toLocaleDateString("en-GB", {
@@ -1859,13 +1859,13 @@ function EmployeeGreetingCard({ name, stats }) {
   const getGreetingText = () => {
     const hr = new Date().getHours();
     if (hr >= 5 && hr < 12) {
-      return { text: "Good Morning", emoji: "??" };
+      return { text: "Good Morning", emoji: "🌅" };
     } else if (hr >= 12 && hr < 17) {
-      return { text: "Good Afternoon", emoji: "??" };
+      return { text: "Good Afternoon", emoji: "☀️" };
     } else if (hr >= 17 && hr < 21) {
-      return { text: "Good Evening", emoji: "??" };
+      return { text: "Good Evening", emoji: "🌇" };
     } else {
-      return { text: "Good Night", emoji: "??" };
+      return { text: "Good Night", emoji: "🌙" };
     }
   };
 
@@ -2920,7 +2920,7 @@ function LeaveSummaryView() {
                 fontSize: "28px",
               }}
             >
-              ??
+              🤱
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -3003,7 +3003,7 @@ function LeaveSummaryView() {
                 fontSize: "28px",
               }}
             >
-              ?????
+              👨‍👧
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
@@ -3736,7 +3736,7 @@ function LeaveSummaryView() {
             marginTop: "16px",
           }}
         >
-          <span>??</span>
+          <span>ℹ️</span>
           <strong>Note:</strong> If you take more than {MONTHLY_PAID_LIMIT} days
           of leave in a month, the extra days will be marked as unpaid leave.
         </div>
@@ -3779,7 +3779,7 @@ function LeaveSummaryView() {
                   color: "#0f172a",
                 }}
               >
-                ?? Date Details
+                📅 Date Details
               </h3>
               <button
                 type="button"
@@ -4771,7 +4771,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
             <div className="notif-list">
               {notifications.length === 0 ? (
                 <div className="notif-empty-state">
-                  <span className="notif-empty-icon">??</span>
+                  <span className="notif-empty-icon">🔔</span>
                   <span>No notifications yet.</span>
                 </div>
               ) : (
@@ -5097,7 +5097,7 @@ function EmployeeDashboard({ onLogout }) {
               onClick={toggleTheme}
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              {isDark ? "??" : "??"}
+              {isDark ? "🌙" : "☀️"}
             </button>
           </div>
 
