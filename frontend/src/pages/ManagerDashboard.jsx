@@ -1,3 +1,4 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 import { useState, useRef, useEffect, useMemo } from "react";
 const MONTHLY_PAID_LIMIT = 3;
 const ANNUAL_PAID_ALLOCATION = 36;
@@ -87,7 +88,7 @@ function HistoryLoader({ empId }) {
     const fetchHistory = async () => {
       try {
         const res = await fetch(
-          `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empId}`,
+          `${API_BASE_URL}/api/manager/reports/employee/${empId}`,
         );
         const data = await res.json();
         if (data.success) {
@@ -323,11 +324,11 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${activeUserId}`);
+      const sRes = await fetch(`${API_BASE_URL}/api/notifications/settings/${activeUserId}`);
       const sData = await sRes.json();
       if (sData.success) setEnabled(sData.notifications_enabled);
 
-      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${activeUserId}`);
+      const cRes = await fetch(`${API_BASE_URL}/api/notifications/unread-count/${activeUserId}`);
       const cData = await cRes.json();
       if (cData.success) setUnreadCount(cData.count);
     } catch (err) { console.error("Notif settings/count error:", err); }
@@ -337,7 +338,7 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${activeUserId}`);
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${activeUserId}`);
       const data = await res.json();
       if (data.success) setNotifications(data.notifications || []);
     } catch (err) { console.error("Notif list error:", err); }
@@ -379,7 +380,7 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setEnabled(data.notifications_enabled);
@@ -394,7 +395,7 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setUnreadCount(0);
@@ -406,7 +407,7 @@ function NotificationBellManager({ refreshCountTrigger, setRefreshCountTrigger }
 
   const handleMarkRead = async (id) => {
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read/${id}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read/${id}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
@@ -568,7 +569,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays");
+      const response = await fetch("${API_BASE_URL}/api/holidays");
       const data = await response.json();
       if (data.success) {
         setHolidaysList(data.holidays || []);
@@ -647,8 +648,8 @@ function ManagerDashboard({ onLogout }) {
       if (endDate) params.append("endDate", endDate);
       const qs = params.toString() ? `?${params.toString()}` : "";
       const [summaryRes, empRes] = await Promise.all([
-        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/summary${qs}`),
-        fetch(`https://team-6-production-a95e.up.railway.app/api/manager/reports/employees${qs}`),
+        fetch(`${API_BASE_URL}/api/manager/reports/summary${qs}`),
+        fetch(`${API_BASE_URL}/api/manager/reports/employees${qs}`),
       ]);
       const summaryData = await summaryRes.json();
       const empData = await empRes.json();
@@ -666,7 +667,7 @@ function ManagerDashboard({ onLogout }) {
     setReportEmpDataLoading(true);
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/reports/employee/${empDbId}`,
+        `${API_BASE_URL}/api/manager/reports/employee/${empDbId}`,
       );
       const data = await response.json();
       if (data.success) {
@@ -1018,7 +1019,7 @@ function ManagerDashboard({ onLogout }) {
   const [notifToggleEnabled, setNotifToggleEnabled] = useState(true);
   useEffect(() => {
     if (!managerLoggedInUser?.id) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${managerLoggedInUser.id}`)
+    fetch(`${API_BASE_URL}/api/notifications/settings/${managerLoggedInUser.id}`)
       .then(r => r.json())
       .then(data => { if (data.success) setNotifToggleEnabled(data.notifications_enabled); })
       .catch(() => {});
@@ -1027,7 +1028,7 @@ function ManagerDashboard({ onLogout }) {
   const handleManagerNotifToggle = async () => {
     if (!managerLoggedInUser?.id) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${managerLoggedInUser.id}`, { method: 'PUT' });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/toggle/${managerLoggedInUser.id}`, { method: 'PUT' });
       const data = await res.json();
       if (data.success) {
         setNotifToggleEnabled(data.notifications_enabled);
@@ -1109,7 +1110,7 @@ function ManagerDashboard({ onLogout }) {
     try {
       showToast("Uploading profile photo...", "info");
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/upload-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/upload-photo/${user.id}`,
         {
           method: "PUT",
           body: formData,
@@ -1138,7 +1139,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/remove-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/remove-photo/${user.id}`,
         {
           method: "DELETE",
         },
@@ -1280,7 +1281,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchManagerLeaves = async () => {
     setLeavesLoading(true);
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/manager/leaves");
+      const response = await fetch("${API_BASE_URL}/api/manager/leaves");
       const data = await response.json();
       console.log("Manager leaves:", data.leaves);
       if (data.success) {
@@ -1330,7 +1331,7 @@ function ManagerDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/update/${user.id}`,
+        `${API_BASE_URL}/api/profile/update/${user.id}`,
         {
           method: "PUT",
           headers: {
@@ -1395,7 +1396,7 @@ function ManagerDashboard({ onLogout }) {
   const handleApproveRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/approve/${dbId}`,
+        `${API_BASE_URL}/api/manager/approve/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1423,7 +1424,7 @@ function ManagerDashboard({ onLogout }) {
   const handleRejectRequest = async (dbId) => {
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/manager/reject/${dbId}`,
+        `${API_BASE_URL}/api/manager/reject/${dbId}`,
         { method: "PUT" },
       );
       const data = await response.json();
@@ -1452,7 +1453,7 @@ function ManagerDashboard({ onLogout }) {
     e.preventDefault();
     setAddError("");
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays", {
+      const response = await fetch("${API_BASE_URL}/api/holidays", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -5037,7 +5038,7 @@ function ManagerDashboard({ onLogout }) {
                   });
                   try {
                     const response = await fetch(
-                      `https://team-6-production-a95e.up.railway.app/api/holidays/${holidayId}`,
+                      `${API_BASE_URL}/api/holidays/${holidayId}`,
                       {
                         method: "DELETE",
                       },

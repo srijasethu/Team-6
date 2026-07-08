@@ -1,3 +1,4 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 import { useState, useRef, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 const MONTHLY_PAID_LIMIT = 3;
@@ -247,7 +248,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Body scroll lock inside ApplyLeaveForm — prevents page scroll when child modals are open
+  // Body scroll lock inside ApplyLeaveForm � prevents page scroll when child modals are open
   useEffect(() => {
     const anyModalOpen = confirmModal.show || showPolicyModal;
     if (anyModalOpen) {
@@ -380,10 +381,10 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         if (isBenefitType) {
           benefitCounter++;
           if (benefitCounter <= maxBenefitDays) {
-            // Within benefit quota — fully paid, does NOT consume monthly balance
+            // Within benefit quota � fully paid, does NOT consume monthly balance
             paid++;
           } else {
-            // Benefit exhausted — try monthly paid balance
+            // Benefit exhausted � try monthly paid balance
             const countInMonth = approvedOrPendingDaysByMonth[monthKey].size;
             if (countInMonth < MONTHLY_PAID_LIMIT) {
               paid++;
@@ -414,7 +415,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`)
+    fetch(`${API_BASE_URL}/api/leave/summary/${user.id}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -427,7 +428,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       })
       .catch(() => {});
 
-    fetch("https://team-6-production-a95e.up.railway.app/api/holidays")
+    fetch("${API_BASE_URL}/api/holidays")
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -448,7 +449,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setSubmitError("");
   };
 
-  // The actual API call — invoked either directly (Paid) or after modal confirmation
+  // The actual API call � invoked either directly (Paid) or after modal confirmation
   const doSubmit = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) { alert("User not found. Please login again."); return; }
@@ -456,7 +457,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setSubmitError("");
     setSubmitting(true);
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/leave/apply", {
+      const response = await fetch("${API_BASE_URL}/api/leave/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -495,9 +496,9 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       return;
     }
 
-    // Paid → submit directly, no popup needed
+    // Paid ? submit directly, no popup needed
     if (unpaid === 0) { doSubmit(); return; }
-    // Partly Paid or Unpaid → show styled modal
+    // Partly Paid or Unpaid ? show styled modal
     const type = paid > 0 ? "partly" : "unpaid";
     setConfirmModal({ show: true, type, paid, unpaid });
   };
@@ -703,12 +704,12 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {overlapping.length > 0 && (
                 <div style={{ paddingLeft: "24px" }}>
                   <div style={{ fontSize: "12px", fontWeight: "600", color: "#0369a1", marginBottom: "4px" }}>
-                    ℹ️ The following dates are holidays / weekly off:
+                    ?? The following dates are holidays / weekly off:
                   </div>
                   <ul style={{ margin: 0, padding: "0 0 0 16px", display: "flex", flexDirection: "column", gap: "2px" }}>
                     {overlapping.map((item) => (
                       <li key={item.date} style={{ fontSize: "12px", color: "#075985" }}>
-                        {item.date} — {item.label}
+                        {item.date} � {item.label}
                       </li>
                     ))}
                   </ul>
@@ -738,7 +739,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
         {submitError && (
           <div className="apply-leave-error-banner">
-            <span className="error-icon">⚠️</span>
+            <span className="error-icon">??</span>
             <span className="error-text">{submitError}</span>
           </div>
         )}
@@ -766,7 +767,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         </div>
       </form>
 
-      {/* ── Confirmation Modal ──────────────────────────────────── */}
+      {/* -- Confirmation Modal ------------------------------------ */}
       {confirmModal.show && (
         <div className="confirm-modal-overlay">
           <div style={{
@@ -880,7 +881,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
         </div>
       )}
 
-      {/* ── Leave Policy Modal ──────────────────────────────────── */}
+      {/* -- Leave Policy Modal ------------------------------------ */}
       {showPolicyModal && (
         <div className="modal-overlay" onClick={() => setShowPolicyModal(false)}>
           <div className="policy-modal-card" style={{
@@ -901,9 +902,9 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   <div style={{ fontSize: "11px", fontWeight: "600", opacity: 0.7, letterSpacing: "1.5px", marginBottom: "6px" }}>
                     TOUCHMARK TECHNOLOGIES
                   </div>
-                  <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800" }}>📄 Company Leave Policy</h2>
+                  <h2 style={{ margin: 0, fontSize: "22px", fontWeight: "800" }}>?? Company Leave Policy</h2>
                   <p style={{ margin: "6px 0 0", fontSize: "13px", opacity: 0.8 }}>
-                    Effective from January 2026 · All employees are subject to this policy
+                    Effective from January 2026 � All employees are subject to this policy
                   </p>
                 </div>
                 <button type="button" onClick={() => setShowPolicyModal(false)}
@@ -919,14 +920,14 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
             <div style={{ padding: "28px 32px" }}>
 
               {/* Monthly Paid Leave */}
-              <PolicySection type="monthly-paid" title="🗓 Monthly Paid Leave Limit" color="#2563eb" bg="#eff6ff" border="#bfdbfe">
+              <PolicySection type="monthly-paid" title="?? Monthly Paid Leave Limit" color="#2563eb" bg="#eff6ff" border="#bfdbfe">
                 <PolicyRow label="Paid leave days per month" value="3 days" />
                 <PolicyRow label="Leave beyond 3 days in a month" value="Unpaid Leave" highlight="red" />
-                <PolicyRow label="Maximum paid leave per year" value="36 days (3 × 12 months)" />
+                <PolicyRow label="Maximum paid leave per year" value="36 days (3 � 12 months)" />
               </PolicySection>
 
               {/* Use It or Lose It */}
-              <PolicySection type="use-or-lose" title="⚠️ Use It or Lose It Policy" color="#b45309" bg="#fffbeb" border="#fde68a">
+              <PolicySection type="use-or-lose" title="?? Use It or Lose It Policy" color="#b45309" bg="#fffbeb" border="#fde68a">
                 <PolicyRow label="Monthly leave expiry" value="End of each calendar month" highlight="red" />
                 <PolicyRow label="Carry forward" value="Not allowed" highlight="red" />
                 <PolicyRow label="Accumulation" value="Not allowed" highlight="red" />
@@ -938,7 +939,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Personal Leave */}
-              <PolicySection type="personal" title="👤 Personal Leave" color="#0891b2" bg="#ecfeff" border="#a5f3fc">
+              <PolicySection type="personal" title="?? Personal Leave" color="#0891b2" bg="#ecfeff" border="#a5f3fc">
                 <PolicyRow label="Paid days per month" value="3 days (shared monthly pool)" />
                 <PolicyRow label="Beyond monthly limit" value="Unpaid Leave" highlight="red" />
                 <PolicyRow label="Past dates" value="Not allowed" highlight="red" />
@@ -947,7 +948,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Medical Leave */}
-              <PolicySection type="medical" title="🏥 Medical Leave" color="#16a34a" bg="#f0fdf4" border="#bbf7d0">
+              <PolicySection type="medical" title="?? Medical Leave" color="#16a34a" bg="#f0fdf4" border="#bbf7d0">
                 <PolicyRow label="Paid days per month" value="3 days (shared with Personal Leave pool)" />
                 <PolicyRow label="Beyond monthly limit" value="Unpaid Leave" highlight="red" />
                 <PolicyRow label="Medical certificate" value="Not required" highlight="green" />
@@ -956,40 +957,40 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               </PolicySection>
 
               {/* Maternity Leave */}
-              <PolicySection type="maternity" title="🤱 Maternity Leave" color="#db2777" bg="#fdf2f8" border="#f9a8d4">
+              <PolicySection type="maternity" title="?? Maternity Leave" color="#db2777" bg="#fdf2f8" border="#f9a8d4">
                 <PolicyRow label="Eligible employees" value="Female" />
                 <PolicyRow label="Duration" value="+182 paid days" highlight="green" />
-                <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
+                <PolicyRow label="Payment" value="Fully Paid � independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
                 <PolicyRow label="Date restrictions" value="Future dates only (up to 12 months in advance)" />
                 <PolicyRow label="Frequency limit" value="Can be applied only once in a year" highlight="red" />
               </PolicySection>
 
               {/* Paternity Leave */}
-              <PolicySection type="paternity" title="👨‍👧 Paternity Leave" color="#7c3aed" bg="#f5f3ff" border="#ddd6fe">
+              <PolicySection type="paternity" title="????? Paternity Leave" color="#7c3aed" bg="#f5f3ff" border="#ddd6fe">
                 <PolicyRow label="Eligible employees" value="Male" />
                 <PolicyRow label="Duration" value="+15 paid days" highlight="green" />
-                <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
+                <PolicyRow label="Payment" value="Fully Paid � independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
                 <PolicyRow label="Date restrictions" value="Future dates only (up to 12 months in advance)" />
                 <PolicyRow label="Frequency limit" value="Can be applied only once in a year" highlight="red" />
               </PolicySection>
 
               {/* Weekly Holidays */}
-              <PolicySection type="weekly-off" title="🟠 Weekly Holidays" color="#ea580c" bg="#fff7ed" border="#fed7aa">
+              <PolicySection type="weekly-off" title="?? Weekly Holidays" color="#ea580c" bg="#fff7ed" border="#fed7aa">
                 <PolicyRow label="Weekly off day" value="Every Sunday" />
-                <PolicyRow label="Counted as leave" value="No — Sundays are not counted as leave days" highlight="green" />
+                <PolicyRow label="Counted as leave" value="No � Sundays are not counted as leave days" highlight="green" />
               </PolicySection>
 
               {/* Public & Company Holidays */}
-              <PolicySection type="public-holidays" title="🔵 Public Holidays &amp; Company Holidays" color="#1e40af" bg="#eff6ff" border="#bfdbfe">
+              <PolicySection type="public-holidays" title="?? Public Holidays &amp; Company Holidays" color="#1e40af" bg="#eff6ff" border="#bfdbfe">
                 <PolicyRow label="Public / Festival holidays" value="Not counted as leave days" highlight="green" />
-                <PolicyRow label="Company holidays" value="Added by manager — not counted as leave days" highlight="green" />
+                <PolicyRow label="Company holidays" value="Added by manager � not counted as leave days" highlight="green" />
                 <PolicyNote>Public, festival, and company holidays do not reduce your paid leave balance.</PolicyNote>
               </PolicySection>
 
               {/* Leave Approval Process */}
-              <PolicySection type="approval-process" title="✅ Leave Approval Process" color="#475569" bg="#f8fafc" border="#e2e8f0">
+              <PolicySection type="approval-process" title="? Leave Approval Process" color="#475569" bg="#f8fafc" border="#e2e8f0">
                 <PolicyRow label="Step 1" value="Employee submits leave application" />
                 <PolicyRow label="Step 2" value="Manager reviews and approves or rejects" />
                 <PolicyRow label="Step 3" value="Employee is notified via Leave Summary" />
@@ -1035,7 +1036,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   doc.text("Company Leave Policy", 14, 26);
                   doc.setFont("helvetica", "normal");
                   doc.setFontSize(9);
-                  doc.text("Effective from January 2026 · All employees are subject to this policy", 14, 35);
+                  doc.text("Effective from January 2026 � All employees are subject to this policy", 14, 35);
                   y = 52;
 
                   const addSection = (title, rows, notes = []) => {
@@ -1108,7 +1109,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Maternity Leave", [
                     ["Eligible employees", "Female"],
                     ["Duration", "+182 paid days"],
-                    ["Payment", "Fully Paid — independent of monthly limit"],
+                    ["Payment", "Fully Paid � independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     ["Date restrictions", "Future dates only (up to 12 months in advance)"],
                     ["Frequency limit", "Can be applied only once in a year"],
@@ -1117,7 +1118,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   addSection("Paternity Leave", [
                     ["Eligible employees", "Male"],
                     ["Duration", "+15 paid days"],
-                    ["Payment", "Fully Paid — independent of monthly limit"],
+                    ["Payment", "Fully Paid � independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
                     ["Date restrictions", "Future dates only (up to 12 months in advance)"],
                     ["Frequency limit", "Can be applied only once in a year"],
@@ -1125,12 +1126,12 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
                   addSection("Weekly Holidays", [
                     ["Weekly off day", "Every Sunday"],
-                    ["Counted as leave", "No — Sundays are not counted as leave days"],
+                    ["Counted as leave", "No � Sundays are not counted as leave days"],
                   ]);
 
                   addSection("Public Holidays & Company Holidays", [
                     ["Public / Festival holidays", "Not counted as leave days"],
-                    ["Company holidays", "Added by manager — not counted as leave days"],
+                    ["Company holidays", "Added by manager � not counted as leave days"],
                   ], ["Public, festival, and company holidays do not reduce your paid leave balance."]);
 
                   addSection("Leave Approval Process", [
@@ -1148,7 +1149,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(8);
                     doc.setTextColor(148, 163, 184);
-                    doc.text(`Page ${i} of ${pages}  ·  Touchmark Technologies Leave Policy 2026`, 14, 290);
+                    doc.text(`Page ${i} of ${pages}  �  Touchmark Technologies Leave Policy 2026`, 14, 290);
                   }
 
                   doc.save("Touchmark_Leave_Policy_2026.pdf");
@@ -1170,7 +1171,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   );
 }
 
-// ── Helper sub-components for the Leave Policy Modal ──────────
+// -- Helper sub-components for the Leave Policy Modal ----------
 function PolicySection({ title, color, bg, border, children, type }) {
   return (
     <div className={`policy-section policy-section-${type}`} style={{
@@ -1197,13 +1198,13 @@ function PolicyRow({ label, value, highlight }) {
 function PolicyNote({ children }) {
   return (
     <p className="policy-note" style={{ margin: "8px 0 0", fontSize: "12px",
-      fontStyle: "italic", lineHeight: 1.5 }}>💡 {children}</p>
+      fontStyle: "italic", lineHeight: 1.5 }}>?? {children}</p>
   );
 }
 
-// Format ISO date → "22 June 2026"
+// Format ISO date ? "22 June 2026"
 function fmtDate(raw) {
-  if (!raw) return "—";
+  if (!raw) return "�";
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
@@ -1213,13 +1214,13 @@ function EmployeeGreetingCard({ name, stats }) {
   const getGreetingText = () => {
     const hr = new Date().getHours();
     if (hr >= 5 && hr < 12) {
-      return { text: "Good Morning", emoji: "🌅" };
+      return { text: "Good Morning", emoji: "??" };
     } else if (hr >= 12 && hr < 17) {
-      return { text: "Good Afternoon", emoji: "☀️" };
+      return { text: "Good Afternoon", emoji: "??" };
     } else if (hr >= 17 && hr < 21) {
-      return { text: "Good Evening", emoji: "🌇" };
+      return { text: "Good Evening", emoji: "??" };
     } else {
-      return { text: "Good Night", emoji: "🌙" };
+      return { text: "Good Night", emoji: "??" };
     }
   };
 
@@ -1275,7 +1276,7 @@ function EmployeeGreetingCard({ name, stats }) {
       </div>
       <div className="greeting-date-section">
         <FaRegClock />
-        <span>Today • {todayStr}</span>
+        <span>Today � {todayStr}</span>
       </div>
     </div>
   );
@@ -1295,7 +1296,7 @@ function ProfileView({
 
   useEffect(() => {
     if (!userId) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${userId}`)
+    fetch(`${API_BASE_URL}/api/notifications/settings/${userId}`)
       .then(r => r.json())
       .then(data => {
         if (data.success) setNotifEnabled(data.notifications_enabled);
@@ -1306,7 +1307,7 @@ function ProfileView({
   const handleNotifToggle = async () => {
     if (!userId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${userId}`, { method: 'PUT' });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/toggle/${userId}`, { method: 'PUT' });
       const data = await res.json();
       if (data.success) {
         setNotifEnabled(data.notifications_enabled);
@@ -1324,7 +1325,7 @@ function ProfileView({
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`)
+    fetch(`${API_BASE_URL}/api/leave/summary/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (!data.success) return;
@@ -1348,7 +1349,7 @@ function ProfileView({
 
       <EmployeeGreetingCard name={profileData.name} stats={stats} />
 
-      {/* ── Hero card ─────────────────────────── */}
+      {/* -- Hero card --------------------------- */}
       <div className="profile-hero-card">
         {/* Left */}
         <div className="profile-hero-left">
@@ -1387,12 +1388,12 @@ function ProfileView({
         <div className="profile-hero-right">
           <span className="pq-icon">&ldquo;</span>
           <p className="pq-text">
-            {profileData.about || "Every successful team is built on responsibility, trust, and consistency. — LeaveWise"}
+            {profileData.about || "Every successful team is built on responsibility, trust, and consistency. � LeaveWise"}
           </p>
         </div>
       </div>
 
-      {/* ── Account Details ───────────────────── */}
+      {/* -- Account Details --------------------- */}
       <p className="account-details-heading">Account Details</p>
 
       <div className="info-grid">
@@ -1445,7 +1446,7 @@ function ProfileView({
         </div>
       </div>
 
-      {/* ── Notification Settings Card ─────────── */}
+      {/* -- Notification Settings Card ----------- */}
       <p className="account-details-heading" style={{ marginTop: '28px' }}>System Settings</p>
       <div className="settings-section-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
@@ -1466,7 +1467,7 @@ function ProfileView({
         </div>
       </div>
 
-      {/* ── Stats bar ─────────────────────────── */}
+      {/* -- Stats bar --------------------------- */}
       <div className="profile-stats-bar">
         <div className="ps-item">
           <div className="ps-icon ps-blue"><FaRegCalendarAlt /></div>
@@ -1525,7 +1526,7 @@ function LeaveSummaryView() {
   const [currentYear, setCurrentYear] = useState(todayDate.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(todayDate.getMonth()); // 0-indexed
 
-  // Body scroll lock — prevents page scroll when calendar detail modal is open
+  // Body scroll lock � prevents page scroll when calendar detail modal is open
   useEffect(() => {
     if (showCalDetailModal) {
       document.body.classList.add("modal-open");
@@ -1547,7 +1548,7 @@ function LeaveSummaryView() {
     if (user.gender) setEmployeeGender(user.gender);
 
     try {
-      const profileRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/profile/get/${user.id}`);
+      const profileRes = await fetch(`${API_BASE_URL}/api/profile/get/${user.id}`);
       const profileData = await profileRes.json();
       if (profileData.success && profileData.user) {
         const freshGender = profileData.user.gender || "Male";
@@ -1561,7 +1562,7 @@ function LeaveSummaryView() {
     }
 
     try {
-      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leave/summary/${user.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/leave/summary/${user.id}`);
       const data = await response.json();
       if (data.success) {
         setSummary({
@@ -1581,7 +1582,7 @@ function LeaveSummaryView() {
     }
 
     try {
-      const hResponse = await fetch("https://team-6-production-a95e.up.railway.app/api/holidays");
+      const hResponse = await fetch("${API_BASE_URL}/api/holidays");
       const hData = await hResponse.json();
       if (hData.success) {
         setHolidays(hData.holidays || []);
@@ -1916,7 +1917,7 @@ function LeaveSummaryView() {
                 fontSize: "28px",
               }}
             >
-              🤱
+              ??
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#be185d", marginBottom: "2px" }}>
@@ -1960,7 +1961,7 @@ function LeaveSummaryView() {
                 fontSize: "28px",
               }}
             >
-              👨‍👧
+              ?????
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#1d4ed8", marginBottom: "2px" }}>
@@ -2226,7 +2227,7 @@ function LeaveSummaryView() {
 
         {/* Notice Section */}
         <div className="apply-leave-notice" style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 18px", borderRadius: "10px", backgroundColor: "#fffbeb", border: "1px solid #fef3c7", color: "#d97706", fontSize: "13px", fontWeight: "500", marginTop: "16px" }}>
-          <span>💡</span>
+          <span>??</span>
           <strong>Note:</strong> If you take more than {MONTHLY_PAID_LIMIT} days of leave in a month, the extra days will be marked as unpaid leave.
         </div>
       </div>
@@ -2241,7 +2242,7 @@ function LeaveSummaryView() {
           }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "800", color: "#0f172a" }}>
-                📅 Date Details
+                ?? Date Details
               </h3>
               <button
                 type="button"
@@ -2355,7 +2356,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
-      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leave/history/${user.id}`);
+      const response = await fetch(`${API_BASE_URL}/api/leave/history/${user.id}`);
       const data = await response.json();
       if (data.success) setLeaveHistory(data.leaves);
     } catch (error) {
@@ -2367,7 +2368,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
     const confirmCancel = window.confirm("Are you sure you want to cancel this leave request?");
     if (!confirmCancel) return;
     try {
-      const response = await fetch(`https://team-6-production-a95e.up.railway.app/api/leaves/cancel/${leaveId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/leaves/cancel/${leaveId}`, {
         method: "PUT",
       });
       const data = await response.json();
@@ -2673,7 +2674,7 @@ function LeaveHistoryView({ onNewLeaveClick, refreshKey, onRefresh }) {
                       {(leave.excluded_days > 0) && (
                         <span style={{ fontSize: "11px", color: "#ea580c", fontWeight: "600" }}
                           title="Sundays and company holidays excluded">
-                          −{leave.excluded_days} Excl.
+                          -{leave.excluded_days} Excl.
                         </span>
                       )}
                       <span style={{ fontSize: "11px", color: "#2563eb", fontWeight: "600" }}
@@ -2836,13 +2837,13 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const sRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/settings/${activeUserId}`);
+      const sRes = await fetch(`${API_BASE_URL}/api/notifications/settings/${activeUserId}`);
       const sData = await sRes.json();
       if (sData.success) {
         setEnabled(sData.notifications_enabled);
       }
 
-      const cRes = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/unread-count/${activeUserId}`);
+      const cRes = await fetch(`${API_BASE_URL}/api/notifications/unread-count/${activeUserId}`);
       const cData = await cRes.json();
       if (cData.success) {
         setUnreadCount(cData.count);
@@ -2856,7 +2857,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/${activeUserId}`);
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${activeUserId}`);
       const data = await res.json();
       if (data.success) {
         setNotifications(data.notifications || []);
@@ -2910,7 +2911,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/toggle/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setEnabled(data.notifications_enabled);
@@ -2934,7 +2935,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
     const activeUserId = getLoggedInUserId();
     if (!activeUserId) return;
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read-all/${activeUserId}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setUnreadCount(0);
@@ -2950,7 +2951,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
 
   const handleMarkRead = async (id) => {
     try {
-      const res = await fetch(`https://team-6-production-a95e.up.railway.app/api/notifications/read/${id}`, { method: "PUT" });
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read/${id}`, { method: "PUT" });
       const data = await res.json();
       if (data.success) {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n));
@@ -3032,7 +3033,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
             <div className="notif-list">
               {notifications.length === 0 ? (
                 <div className="notif-empty-state">
-                  <span className="notif-empty-icon">🔔</span>
+                  <span className="notif-empty-icon">??</span>
                   <span>No notifications yet.</span>
                 </div>
               ) : (
@@ -3070,7 +3071,7 @@ function EmployeeDashboard({ onLogout }) {
     localStorage.setItem("employeeActiveView", activeView);
   }, [activeView]);
 
-  // ── Theme ────────────────────────────────────────────────
+  // -- Theme ------------------------------------------------
   const [isDark, setIsDark] = useState(() => {
     return localStorage.getItem("appTheme") === "dark";
   });
@@ -3104,7 +3105,7 @@ function EmployeeDashboard({ onLogout }) {
     }
   }, [toast]);
 
-  // Body scroll lock — prevents page scroll when any modal is open
+  // Body scroll lock � prevents page scroll when any modal is open
   useEffect(() => {
     const anyModalOpen = showLogoutModal || !!photoPreview;
     if (anyModalOpen) {
@@ -3132,7 +3133,7 @@ function EmployeeDashboard({ onLogout }) {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
-    fetch(`https://team-6-production-a95e.up.railway.app/api/profile/get/${user.id}`)
+    fetch(`${API_BASE_URL}/api/profile/get/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.user) {
@@ -3195,7 +3196,7 @@ function EmployeeDashboard({ onLogout }) {
     try {
       showToast("Uploading profile photo...", "info");
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/upload-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/upload-photo/${user.id}`,
         {
           method: "PUT",
           body: formData,
@@ -3230,7 +3231,7 @@ function EmployeeDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/remove-photo/${user.id}`,
+        `${API_BASE_URL}/api/profile/remove-photo/${user.id}`,
         {
           method: "DELETE",
         },
@@ -3268,7 +3269,7 @@ function EmployeeDashboard({ onLogout }) {
 
     try {
       const response = await fetch(
-        `https://team-6-production-a95e.up.railway.app/api/profile/update/${user.id}`,
+        `${API_BASE_URL}/api/profile/update/${user.id}`,
         {
           method: "PUT",
           headers: {
@@ -3348,7 +3349,7 @@ function EmployeeDashboard({ onLogout }) {
               onClick={toggleTheme}
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              {isDark ? "🌞" : "🌙"}
+              {isDark ? "??" : "??"}
             </button>
           </div>
 

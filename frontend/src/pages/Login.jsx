@@ -18,7 +18,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -33,7 +33,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
     }
 
     try {
-      const response = await fetch("https://team-6-production-a95e.up.railway.app/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -86,8 +86,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <rect x="30" y="28" width="320" height="254" rx="18" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
 
               {/* Ring pulls (filled circles on top) */}
-              <circle cx="95"  cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
-              <circle cx="95"  cy="28" r="4" fill="rgba(255,255,255,0.15)" />
+              <circle cx="95" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+              <circle cx="95" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
               <circle cx="148" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
               <circle cx="148" cy="28" r="4" fill="rgba(255,255,255,0.15)" />
               <circle cx="201" cy="28" r="9" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
@@ -101,21 +101,21 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <line x1="30" y1="72" x2="350" y2="72" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
 
               {/* Day header labels */}
-              <text x="71.4"  y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Mon</text>
+              <text x="71.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Mon</text>
               <text x="117.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Tue</text>
               <text x="163.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Wed</text>
               <text x="209.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Thu</text>
               <text x="255.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Fri</text>
               <text x="301.4" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Sat</text>
-              <text x="335"   y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Sun</text>
+              <text x="335" y="57" fill="rgba(255,255,255,0.7)" fontSize="11" fontWeight="700" textAnchor="middle" fontFamily="inherit">Sun</text>
 
               {/* Vertical grid lines */}
-              <line x1="94.4"  y1="72" x2="94.4"  y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="94.4" y1="72" x2="94.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
               <line x1="140.4" y1="72" x2="140.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
               <line x1="186.4" y1="72" x2="186.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
               <line x1="232.4" y1="72" x2="232.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
               <line x1="278.4" y1="72" x2="278.4" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-              <line x1="318"   y1="72" x2="318"   y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+              <line x1="318" y1="72" x2="318" y2="282" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
 
               {/* Horizontal grid lines */}
               <line x1="30" y1="112" x2="350" y2="112" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
@@ -124,8 +124,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <line x1="30" y1="232" x2="350" y2="232" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
 
               {/* Day cells (rounded rectangles, week 1) */}
-              <rect x="36"  y="78" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
-              <rect x="99"  y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="36" y="78" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="145" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="191" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="237" y="78" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
@@ -133,8 +133,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <rect x="323" y="78" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
 
               {/* Day cells (week 2) */}
-              <rect x="36"  y="118" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
-              <rect x="99"  y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="36" y="118" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="145" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               {/* Wednesday cell highlighted with checkmark */}
               <rect x="191" y="118" width="36" height="28" rx="6" fill="rgba(255,255,255,0.9)" />
@@ -144,8 +144,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <rect x="323" y="118" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
 
               {/* Day cells (week 3) */}
-              <rect x="36"  y="158" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
-              <rect x="99"  y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="36" y="158" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="145" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="191" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="237" y="158" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
@@ -153,8 +153,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <rect x="323" y="158" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
 
               {/* Day cells (week 4) */}
-              <rect x="36"  y="198" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
-              <rect x="99"  y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="36" y="198" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="145" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="191" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="237" y="198" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
@@ -162,8 +162,8 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
               <rect x="323" y="198" width="21" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
 
               {/* Day cells (week 5) */}
-              <rect x="36"  y="238" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
-              <rect x="99"  y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="36" y="238" width="52" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
+              <rect x="99" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="145" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="191" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
               <rect x="237" y="238" width="36" height="28" rx="6" fill="rgba(255,255,255,0.07)" />
@@ -182,7 +182,7 @@ function Login({ onEmployeeLogin, onManagerLogin }) {
           <svg className="right-panel-wave-svg" viewBox="0 0 520 560" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMin meet">
             <path d="M520 0 Q420 80 520 160 Q620 240 520 320 Q420 400 520 480 L520 0Z" fill="rgba(8,104,239,0.04)" />
             <path d="M520 0 Q460 100 520 200 Q580 300 520 400 L520 0Z" fill="rgba(8,104,239,0.03)" />
-            <circle cx="490" cy="60"  r="40" fill="rgba(8,104,239,0.025)" />
+            <circle cx="490" cy="60" r="40" fill="rgba(8,104,239,0.025)" />
             <circle cx="510" cy="130" r="28" fill="rgba(8,104,239,0.025)" />
             <circle cx="480" cy="190" r="20" fill="rgba(8,104,239,0.02)" />
           </svg>
