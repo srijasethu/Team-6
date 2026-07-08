@@ -154,28 +154,28 @@ function EmployeeLeaveHistoryList({ empId }) {
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
                   <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
-                    <span 
-                      style={{ 
-                        fontSize: "11px", 
-                        fontWeight: "700", 
-                        color: "#15803d", 
-                        background: "#f0fdf4", 
-                        border: "1px solid #86efac", 
-                        borderRadius: "999px", 
-                        padding: "2px 8px" 
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color: "#15803d",
+                        background: "#f0fdf4",
+                        border: "1px solid #86efac",
+                        borderRadius: "999px",
+                        padding: "2px 8px"
                       }}
                     >
                       {paidDays} Paid
                     </span>
-                    <span 
-                      style={{ 
-                        fontSize: "11px", 
-                        fontWeight: "700", 
-                        color: "#b91c1c", 
-                        background: "#fef2f2", 
-                        border: "1px solid #fca5a5", 
-                        borderRadius: "999px", 
-                        padding: "2px 8px" 
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        color: "#b91c1c",
+                        background: "#fef2f2",
+                        border: "1px solid #fca5a5",
+                        borderRadius: "999px",
+                        padding: "2px 8px"
                       }}
                     >
                       {unpaidDays} Unpaid
@@ -933,10 +933,10 @@ function ManagerDashboard({ onLogout }) {
         "Joining Date",
         employee.joining_date
           ? new Date(employee.joining_date).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
           : "N/A",
       ],
     ];
@@ -1155,11 +1155,11 @@ function ManagerDashboard({ onLogout }) {
         month: "long",
         year: "numeric",
       }) +
-        " at " +
-        new Date().toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+      " at " +
+      new Date().toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       38,
       currentY,
     );
@@ -1210,7 +1210,7 @@ function ManagerDashboard({ onLogout }) {
       .then((data) => {
         if (data.success) setNotifToggleEnabled(data.notifications_enabled);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [notifRefreshTrigger]);
 
   const handleManagerNotifToggle = async () => {
@@ -2812,7 +2812,7 @@ function ManagerDashboard({ onLogout }) {
                                         <FaInfoCircle />
                                       </button>
                                       <span className="leave-type-name" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                        {request.type} {isSpecialLeave && <span style={{ fontSize: "12px" }}>✨</span>}
+                                        {request.type} {isSpecialLeave && <span style={{ fontSize: "12px" }}>⭐</span>}
                                       </span>
                                     </div>
                                     {/* Badges row: all payment/type badges in a horizontal row */}
@@ -2963,7 +2963,7 @@ function ManagerDashboard({ onLogout }) {
                                           setApprovalActionPopup(
                                             approvalActionPopup &&
                                               approvalActionPopup.dbId ===
-                                                request.dbId
+                                              request.dbId
                                               ? null
                                               : request,
                                           );
@@ -2973,7 +2973,7 @@ function ManagerDashboard({ onLogout }) {
                                       </button>
                                       {approvalActionPopup &&
                                         approvalActionPopup.dbId ===
-                                          request.dbId && (
+                                        request.dbId && (
                                           <div
                                             className="action-inline-popup"
                                             onClick={(e) => e.stopPropagation()}
@@ -3082,76 +3082,166 @@ function ManagerDashboard({ onLogout }) {
                               selectedRequest.alert_message.includes(
                                 "Monthly",
                               )))) && (
-                          <div
-                            style={{
-                              padding: "14px 16px",
-                              borderRadius: "10px",
-                              backgroundColor: "#fff1f2",
-                              border: "1.5px solid #fda4af",
-                              marginBottom: "18px",
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: "12px",
-                            }}
-                          >
                             <div
                               style={{
-                                width: "34px",
-                                height: "34px",
-                                borderRadius: "8px",
-                                flexShrink: 0,
-                                backgroundColor: "#fecdd3",
+                                padding: "14px 16px",
+                                borderRadius: "10px",
+                                backgroundColor: "#fff1f2",
+                                border: "1.5px solid #fda4af",
+                                marginBottom: "18px",
                                 display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#be123c",
-                                fontSize: "15px",
+                                alignItems: "flex-start",
+                                gap: "12px",
                               }}
                             >
-                              <FaExclamationTriangle />
-                            </div>
-                            <div>
                               <div
                                 style={{
-                                  fontWeight: "700",
-                                  fontSize: "13px",
-                                  color:
-                                    selectedRequest.payment_type === "Paid"
-                                      ? "#15803d"
-                                      : "#be123c",
-                                  marginBottom: "3px",
+                                  width: "34px",
+                                  height: "34px",
+                                  borderRadius: "8px",
+                                  flexShrink: 0,
+                                  backgroundColor: "#fecdd3",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "#be123c",
+                                  fontSize: "15px",
                                 }}
                               >
-                                {selectedRequest.payment_type === "Unpaid"
-                                  ? "Unpaid Leave"
-                                  : selectedRequest.payment_type === "Paid"
-                                    ? "Payment Breakdown"
-                                    : "Partly Paid Leave"}
+                                <FaExclamationTriangle />
                               </div>
-                              {selectedRequest.payment_type !== "Paid" && (
+                              <div>
                                 <div
                                   style={{
-                                    fontSize: "12.5px",
-                                    color: "#64748b",
-                                    lineHeight: "1.5",
+                                    fontWeight: "700",
+                                    fontSize: "13px",
+                                    color:
+                                      selectedRequest.payment_type === "Paid"
+                                        ? "#15803d"
+                                        : "#be123c",
+                                    marginBottom: "3px",
                                   }}
                                 >
-                                  {selectedRequest.alert_message ||
-                                    (selectedRequest.payment_type === "Unpaid"
-                                      ? "This leave is unpaid because the monthly paid leave limit has already been used."
-                                      : "This leave is partly unpaid because the monthly paid leave limit is exceeded.")}
+                                  {selectedRequest.payment_type === "Unpaid"
+                                    ? "Unpaid Leave"
+                                    : selectedRequest.payment_type === "Paid"
+                                      ? "Payment Breakdown"
+                                      : "Partly Paid Leave"}
                                 </div>
-                              )}
-                              {selectedRequest.unpaid_days > 0 &&
-                                (() => {
-                                  const msg =
-                                    selectedRequest.alert_message || "";
-                                  const isBreakdown =
-                                    msg.includes("Paternity") ||
-                                    msg.includes("Maternity") ||
-                                    msg.includes("Monthly");
-                                  if (isBreakdown) {
+                                {selectedRequest.payment_type !== "Paid" && (
+                                  <div
+                                    style={{
+                                      fontSize: "12.5px",
+                                      color: "#64748b",
+                                      lineHeight: "1.5",
+                                    }}
+                                  >
+                                    {selectedRequest.alert_message ||
+                                      (selectedRequest.payment_type === "Unpaid"
+                                        ? "This leave is unpaid because the monthly paid leave limit has already been used."
+                                        : "This leave is partly unpaid because the monthly paid leave limit is exceeded.")}
+                                  </div>
+                                )}
+                                {selectedRequest.unpaid_days > 0 &&
+                                  (() => {
+                                    const msg =
+                                      selectedRequest.alert_message || "";
+                                    const isBreakdown =
+                                      msg.includes("Paternity") ||
+                                      msg.includes("Maternity") ||
+                                      msg.includes("Monthly");
+                                    if (isBreakdown) {
+                                      return (
+                                        <div
+                                          style={{
+                                            marginTop: "8px",
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            gap: "6px",
+                                          }}
+                                        >
+                                          {msg.split(" + ").map((part, i) => {
+                                            const isUnpaid =
+                                              part.includes("Unpaid");
+                                            const isMonthly =
+                                              part.includes("Monthly");
+                                            return (
+                                              <span
+                                                key={i}
+                                                style={{
+                                                  fontSize: "12px",
+                                                  fontWeight: "700",
+                                                  color: isUnpaid
+                                                    ? "#b91c1c"
+                                                    : isMonthly
+                                                      ? "#2563eb"
+                                                      : "#15803d",
+                                                  background: isUnpaid
+                                                    ? "#fef2f2"
+                                                    : isMonthly
+                                                      ? "#eff6ff"
+                                                      : "#f0fdf4",
+                                                  border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
+                                                  borderRadius: "999px",
+                                                  padding: "2px 10px",
+                                                }}
+                                              >
+                                                {isUnpaid ? "✕" : "✓"}{" "}
+                                                {part.trim()}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    }
                                     return (
+                                      <div
+                                        style={{
+                                          marginTop: "8px",
+                                          display: "flex",
+                                          gap: "10px",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontSize: "12px",
+                                            fontWeight: "700",
+                                            color: "#15803d",
+                                            background: "#f0fdf4",
+                                            border: "1px solid #86efac",
+                                            borderRadius: "999px",
+                                            padding: "2px 10px",
+                                          }}
+                                        >
+                                          ✓ {selectedRequest.paid_days ?? 0} Paid
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: "12px",
+                                            fontWeight: "700",
+                                            color: "#b91c1c",
+                                            background: "#fef2f2",
+                                            border: "1px solid #fca5a5",
+                                            borderRadius: "999px",
+                                            padding: "2px 10px",
+                                          }}
+                                        >
+                                          ✕ {selectedRequest.unpaid_days} Unpaid
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
+
+                                {/* Show breakdown for fully-paid Maternity/Paternity */}
+                                {selectedRequest.unpaid_days === 0 &&
+                                  selectedRequest.alert_message &&
+                                  (() => {
+                                    const msg = selectedRequest.alert_message;
+                                    const isBreakdown =
+                                      msg.includes("Paternity") ||
+                                      msg.includes("Maternity") ||
+                                      msg.includes("Monthly");
+                                    return isBreakdown ? (
                                       <div
                                         style={{
                                           marginTop: "8px",
@@ -3186,106 +3276,16 @@ function ManagerDashboard({ onLogout }) {
                                                 padding: "2px 10px",
                                               }}
                                             >
-                                              {isUnpaid ? "✕" : "✓"}{" "}
-                                              {part.trim()}
+                                              {isUnpaid ? "✕" : "✓"} {part.trim()}
                                             </span>
                                           );
                                         })}
                                       </div>
-                                    );
-                                  }
-                                  return (
-                                    <div
-                                      style={{
-                                        marginTop: "8px",
-                                        display: "flex",
-                                        gap: "10px",
-                                      }}
-                                    >
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          fontWeight: "700",
-                                          color: "#15803d",
-                                          background: "#f0fdf4",
-                                          border: "1px solid #86efac",
-                                          borderRadius: "999px",
-                                          padding: "2px 10px",
-                                        }}
-                                      >
-                                        ✓ {selectedRequest.paid_days ?? 0} Paid
-                                      </span>
-                                      <span
-                                        style={{
-                                          fontSize: "12px",
-                                          fontWeight: "700",
-                                          color: "#b91c1c",
-                                          background: "#fef2f2",
-                                          border: "1px solid #fca5a5",
-                                          borderRadius: "999px",
-                                          padding: "2px 10px",
-                                        }}
-                                      >
-                                        ✕ {selectedRequest.unpaid_days} Unpaid
-                                      </span>
-                                    </div>
-                                  );
-                                })()}
-
-                              {/* Show breakdown for fully-paid Maternity/Paternity */}
-                              {selectedRequest.unpaid_days === 0 &&
-                                selectedRequest.alert_message &&
-                                (() => {
-                                  const msg = selectedRequest.alert_message;
-                                  const isBreakdown =
-                                    msg.includes("Paternity") ||
-                                    msg.includes("Maternity") ||
-                                    msg.includes("Monthly");
-                                  return isBreakdown ? (
-                                    <div
-                                      style={{
-                                        marginTop: "8px",
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: "6px",
-                                      }}
-                                    >
-                                      {msg.split(" + ").map((part, i) => {
-                                        const isUnpaid =
-                                          part.includes("Unpaid");
-                                        const isMonthly =
-                                          part.includes("Monthly");
-                                        return (
-                                          <span
-                                            key={i}
-                                            style={{
-                                              fontSize: "12px",
-                                              fontWeight: "700",
-                                              color: isUnpaid
-                                                ? "#b91c1c"
-                                                : isMonthly
-                                                  ? "#2563eb"
-                                                  : "#15803d",
-                                              background: isUnpaid
-                                                ? "#fef2f2"
-                                                : isMonthly
-                                                  ? "#eff6ff"
-                                                  : "#f0fdf4",
-                                              border: `1px solid ${isUnpaid ? "#fca5a5" : isMonthly ? "#bfdbfe" : "#86efac"}`,
-                                              borderRadius: "999px",
-                                              padding: "2px 10px",
-                                            }}
-                                          >
-                                            {isUnpaid ? "✕" : "✓"} {part.trim()}
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  ) : null;
-                                })()}
+                                    ) : null;
+                                  })()}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         <div
                           style={{
@@ -3355,10 +3355,10 @@ function ManagerDashboard({ onLogout }) {
                                   borderRadius: "50%",
                                   background:
                                     selectedRequest.payment_type ===
-                                    "Partly Paid"
+                                      "Partly Paid"
                                       ? "#e11d48"
                                       : selectedRequest.payment_type ===
-                                          "Unpaid"
+                                        "Unpaid"
                                         ? "#ef4444"
                                         : "#22c55e",
                                   display: "inline-block",
@@ -3463,7 +3463,7 @@ function ManagerDashboard({ onLogout }) {
                       Leave Type Distribution
                     </div>
                     {reportSummary &&
-                    Object.keys(reportSummary.typeDistribution || {}).length >
+                      Object.keys(reportSummary.typeDistribution || {}).length >
                       0 ? (
                       (() => {
                         const originalDist = reportSummary.typeDistribution;
@@ -3497,32 +3497,32 @@ function ManagerDashboard({ onLogout }) {
                                   background:
                                     conicEntries.length > 0
                                       ? `conic-gradient(${conicEntries
-                                          .map((e, i) => {
-                                            const color =
-                                              TYPE_COLORS[e[0]] || "#64748b";
-                                            const startPct = conicEntries
-                                              .slice(0, i)
-                                              .reduce(
-                                                (a, ee) =>
-                                                  a +
-                                                  (total > 0
-                                                    ? (ee[1] / total) * 100
-                                                    : 0),
-                                                0,
-                                              );
-                                            const endPct = conicEntries
-                                              .slice(0, i + 1)
-                                              .reduce(
-                                                (a, ee) =>
-                                                  a +
-                                                  (total > 0
-                                                    ? (ee[1] / total) * 100
-                                                    : 0),
-                                                0,
-                                              );
-                                            return `${color} ${startPct}% ${endPct}%`;
-                                          })
-                                          .join(", ")})`
+                                        .map((e, i) => {
+                                          const color =
+                                            TYPE_COLORS[e[0]] || "#64748b";
+                                          const startPct = conicEntries
+                                            .slice(0, i)
+                                            .reduce(
+                                              (a, ee) =>
+                                                a +
+                                                (total > 0
+                                                  ? (ee[1] / total) * 100
+                                                  : 0),
+                                              0,
+                                            );
+                                          const endPct = conicEntries
+                                            .slice(0, i + 1)
+                                            .reduce(
+                                              (a, ee) =>
+                                                a +
+                                                (total > 0
+                                                  ? (ee[1] / total) * 100
+                                                  : 0),
+                                              0,
+                                            );
+                                          return `${color} ${startPct}% ${endPct}%`;
+                                        })
+                                        .join(", ")})`
                                       : "#cbd5e1",
                                 }}
                               >
@@ -3944,7 +3944,7 @@ function ManagerDashboard({ onLogout }) {
                   </div>
                 </div>
 
-                <div 
+                <div
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -4003,12 +4003,12 @@ function ManagerDashboard({ onLogout }) {
                   </button>
                 </div>
 
-                <div 
-                  className="profile-hero-card" 
-                  style={{ 
-                    marginBottom: "24px", 
-                    display: "flex", 
-                    alignItems: "center", 
+                <div
+                  className="profile-hero-card"
+                  style={{
+                    marginBottom: "24px",
+                    display: "flex",
+                    alignItems: "center",
                     gap: "20px",
                     padding: "20px",
                     background: "var(--bg-card, #ffffff)",
@@ -4018,7 +4018,7 @@ function ManagerDashboard({ onLogout }) {
                 >
                   <div
                     className="popup-employee-initials"
-                    style={{ 
+                    style={{
                       backgroundColor: "#f25c05",
                       width: "60px",
                       height: "60px",
@@ -4103,7 +4103,7 @@ function ManagerDashboard({ onLogout }) {
                 </div>
 
                 {/* Breakdown and History Row */}
-                <div 
+                <div
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -4176,35 +4176,35 @@ function ManagerDashboard({ onLogout }) {
                                     background:
                                       conicEntries.length > 0
                                         ? `conic-gradient(${conicEntries
-                                            .map((e, i) => {
-                                              const color =
-                                                TYPE_COLORS[e[0]] ||
-                                                "#64748b";
-                                              const startPct = conicEntries
-                                                .slice(0, i)
-                                                .reduce(
-                                                  (a, ee) =>
-                                                    a +
-                                                    (total > 0
-                                                      ? (ee[1] / total) *
-                                                        100
-                                                      : 0),
-                                                  0,
-                                                );
-                                              const endPct = conicEntries
-                                                .slice(0, i + 1)
-                                                .reduce(
-                                                  (a, ee) =>
-                                                    a +
-                                                    (total > 0
-                                                      ? (ee[1] / total) *
-                                                        100
-                                                      : 0),
-                                                  0,
-                                                );
-                                              return `${color} ${startPct}% ${endPct}%`;
-                                            })
-                                            .join(", ")})`
+                                          .map((e, i) => {
+                                            const color =
+                                              TYPE_COLORS[e[0]] ||
+                                              "#64748b";
+                                            const startPct = conicEntries
+                                              .slice(0, i)
+                                              .reduce(
+                                                (a, ee) =>
+                                                  a +
+                                                  (total > 0
+                                                    ? (ee[1] / total) *
+                                                    100
+                                                    : 0),
+                                                0,
+                                              );
+                                            const endPct = conicEntries
+                                              .slice(0, i + 1)
+                                              .reduce(
+                                                (a, ee) =>
+                                                  a +
+                                                  (total > 0
+                                                    ? (ee[1] / total) *
+                                                    100
+                                                    : 0),
+                                                0,
+                                              );
+                                            return `${color} ${startPct}% ${endPct}%`;
+                                          })
+                                          .join(", ")})`
                                         : "#cbd5e1",
                                   }}
                                 >
@@ -4277,7 +4277,7 @@ function ManagerDashboard({ onLogout }) {
                                   marginBottom: "8px",
                                 }}
                               >
-                                <div 
+                                <div
                                   className="item-meta"
                                   style={{
                                     display: "flex",
@@ -4325,7 +4325,7 @@ function ManagerDashboard({ onLogout }) {
                   </div>
                 </div>
 
-                <div 
+                <div
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -4357,12 +4357,12 @@ function ManagerDashboard({ onLogout }) {
                   </button>
                 </div>
 
-                <div 
-                  className="profile-hero-card" 
-                  style={{ 
-                    marginBottom: "24px", 
-                    display: "flex", 
-                    alignItems: "center", 
+                <div
+                  className="profile-hero-card"
+                  style={{
+                    marginBottom: "24px",
+                    display: "flex",
+                    alignItems: "center",
                     gap: "20px",
                     padding: "20px",
                     background: "var(--bg-card, #ffffff)",
@@ -4372,7 +4372,7 @@ function ManagerDashboard({ onLogout }) {
                 >
                   <div
                     className="popup-employee-initials"
-                    style={{ 
+                    style={{
                       backgroundColor: "#f25c05",
                       width: "60px",
                       height: "60px",
@@ -4413,7 +4413,7 @@ function ManagerDashboard({ onLogout }) {
                   </div>
                 </div>
 
-                <div 
+                <div
                   className="report-table-card"
                   style={{
                     background: "var(--bg-card, #ffffff)",
@@ -5093,20 +5093,19 @@ function ManagerDashboard({ onLogout }) {
                         >
                           {selectedHoliday.holiday_type &&
                             selectedHoliday.holiday_type !==
-                              "Sunday Holiday" && (
+                            "Sunday Holiday" && (
                               <span
-                                className={`detail-type-badge detail-type-badge--${
-                                  selectedHoliday.holiday_type ===
-                                  "Public Holiday"
+                                className={`detail-type-badge detail-type-badge--${selectedHoliday.holiday_type ===
+                                    "Public Holiday"
                                     ? "public"
                                     : selectedHoliday.holiday_type ===
-                                        "Festival"
+                                      "Festival"
                                       ? "festival"
                                       : selectedHoliday.holiday_type ===
-                                          "Company Holiday"
+                                        "Company Holiday"
                                         ? "company"
                                         : "default"
-                                }`}
+                                  }`}
                               >
                                 {selectedHoliday.holiday_type}
                               </span>
@@ -5131,7 +5130,7 @@ function ManagerDashboard({ onLogout }) {
                           {selectedHoliday.isSunday &&
                             selectedHoliday.holiday_type &&
                             selectedHoliday.holiday_type !==
-                              "Sunday Holiday" && (
+                            "Sunday Holiday" && (
                               <span className="detail-weekly-off-tag">
                                 (Weekly Off)
                               </span>
@@ -5165,7 +5164,7 @@ function ManagerDashboard({ onLogout }) {
                           {selectedHoliday.isSunday &&
                             selectedHoliday.holiday_type &&
                             selectedHoliday.holiday_type !==
-                              "Sunday Holiday" && (
+                            "Sunday Holiday" && (
                               <span className="sunday-note-text">
                                 Note: Sundays are company weekly holidays.
                               </span>
