@@ -33,6 +33,7 @@ import {
   FaBellSlash,
 } from "react-icons/fa";
 import "../styles/EmployeeDashboard.css";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const leaveRows = [
   [
@@ -488,7 +489,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       })
       .catch(() => {});
 
-    fetch("${API_BASE_URL}/api/holidays")
+    fetch(`${API_BASE_URL}/api/holidays`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) {
@@ -520,7 +521,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
     setSubmitError("");
     setSubmitting(true);
     try {
-      const response = await fetch("${API_BASE_URL}/api/leave/apply", {
+      const response = await fetch(`${API_BASE_URL}/api/leave/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2306,7 +2307,7 @@ function LeaveSummaryView() {
     }
 
     try {
-      const hResponse = await fetch("${API_BASE_URL}/api/holidays");
+      const hResponse = await fetch(`${API_BASE_URL}/api/holidays`);
       const hData = await hResponse.json();
       if (hData.success) {
         setHolidays(hData.holidays || []);
@@ -4804,7 +4805,6 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
 }
 
 function EmployeeDashboard({ onLogout }) {
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("employeeActiveView") || "profile";
   });

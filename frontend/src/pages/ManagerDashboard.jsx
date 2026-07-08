@@ -47,6 +47,7 @@ import sarahRamanAvatar from "../assets/sarah_raman.png";
 import rinaSharmaAvatar from "../assets/rina_sharma.png";
 import sarahPamestAvatar from "../assets/sarah_pamest.png";
 import "../styles/ManagerDashboard.css";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
@@ -572,7 +573,6 @@ function NotificationBellManager({
 }
 
 function ManagerDashboard({ onLogout }) {
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("managerActiveView") || "profile";
   });
@@ -634,7 +634,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchHolidays = async () => {
     setHolidaysLoading(true);
     try {
-      const response = await fetch("${API_BASE_URL}/api/holidays");
+      const response = await fetch(`${API_BASE_URL}/api/holidays`);
       const data = await response.json();
       if (data.success) {
         setHolidaysList(data.holidays || []);
@@ -1356,7 +1356,7 @@ function ManagerDashboard({ onLogout }) {
   const fetchManagerLeaves = async () => {
     setLeavesLoading(true);
     try {
-      const response = await fetch("${API_BASE_URL}/api/manager/leaves");
+      const response = await fetch(`${API_BASE_URL}/api/manager/leaves`);
       const data = await response.json();
       console.log("Manager leaves:", data.leaves);
       if (data.success) {
@@ -1528,7 +1528,7 @@ function ManagerDashboard({ onLogout }) {
     e.preventDefault();
     setAddError("");
     try {
-      const response = await fetch("${API_BASE_URL}/api/holidays", {
+      const response = await fetch(`${API_BASE_URL}/api/holidays`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
