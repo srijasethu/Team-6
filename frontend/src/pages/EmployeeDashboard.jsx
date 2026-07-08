@@ -1,4 +1,3 @@
-﻿const API_BASE_URL = import.meta.env.VITE_API_URL;
 import { useState, useRef, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 const MONTHLY_PAID_LIMIT = 3;
@@ -4805,6 +4804,7 @@ function NotificationBell({ refreshCountTrigger, setRefreshCountTrigger }) {
 }
 
 function EmployeeDashboard({ onLogout }) {
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [activeView, setActiveView] = useState(() => {
     return localStorage.getItem("employeeActiveView") || "profile";
   });
