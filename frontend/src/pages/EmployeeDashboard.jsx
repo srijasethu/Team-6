@@ -921,7 +921,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Monthly Paid Leave */}
               <PolicySection type="monthly-paid" title="🗓 Monthly Paid Leave Limit" color="#2563eb" bg="#eff6ff" border="#bfdbfe">
                 <PolicyRow label="Paid leave days per month" value="3 days" />
-                <PolicyRow label="Leave beyond 3 days in a month" value="Becomes Unpaid Leave" highlight="red" />
+                <PolicyRow label="Leave beyond 3 days in a month" value="Unpaid Leave" highlight="red" />
                 <PolicyRow label="Maximum paid leave per year" value="36 days (3 × 12 months)" />
               </PolicySection>
 
@@ -940,7 +940,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Personal Leave */}
               <PolicySection type="personal" title="👤 Personal Leave" color="#0891b2" bg="#ecfeff" border="#a5f3fc">
                 <PolicyRow label="Paid days per month" value="3 days (shared monthly pool)" />
-                <PolicyRow label="Beyond monthly limit" value="Becomes Unpaid Leave" highlight="red" />
+                <PolicyRow label="Beyond monthly limit" value="Unpaid Leave" highlight="red" />
                 <PolicyRow label="Past dates" value="Not allowed" highlight="red" />
                 <PolicyRow label="Allowed period" value="Current month + next month only" />
                 <PolicyNote>Marriage, personal errands, and other personal reasons fall under Personal Leave.</PolicyNote>
@@ -949,7 +949,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               {/* Medical Leave */}
               <PolicySection type="medical" title="🏥 Medical Leave" color="#16a34a" bg="#f0fdf4" border="#bbf7d0">
                 <PolicyRow label="Paid days per month" value="3 days (shared with Personal Leave pool)" />
-                <PolicyRow label="Beyond monthly limit" value="Becomes Unpaid Leave" highlight="red" />
+                <PolicyRow label="Beyond monthly limit" value="Unpaid Leave" highlight="red" />
                 <PolicyRow label="Medical certificate" value="Not required" highlight="green" />
                 <PolicyRow label="Past dates" value="Allowed (within current month)" highlight="green" />
                 <PolicyRow label="Allowed period" value="Past dates + current month + next month" />
@@ -957,7 +957,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
               {/* Maternity Leave */}
               <PolicySection type="maternity" title="🤱 Maternity Leave" color="#db2777" bg="#fdf2f8" border="#f9a8d4">
-                <PolicyRow label="Eligible employees" value="Female employees" />
+                <PolicyRow label="Eligible employees" value="Female" />
                 <PolicyRow label="Duration" value="+182 paid days" highlight="green" />
                 <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
@@ -967,7 +967,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
               {/* Paternity Leave */}
               <PolicySection type="paternity" title="👨‍👧 Paternity Leave" color="#7c3aed" bg="#f5f3ff" border="#ddd6fe">
-                <PolicyRow label="Eligible employees" value="Male employees" />
+                <PolicyRow label="Eligible employees" value="Male" />
                 <PolicyRow label="Duration" value="+15 paid days" highlight="green" />
                 <PolicyRow label="Payment" value="Fully Paid — independent of monthly limit" highlight="green" />
                 <PolicyRow label="Impact on Personal / Medical limit" value="None" />
@@ -1075,7 +1075,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
                   addSection("Monthly Paid Leave Limit", [
                     ["Paid leave days per month", "3 days"],
-                    ["Leave beyond 3 days in a month", "Becomes Unpaid Leave"],
+                    ["Leave beyond 3 days in a month", "Unpaid Leave"],
                     ["Maximum paid leave per year", "36 days (3 x 12 months)"],
                   ]);
 
@@ -1092,21 +1092,21 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
 
                   addSection("Personal Leave", [
                     ["Paid days per month", "3 days (shared monthly pool)"],
-                    ["Beyond monthly limit", "Becomes Unpaid Leave"],
+                    ["Beyond monthly limit", "Unpaid Leave"],
                     ["Past dates", "Not allowed"],
                     ["Allowed period", "Current month + next month only"],
                   ], ["Marriage and other personal reasons fall under Personal Leave."]);
 
                   addSection("Medical Leave", [
                     ["Paid days per month", "3 days (shared with Personal Leave pool)"],
-                    ["Beyond monthly limit", "Becomes Unpaid Leave"],
+                    ["Beyond monthly limit", "Unpaid Leave"],
                     ["Medical certificate", "Not required"],
                     ["Past dates", "Allowed (within current month)"],
                     ["Allowed period", "Past dates + current month + next month"],
                   ]);
 
                   addSection("Maternity Leave", [
-                    ["Eligible employees", "Female employees"],
+                    ["Eligible employees", "Female"],
                     ["Duration", "+182 paid days"],
                     ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
@@ -1115,7 +1115,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
                   ]);
 
                   addSection("Paternity Leave", [
-                    ["Eligible employees", "Male employees"],
+                    ["Eligible employees", "Male"],
                     ["Duration", "+15 paid days"],
                     ["Payment", "Fully Paid — independent of monthly limit"],
                     ["Impact on Personal / Medical limit", "None"],
