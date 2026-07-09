@@ -35,6 +35,42 @@ import {
 import "../styles/EmployeeDashboard.css";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// Safe localStorage helper
+const safeGetItem = (key, fallback = null) => {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch (e) {
+    console.warn("localStorage.getItem failed:", e);
+    return fallback;
+  }
+};
+
+const safeSetItem = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn("localStorage.setItem failed:", e);
+  }
+};
+
+const safeRemoveItem = (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.warn("localStorage.removeItem failed:", e);
+  }
+};
+
+const safeJsonParse = (str, fallback = null) => {
+  if (!str) return fallback;
+  try {
+    return JSON.parse(str) || fallback;
+  } catch (e) {
+    console.warn("JSON.parse failed:", e);
+    return fallback;
+  }
+};
+
 const leaveRows = [
   [
     "1",
@@ -282,8 +318,8 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
   }, [confirmModal.show, showPolicyModal]);
 
   // Read gender from localStorage to restrict leave type options
-  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const userGender = storedUser.gender || "";
+  const storedUser = safeJsonParse(safeGetItem("user"), {});
+  const userGender = storedUser?.gender || "";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -4858,7 +4894,7 @@ function EmployeeDashboard({ onLogout }) {
     return () => document.body.classList.remove("modal-open");
   }, [showLogoutModal, photoPreview]);
 
-  const loggedInUser = JSON.parse(localStorage.getItem("user"));
+  const loggedInUser = safeJsonParse(safeGetItem("user"), {});
 
   const [profileData, setProfileData] = useState({
     name: loggedInUser?.name || "",
@@ -4873,8 +4909,8 @@ function EmployeeDashboard({ onLogout }) {
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) return;
+    const user = safeJsonParse(safeGetItem("user"));
+    if (!user?.id) return;
     fetch(`${API_BASE_URL}/api/profile/get/${user.id}`)
       .then((r) => r.json())
       .then((data) => {
