@@ -52,7 +52,20 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
-  return new Date(dateString).toLocaleDateString("en-GB", {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) {
+    const fixed = String(dateString).replace(/-/g, "/").replace("T", " ").split(".")[0];
+    const d2 = new Date(fixed);
+    if (!isNaN(d2.getTime())) {
+      return d2.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+    return dateString;
+  }
+  return d.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -73,7 +86,18 @@ const formatDateNicely = (dateStr) => {
     }
   }
   if (!dateObj || isNaN(dateObj.getTime())) dateObj = new Date(dateStr);
-  if (isNaN(dateObj.getTime())) return dateStr;
+  if (isNaN(dateObj.getTime())) {
+    const fixed = String(dateStr).replace(/-/g, "/").replace("T", " ").split(".")[0];
+    const d2 = new Date(fixed);
+    if (!isNaN(d2.getTime())) {
+      return d2.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    }
+    return dateStr;
+  }
   return dateObj.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
