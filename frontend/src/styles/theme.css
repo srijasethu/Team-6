@@ -914,6 +914,65 @@ body.modal-open .profile-panel {
   background: var(--bg-card-hover) !important;
   box-shadow: none;
 }
+
+[data-theme="dark"] .requests-table tbody tr.special-row-maternity {
+  background: linear-gradient(90deg, rgba(219, 39, 119, 0.08) 0%, var(--bg-table-row) 100%) !important;
+  border-left: 4px solid #f472b6 !important;
+}
+[data-theme="dark"] .requests-table tbody tr.special-row-maternity td:first-child {
+  border-left: 4px solid #f472b6 !important;
+}
+
+[data-theme="dark"] .requests-table tbody tr.special-row-paternity {
+  background: linear-gradient(90deg, rgba(129, 140, 248, 0.08) 0%, var(--bg-table-row) 100%) !important;
+  border-left: 4px solid #818cf8 !important;
+}
+[data-theme="dark"] .requests-table tbody tr.special-row-paternity td:first-child {
+  border-left: 4px solid #818cf8 !important;
+}
+
+/* Redesigned highlight hover consistency in dark mode */
+[data-theme="dark"] .requests-table tbody tr.special-row-maternity:hover,
+[data-theme="dark"] .requests-table tbody tr.special-row-paternity:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+/* Compact badges in dark mode with subtle glow */
+[data-theme="dark"] .special-leave-badge.maternity {
+  background-color: rgba(219, 39, 119, 0.15) !important;
+  color: #f472b6 !important;
+  border: 1px solid rgba(244, 114, 182, 0.3) !important;
+  box-shadow: 0 0 8px rgba(219, 39, 119, 0.3) !important;
+}
+
+[data-theme="dark"] .special-leave-badge.paternity {
+  background-color: rgba(124, 58, 237, 0.15) !important;
+  color: #a78bfa !important;
+  border: 1px solid rgba(167, 139, 250, 0.3) !important;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3) !important;
+}
+
+/* Text glow for leave type name inside special rows */
+[data-theme="dark"] .special-row-maternity .leave-type-name {
+  color: #f472b6 !important;
+  text-shadow: 0 0 8px rgba(244, 114, 182, 0.35);
+}
+
+[data-theme="dark"] .special-row-paternity .leave-type-name {
+  color: #a78bfa !important;
+  text-shadow: 0 0 8px rgba(167, 139, 250, 0.35);
+}
+
+/* Star icon glow in dark mode */
+[data-theme="dark"] .special-row-maternity .special-leave-star {
+  color: #f472b6 !important;
+  filter: drop-shadow(0 0 3px rgba(244, 114, 182, 0.6));
+}
+
+[data-theme="dark"] .special-row-paternity .special-leave-star {
+  color: #a78bfa !important;
+  filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.6));
+}
 [data-theme="dark"] .report-table tbody tr {
   background: var(--bg-table-row);
 }

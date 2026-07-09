@@ -37,6 +37,7 @@ import {
   FaFilePdf,
   FaBell,
   FaBellSlash,
+  FaStar,
 } from "react-icons/fa";
 import { FiLogOut } from "react-icons/fi";
 import { jsPDF } from "jspdf";
@@ -2753,12 +2754,10 @@ function ManagerDashboard({ onLogout }) {
                                 const compactText = isMaternity
                                   ? `+182 Paid Maternity • ${unpaidVal} Unpaid`
                                   : `+15 Paid Paternity • ${unpaidVal} Unpaid`;
-                                const specialBadgeStyle = isMaternity
-                                  ? { backgroundColor: "#fdf2f8", color: "#db2777", border: "1px solid #f9a8d4" }
-                                  : { backgroundColor: "#f5f3ff", color: "#7c3aed", border: "1px solid #ddd6fe" };
                                 badges.push(
                                   <span
                                     key="special-compact-badge"
+                                    className={`special-leave-badge ${isMaternity ? "maternity" : "paternity"}`}
                                     style={{
                                       display: "inline-flex",
                                       alignItems: "center",
@@ -2767,7 +2766,6 @@ function ManagerDashboard({ onLogout }) {
                                       fontSize: "11px",
                                       fontWeight: "700",
                                       letterSpacing: "0.02em",
-                                      ...specialBadgeStyle,
                                     }}
                                   >
                                     {compactText}
@@ -2883,17 +2881,16 @@ function ManagerDashboard({ onLogout }) {
                               return "";
                             };
 
-                            const rowStyle = isSpecialLeave ? {
-                              background: isMaternity
-                                ? "linear-gradient(90deg, rgba(253, 242, 248, 0.5) 0%, rgba(255, 255, 255, 1) 100%)"
-                                : "linear-gradient(90deg, rgba(245, 243, 255, 0.5) 0%, rgba(255, 255, 255, 1) 100%)",
-                              borderLeft: isMaternity ? "4px solid #f9a8d4" : "4px solid #ddd6fe"
-                            } : {};
-
                             return (
                               <tr
                                 key={`${request.dbId || request.id}-${index}`}
-                                style={rowStyle}
+                                className={
+                                  isSpecialLeave
+                                    ? isMaternity
+                                      ? "special-row-maternity"
+                                      : "special-row-paternity"
+                                    : ""
+                                }
                               >
                                 {/* Employee Name column */}
                                 <td>
@@ -2925,7 +2922,7 @@ function ManagerDashboard({ onLogout }) {
                                         <FaInfoCircle />
                                       </button>
                                       <span className="leave-type-name" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                        {request.type} {isSpecialLeave && <span style={{ fontSize: "12px" }}>⭐</span>}
+                                        {request.type} {isSpecialLeave && <FaStar className="special-leave-star" />}
                                       </span>
                                     </div>
                                     {/* Badges row: all payment/type badges in a horizontal row */}

@@ -4699,3 +4699,57 @@
   transform: scale(1.18);
   box-shadow: 0 5px 16px rgba(242, 92, 5, 0.6);
 }
+
+/* ============================================
+   SPECIAL LEAVE ROWS (MATERNITY / PATERNITY)
+   ============================================ */
+.special-row-maternity {
+  background: linear-gradient(90deg, rgba(253, 242, 248, 0.5) 0%, rgba(255, 255, 255, 1) 100%) !important;
+  border-left: 4px solid #f9a8d4 !important;
+}
+.special-row-maternity td:first-child {
+  border-left: 4px solid #f9a8d4 !important;
+}
+
+.special-row-paternity {
+  background: linear-gradient(90deg, rgba(245, 243, 255, 0.5) 0%, rgba(255, 255, 255, 1) 100%) !important;
+  border-left: 4px solid #ddd6fe !important;
+}
+.special-row-paternity td:first-child {
+  border-left: 4px solid #ddd6fe !important;
+}
+
+/* Redesigned highlight hover consistency */
+.requests-table tbody tr.special-row-maternity:hover,
+.requests-table tbody tr.special-row-paternity:hover {
+  background: #fff4ee !important;
+}
+
+/* Compact badges in light mode */
+.special-leave-badge.maternity {
+  background-color: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #f9a8d4;
+}
+
+.special-leave-badge.paternity {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+  border: 1px solid #ddd6fe;
+}
+
+/* Elegant vector star icon */
+.special-leave-star {
+  font-size: 11px;
+  margin-left: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.special-row-maternity .special-leave-star {
+  color: #db2777;
+}
+
+.special-row-paternity .special-leave-star {
+  color: #7c3aed;
+}
