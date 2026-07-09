@@ -102,6 +102,41 @@ const getProfilePhotoUrl = (photoPath) => {
   return `${API_BASE_URL}${cleanedPath}`;
 };
 
+const safeRequestNotificationPermission = () => {
+  try {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+    if (isMobile) return;
+
+    if (
+      "Notification" in window &&
+      typeof Notification !== "undefined" &&
+      Notification.requestPermission
+    ) {
+      Notification.requestPermission();
+    }
+  } catch (e) {
+    console.warn("safeRequestNotificationPermission failed:", e);
+  }
+};
+
+const safeShowNotification = (title, options) => {
+  try {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+    if (isMobile) return;
+
+    if (
+      "Notification" in window &&
+      typeof Notification === "function" &&
+      Notification.permission === "granted"
+    ) {
+      new Notification(title, options);
+    }
+  } catch (e) {
+    console.warn("safeShowNotification failed:", e);
+  }
+};
+
+
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
   const d = new Date(dateString);
@@ -659,12 +694,8 @@ function NotificationBellManager({
   useEffect(() => {
     if (dropdownOpen) {
       fetchNotificationsList();
-      if (
-        enabled &&
-        "Notification" in window &&
-        Notification.permission === "default"
-      ) {
-        Notification.requestPermission();
+      if (enabled) {
+        safeRequestNotificationPermission();
       }
     }
   }, [dropdownOpen, enabled]);
@@ -701,8 +732,8 @@ function NotificationBellManager({
       const data = await res.json();
       if (data.success) {
         setEnabled(data.notifications_enabled);
-        if (data.notifications_enabled && "Notification" in window)
-          Notification.requestPermission();
+        if (data.notifications_enabled)
+          safeRequestNotificationPermission();
         if (setRefreshCountTrigger) setRefreshCountTrigger((prev) => prev + 1);
         else fetchSettingsAndCount();
       }
@@ -755,18 +786,13 @@ function NotificationBellManager({
       const newUnreads = currentUnreads.filter(
         (n) => !prevUnreadList.some((p) => p.id === n.id),
       );
-      if (
-        newUnreads.length > 0 &&
-        "Notification" in window &&
-        Notification.permission === "granted"
-      ) {
-        newUnreads.forEach(
-          (n) =>
-            new Notification(n.title, {
-              body: n.message,
-              icon: "/favicon.svg",
-            }),
-        );
+      if (newUnreads.length > 0) {
+        newUnreads.forEach((n) => {
+          safeShowNotification(n.title, {
+            body: n.message,
+            icon: "/favicon.svg",
+          });
+        });
       }
       setPrevUnreadList(currentUnreads);
     }
@@ -1417,8 +1443,8 @@ function ManagerDashboard({ onLogout }) {
       const data = await res.json();
       if (data.success) {
         setNotifToggleEnabled(data.notifications_enabled);
-        if (data.notifications_enabled && "Notification" in window)
-          Notification.requestPermission();
+        if (data.notifications_enabled)
+          safeRequestNotificationPermission();
         setNotifRefreshTrigger((prev) => prev + 1);
       }
     } catch (err) {
