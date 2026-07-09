@@ -50,6 +50,42 @@ import sarahPamestAvatar from "../assets/sarah_pamest.png";
 import "../styles/ManagerDashboard.css";
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// Safe localStorage helper
+const safeGetItem = (key, fallback = null) => {
+  try {
+    return localStorage.getItem(key) || fallback;
+  } catch (e) {
+    console.warn("localStorage.getItem failed:", e);
+    return fallback;
+  }
+};
+
+const safeSetItem = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn("localStorage.setItem failed:", e);
+  }
+};
+
+const safeRemoveItem = (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.warn("localStorage.removeItem failed:", e);
+  }
+};
+
+const safeJsonParse = (str, fallback = null) => {
+  if (!str) return fallback;
+  try {
+    return JSON.parse(str) || fallback;
+  } catch (e) {
+    console.warn("JSON.parse failed:", e);
+    return fallback;
+  }
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
   const d = new Date(dateString);
@@ -1288,7 +1324,7 @@ function ManagerDashboard({ onLogout }) {
       currentY,
     );
 
-    const loggedInUser = JSON.parse(localStorage.getItem("user")) || {};
+    const loggedInUser = safeJsonParse(safeGetItem("user"), {});
     doc.setFont("helvetica", "bold");
     doc.text("Manager Name:", 110, currentY);
     doc.setFont("helvetica", "normal");
@@ -1315,13 +1351,31 @@ function ManagerDashboard({ onLogout }) {
   };
 
   // Profile photo
-  const managerLoggedInUser = JSON.parse(localStorage.getItem("user"));
+  const managerLoggedInUser = safeJsonParse(safeGetItem("user"), {});
   const [profilePhoto, setProfilePhoto] = useState(
     managerLoggedInUser?.profile_photo || null,
   );
   const profilePhotoInputRef = useRef(null);
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const photoMenuRef = useRef(null);
+
+  // Fetch fresh profile photo from DB on mount so it persists after refresh/redeployment
+  useEffect(() => {
+    const user = safeJsonParse(safeGetItem("user"));
+    if (!user?.id) return;
+    fetch(`${API_BASE_URL}/api/profile/get/${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          const freshPhoto = data.user.profile_photo || null;
+          setProfilePhoto(freshPhoto);
+          // Keep localStorage in sync with the latest DB value
+          const updatedUser = { ...user, profile_photo: freshPhoto };
+          safeSetItem("user", JSON.stringify(updatedUser));
+        }
+      })
+      .catch(() => { });
+  }, []);
 
   // Notification settings for profile toggle
   const [notifToggleEnabled, setNotifToggleEnabled] = useState(true);
@@ -1419,7 +1473,7 @@ function ManagerDashboard({ onLogout }) {
   };
 
   const handleUploadConfirm = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = safeJsonParse(safeGetItem("user"));
     if (!pendingPhotoFile || !user) return;
 
     const formData = new FormData();
@@ -1437,7 +1491,7 @@ function ManagerDashboard({ onLogout }) {
       const data = await response.json();
       if (data.success) {
         const updatedUser = { ...user, profile_photo: data.profile_photo };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        safeSetItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(data.profile_photo);
         showToast("Profile photo updated successfully", "success");
         setPhotoPreview(null);
@@ -1452,8 +1506,8 @@ function ManagerDashboard({ onLogout }) {
   };
 
   const handleProfilePhotoRemove = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) return;
+    const user = safeJsonParse(safeGetItem("user"));
+    if (!user?.id) return;
 
     try {
       const response = await fetch(
@@ -1465,7 +1519,7 @@ function ManagerDashboard({ onLogout }) {
       const data = await response.json();
       if (data.success) {
         const updatedUser = { ...user, profile_photo: null };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        safeSetItem("user", JSON.stringify(updatedUser));
         setProfilePhoto(null);
         showToast("Profile photo removed successfully", "success");
       } else {
@@ -1643,9 +1697,8 @@ function ManagerDashboard({ onLogout }) {
   };
 
   const handleSaveClick = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!user) return;
+    const user = safeJsonParse(safeGetItem("user"));
+    if (!user?.id) return;
 
     try {
       const response = await fetch(
@@ -1674,7 +1727,7 @@ function ManagerDashboard({ onLogout }) {
           ...data.user,
         };
 
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        safeSetItem("user", JSON.stringify(updatedUser));
 
         setProfileData({
           name: data.user.name || "",
