@@ -4895,7 +4895,9 @@ function EmployeeDashboard({ onLogout }) {
           };
           setProfileData(freshProfile);
           setTempProfileData(freshProfile);
-          // Keep localStorage in sync
+          // Update profilePhoto from DB so it persists after refresh/redeployment
+          setProfilePhoto(data.user.profile_photo || null);
+          // Keep localStorage in sync with the latest DB value
           localStorage.setItem(
             "user",
             JSON.stringify({ ...user, ...data.user, gender: freshGender }),

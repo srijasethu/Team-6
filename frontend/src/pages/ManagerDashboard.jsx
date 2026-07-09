@@ -1323,6 +1323,24 @@ function ManagerDashboard({ onLogout }) {
   const [showPhotoMenu, setShowPhotoMenu] = useState(false);
   const photoMenuRef = useRef(null);
 
+  // Fetch fresh profile photo from DB on mount so it persists after refresh/redeployment
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user?.id) return;
+    fetch(`${API_BASE_URL}/api/profile/get/${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.user) {
+          const freshPhoto = data.user.profile_photo || null;
+          setProfilePhoto(freshPhoto);
+          // Keep localStorage in sync with the latest DB value
+          const updatedUser = { ...user, profile_photo: freshPhoto };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+      })
+      .catch(() => { });
+  }, []);
+
   // Notification settings for profile toggle
   const [notifToggleEnabled, setNotifToggleEnabled] = useState(true);
   useEffect(() => {

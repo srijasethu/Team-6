@@ -1,16 +1,15 @@
 const express = require("express");
 const multer = require("multer");
 const db = require("../config/db");
-const fs = require("fs");
-const path = require("path");
 
 const router = express.Router();
 
+// ── Test Route ────────────────────────────────────────────────────────────────
 router.get("/test", (req, res) => {
   res.json({ message: "Profile routes working" });
 });
 
-// ── GET /get/:id ─────────────────────────────────────────────────────────────
+// ── GET /get/:id ──────────────────────────────────────────────────────────────
 router.get("/get/:id", (req, res) => {
   const userId = req.params.id;
   const sql = `
@@ -30,36 +29,11 @@ router.get("/get/:id", (req, res) => {
   });
 });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
+// ── Upload uses memory storage: convert to base64 data URI saved in MySQL ─────
+// This avoids Railway's ephemeral filesystem — photos survive restarts/redeploys
+const upload = multer({ storage: multer.memoryStorage() });
 
-const upload = multer({ storage });
-
-const deleteFileFromUrl = (photoUrl) => {
-  if (!photoUrl) return;
-
-  try {
-    const prefix = "https://team-6-production-a95e.up.railway.app/uploads/";
-
-    if (photoUrl.startsWith(prefix)) {
-      const filename = photoUrl.replace(prefix, "");
-      const filePath = path.join(__dirname, "..", "uploads", filename);
-
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    }
-  } catch (err) {
-    console.error("Failed to delete old avatar file:", err);
-  }
-};
-
+// ── PUT /upload-photo/:id ─────────────────────────────────────────────────────
 router.put("/upload-photo/:id", upload.single("profile_photo"), (req, res) => {
   const userId = req.params.id;
 
@@ -67,55 +41,44 @@ router.put("/upload-photo/:id", upload.single("profile_photo"), (req, res) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const imagePath = `https://team-6-production-a95e.up.railway.app/uploads/${req.file.filename}`;
+  // Convert buffer to base64 data URI stored directly in MySQL
+  const mimeType = req.file.mimetype || "image/jpeg";
+  const base64 = req.file.buffer.toString("base64");
+  const dataUri = `data:${mimeType};base64,${base64}`;
 
-  const selectSql = "SELECT profile_photo FROM users WHERE id = ?";
+  const sql = "UPDATE users SET profile_photo = ? WHERE id = ?";
 
-  db.query(selectSql, [userId], (selectErr, result) => {
-    if (!selectErr && result.length > 0) {
-      deleteFileFromUrl(result[0].profile_photo);
+  db.query(sql, [dataUri, userId], (err) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
     }
 
-    const sql = "UPDATE users SET profile_photo = ? WHERE id = ?";
-
-    db.query(sql, [imagePath, userId], (err) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      res.json({
-        success: true,
-        profile_photo: imagePath,
-      });
+    res.json({
+      success: true,
+      profile_photo: dataUri,
     });
   });
 });
 
+// ── DELETE /remove-photo/:id ──────────────────────────────────────────────────
 router.delete("/remove-photo/:id", (req, res) => {
   const userId = req.params.id;
 
-  const selectSql = "SELECT profile_photo FROM users WHERE id = ?";
+  const sql = "UPDATE users SET profile_photo = NULL WHERE id = ?";
 
-  db.query(selectSql, [userId], (selectErr, result) => {
-    if (!selectErr && result.length > 0) {
-      deleteFileFromUrl(result[0].profile_photo);
+  db.query(sql, [userId], (err) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
     }
 
-    const sql = "UPDATE users SET profile_photo = NULL WHERE id = ?";
-
-    db.query(sql, [userId], (err) => {
-      if (err) {
-        return res.status(500).json(err);
-      }
-
-      res.json({
-        success: true,
-        profile_photo: null,
-      });
+    res.json({
+      success: true,
+      profile_photo: null,
     });
   });
 });
 
+// ── PUT /update/:id ───────────────────────────────────────────────────────────
 router.put("/update/:id", (req, res) => {
   const userId = req.params.id;
 
@@ -137,29 +100,22 @@ router.put("/update/:id", (req, res) => {
     [name, email, phone, department, formattedJoiningDate, designation, userId],
     (err) => {
       if (err) {
-        return res.status(500).json(err);
+        return res.status(500).json({ success: false, error: err.message });
       }
 
       const selectSql = `
-        SELECT 
-          id,
-          name,
-          email,
-          role,
-          employee_id,
-          department,
-          phone,
+        SELECT
+          id, name, email, role, employee_id,
+          department, phone,
           DATE_FORMAT(joining_date, '%Y-%m-%d') AS joining_date,
-          designation,
-          profile_photo,
-          gender
+          designation, profile_photo, gender
         FROM users
         WHERE id = ?
       `;
 
       db.query(selectSql, [userId], (selectErr, result) => {
         if (selectErr) {
-          return res.status(500).json(selectErr);
+          return res.status(500).json({ success: false, error: selectErr.message });
         }
 
         res.json({
