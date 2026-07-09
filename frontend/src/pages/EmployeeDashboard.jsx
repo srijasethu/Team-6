@@ -71,6 +71,21 @@ const safeJsonParse = (str, fallback = null) => {
   }
 };
 
+// Converts a backend profile_photo value (relative path or data URI) to a displayable URL
+const getProfilePhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  if (
+    photoPath.startsWith("http://") ||
+    photoPath.startsWith("https://") ||
+    photoPath.startsWith("data:") ||
+    photoPath.startsWith("blob:")
+  ) {
+    return photoPath;
+  }
+  const cleanedPath = photoPath.startsWith("/") ? photoPath : `/${photoPath}`;
+  return `${API_BASE_URL}${cleanedPath}`;
+};
+
 const leaveRows = [
   [
     "1",
@@ -164,7 +179,8 @@ function EmployeeAvatar({
     if (onRemovePhoto) onRemovePhoto();
   };
 
-  const showDefault = !photoUrl || imgError;
+  const resolvedPhotoUrl = getProfilePhotoUrl(photoUrl);
+  const showDefault = !resolvedPhotoUrl || imgError;
 
   return (
     <div className={`avatar-wrapper${large ? " large" : ""}`} ref={menuRef}>
@@ -174,7 +190,7 @@ function EmployeeAvatar({
         </div>
       ) : (
         <img
-          src={photoUrl}
+          src={resolvedPhotoUrl}
           alt="Employee Avatar"
           className={`employee-avatar-img${large ? " large" : ""}`}
           onError={() => setImgError(true)}
