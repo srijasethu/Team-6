@@ -20,8 +20,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Ensure uploads directory exists at startup (Railway ephemeral FS never has it)
+const fs = require("fs");
+const path = require("path");
+const uploadsPath = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log("Created uploads directory at:", uploadsPath);
+}
+
 // Serve uploaded images
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(uploadsPath));
 
 // Direct test route
 app.get("/api/profile/test", (req, res) => {

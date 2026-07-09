@@ -86,6 +86,22 @@ const safeJsonParse = (str, fallback = null) => {
   }
 };
 
+// Converts a backend profile_photo value (relative path or data URI) to a displayable URL
+const getProfilePhotoUrl = (photoPath) => {
+  if (!photoPath) return null;
+  if (
+    photoPath.startsWith("http://") ||
+    photoPath.startsWith("https://") ||
+    photoPath.startsWith("data:") ||
+    photoPath.startsWith("blob:")
+  ) {
+    return photoPath;
+  }
+  // Relative path like /uploads/filename.jpg — prepend the backend base URL
+  const cleanedPath = photoPath.startsWith("/") ? photoPath : `/${photoPath}`;
+  return `${API_BASE_URL}${cleanedPath}`;
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return "Not Available";
   const d = new Date(dateString);
@@ -2035,7 +2051,7 @@ function ManagerDashboard({ onLogout }) {
                     <div className="profile-hero-left">
                       <div className="avatar-wrapper" ref={photoMenuRef}>
                         <img
-                          src={profilePhoto || defaultManagerAvatar}
+                          src={getProfilePhotoUrl(profilePhoto) || defaultManagerAvatar}
                           alt="Manager Avatar"
                           className="manager-avatar"
                           onError={(e) => {
