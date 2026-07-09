@@ -916,19 +916,19 @@ body.modal-open .profile-panel {
 }
 
 [data-theme="dark"] .requests-table tbody tr.special-row-maternity {
-  background: linear-gradient(90deg, rgba(219, 39, 119, 0.08) 0%, var(--bg-table-row) 100%) !important;
-  border-left: 4px solid #f472b6 !important;
+  background: var(--bg-table-row) !important;
+  border-left: none !important;
 }
 [data-theme="dark"] .requests-table tbody tr.special-row-maternity td:first-child {
-  border-left: 4px solid #f472b6 !important;
+  border-left: none !important;
 }
 
 [data-theme="dark"] .requests-table tbody tr.special-row-paternity {
-  background: linear-gradient(90deg, rgba(129, 140, 248, 0.08) 0%, var(--bg-table-row) 100%) !important;
-  border-left: 4px solid #818cf8 !important;
+  background: var(--bg-table-row) !important;
+  border-left: none !important;
 }
 [data-theme="dark"] .requests-table tbody tr.special-row-paternity td:first-child {
-  border-left: 4px solid #818cf8 !important;
+  border-left: none !important;
 }
 
 /* Redesigned highlight hover consistency in dark mode */
