@@ -712,7 +712,7 @@ function NotificationBellManager({
           (n) =>
             new Notification(n.title, {
               body: n.message,
-              icon: "/favicon.ico",
+              icon: "/favicon.svg",
             }),
         );
       }
