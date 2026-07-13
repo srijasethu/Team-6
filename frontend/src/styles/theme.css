@@ -2681,6 +2681,43 @@ body.modal-open .profile-panel {
   color: var(--text-mid) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   UNPAID LEAVE CONFIRMATION MODAL — Dark mode overrides
+   Targets the inline-styled modal card and its Cancel button
+   ═══════════════════════════════════════════════════════════ */
+
+/* Modal card shell — overrides inline background: "#ffffff" */
+[data-theme="dark"] .unpaid-modal-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow-modal) !important;
+  color: var(--text-mid) !important;
+}
+
+/* Header strip inside the card */
+[data-theme="dark"] .unpaid-modal-card > div:first-child {
+  background: linear-gradient(135deg, #1a0a0a 0%, #1E293B 100%) !important;
+  border-bottom-color: rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Body text colours */
+[data-theme="dark"] .unpaid-modal-card p,
+[data-theme="dark"] .unpaid-modal-card div {
+  color: var(--text-mid);
+}
+
+/* Cancel button — overrides inline background: "#ffffff" and color: "#475569" */
+[data-theme="dark"] .unpaid-modal-cancel-btn {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-high) !important;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+[data-theme="dark"] .unpaid-modal-cancel-btn:hover {
+  background: var(--bg-card-hover) !important;
+  border-color: var(--accent-blue) !important;
+}
+
 
 /* ═══════════════════════════════════════════════════════════
    DARK MODE — VIEW HISTORY / VIEW REPORT MODALS

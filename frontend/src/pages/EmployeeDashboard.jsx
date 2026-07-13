@@ -1019,6 +1019,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
       {confirmModal.show && (
         <div className="confirm-modal-overlay">
           <div
+            className="unpaid-modal-card"
             style={{
               background: "#ffffff",
               borderRadius: "16px",
@@ -1224,6 +1225,7 @@ function ApplyLeaveForm({ onApplyLeave, onBack }) {
               >
                 <button
                   type="button"
+                  className="unpaid-modal-cancel-btn"
                   onClick={() =>
                     setConfirmModal({
                       show: false,
