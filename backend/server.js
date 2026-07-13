@@ -10,14 +10,13 @@ const holidayRoutes = require("./routes/holidayRoutes");
 
 const app = express();
 
-app.use(cors({
-  origin: [
-    "https://team-6-omega.vercel.app",
-    "http://localhost:5173"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: ["https://team-6-omega.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 // Ensure uploads directory exists at startup (Railway ephemeral FS never has it)
@@ -53,7 +52,7 @@ app.get("/", (req, res) => {
   res.send("Leave Management Backend Running");
 });
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
